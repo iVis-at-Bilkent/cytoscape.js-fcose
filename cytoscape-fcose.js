@@ -150,8 +150,8 @@ var assign = __webpack_require__(1);
 
 var defaults = Object.freeze({
   // animation
-  animate: undefined, // whether or not to animate the layout
-  animationDuration: undefined, // duration of animation in ms, if enabled
+  animate: true, // whether or not to animate the layout
+  animationDuration: 1000, // duration of animation in ms, if enabled
   animationEasing: undefined, // easing of animation, if enabled
   animateFilter: function animateFilter(node, i) {
     return true;
@@ -160,7 +160,7 @@ var defaults = Object.freeze({
   // viewport
   pan: undefined, // pan the graph to the provided position, given as { x, y }
   zoom: undefined, // zoom level as a positive number to set after animation
-  fit: undefined, // fit the viewport to the repositioned nodes, overrides pan and zoom
+  fit: true, // fit the viewport to the repositioned nodes, overrides pan and zoom
 
   // modifications
   padding: undefined, // padding around layout
@@ -191,12 +191,212 @@ var Layout = function () {
       var cy = options.cy;
       var eles = options.eles;
       var nodes = eles.nodes();
+      var nodeIndexes = new Map(); // map to keep indexes to nodes
+      var allDistances = []; //array to keep all distances between nodes
+      var xCoords = [];
+      var yCoords = [];
+      var infinity = 100000000;
+      var small = 0.000000001;
+      var pi_tol = 0.0000001;
+
+      // compute all pairs shortest path
+      var allBFS = function allBFS() {
+        var _loop = function _loop(i) {
+          var distance = [];
+
+          for (var j = 0; j < nodes.length; j++) {
+            if (j == i) distance[j] = 0;else distance[j] = infinity;
+          }
+
+          eles.bfs({ roots: nodes[i], visit: function visit(v, e, u, i, depth) {
+              distance[nodeIndexes.get(v.id())] = (15 + nodes[i].width() / 2 + v.width() / 2) * depth;
+            },
+            directed: false
+          });
+
+          allDistances.push(distance);
+        };
+
+        for (var i = 0; i < nodes.length; i++) {
+          _loop(i);
+        }
+      };
+
+      var multGamma = function multGamma(array) {
+        var result = [];
+        var sum = 0;
+
+        for (var i = 0; i < nodes.length; i++) {
+          sum += array[i];
+        }
+
+        sum *= -1 / nodes.length;
+
+        for (var _i = 0; _i < nodes.length; _i++) {
+          result[_i] = sum + array[_i];
+        }
+        return result;
+      };
+
+      var multL = function multL(array) {
+        var result = [];
+        //      let sum = 0;
+
+        for (var i = 0; i < nodes.length; i++) {
+          var sum = 0;
+          for (var j = 0; j < nodes.length; j++) {
+            sum += -0.5 * allDistances[i][j] * array[j];
+          }
+          result[i] = sum;
+        }
+
+        return result;
+      };
+
+      var multCons = function multCons(array, constant) {
+        var result = [];
+
+        for (var i = 0; i < nodes.length; i++) {
+          result[i] = array[i] * constant;
+        }
+
+        return result;
+      };
+
+      var minusOp = function minusOp(array1, array2) {
+        var result = [];
+
+        for (var i = 0; i < nodes.length; i++) {
+          result[i] = array1[i] - array2[i];
+        }
+
+        return result;
+      };
+
+      var dotProduct = function dotProduct(array1, array2) {
+        var product = 0;
+
+        for (var i = 0; i < nodes.length; i++) {
+          product += array1[i] * array2[i];
+        }
+
+        return product;
+      };
+
+      var mag = function mag(array) {
+        return Math.sqrt(dotProduct(array, array));
+      };
+
+      var normalize = function normalize(array) {
+        var result = [];
+        var magnitude = mag(array);
+
+        for (var i = 0; i < nodes.length; i++) {
+          result[i] = array[i] / magnitude;
+        }
+
+        return result;
+      };
+
+      var powerIteration = function powerIteration() {
+        // two largest eigenvalues
+        var theta1 = void 0;
+        var theta2 = void 0;
+
+        // initial guesses for eigenvectors
+        var Y1 = [];
+        var Y2 = [];
+
+        var V1 = [];
+        var V2 = [];
+
+        for (var i = 0; i < nodes.length; i++) {
+          Y1[i] = Math.random();
+          Y2[i] = Math.random();
+        }
+
+        Y1 = normalize(Y1);
+        Y2 = normalize(Y2);
+
+        var count = 0;
+        // to keep track of the improvement ratio in power iteration
+        var current = small;
+        var previous = small;
+
+        var temp = void 0;
+
+        while (true) {
+          count++;
+
+          for (var _i2 = 0; _i2 < nodes.length; _i2++) {
+            V1[_i2] = Y1[_i2];
+          }
+
+          Y1 = multGamma(multL(multGamma(V1)));
+          theta1 = dotProduct(V1, Y1);
+          Y1 = normalize(Y1);
+
+          current = dotProduct(V1, Y1);
+
+          temp = Math.abs(current / previous);
+
+          if (temp < 1 + pi_tol && temp > 1) {
+            break;
+          }
+
+          previous = current;
+        }
+
+        for (var _i3 = 0; _i3 < nodes.length; _i3++) {
+          V1[_i3] = Y1[_i3];
+        }
+
+        count = 0;
+        previous = small;
+        while (true) {
+          count++;
+
+          for (var _i4 = 0; _i4 < nodes.length; _i4++) {
+            V2[_i4] = Y2[_i4];
+          }
+
+          V2 = minusOp(V2, multCons(V1, dotProduct(V1, V2)));
+          Y2 = multGamma(multL(multGamma(V2)));
+          theta2 = dotProduct(V2, Y2);
+          Y2 = normalize(Y2);
+
+          current = dotProduct(V2, Y2);
+
+          temp = Math.abs(current / previous);
+
+          if (temp < 1 + pi_tol && temp > 1) {
+            break;
+          }
+
+          previous = current;
+        }
+
+        for (var _i5 = 0; _i5 < nodes.length; _i5++) {
+          V2[_i5] = Y2[_i5];
+        }
+
+        // theta1 now contains dominant eigenvalue
+        // theta2 now contains the second-largest eigenvalue
+        // V1 now contains theta1's eigenvector
+        // V2 now contains theta2's eigenvector
+
+        //populate the two vectors
+        xCoords = multCons(V1, Math.sqrt(theta1));
+        yCoords = multCons(V2, Math.sqrt(theta2));
+      };
 
       // example positioning algorithm
-      var getRandomPos = function getRandomPos(ele, i) {
+      var getPositions = function getPositions(ele, i) {
         return {
-          x: Math.round(Math.random() * 500),
-          y: Math.round(Math.random() * 500)
+          //        x: Math.round( Math.random() * 500 ),
+          //        y: Math.round( Math.random() * 500 )
+          x: xCoords[i],
+          y: yCoords[i]
         };
       };
 
@@ -204,8 +404,28 @@ var Layout = function () {
       var getNodePos = function getNodePos(ele, i) {
         var dims = ele.layoutDimensions(options); // the space used by the node
 
-        return getRandomPos(ele, i);
+        return getPositions(ele, i);
       };
+
+      // assign indexes to nodes
+      for (var i = 0; i < nodes.length; i++) {
+        nodeIndexes.set(nodes[i].id(), i);
+      }
+
+      allBFS();
+
+      // get the distance squared matrix
+      for (var _i6 = 0; _i6 < nodes.length; _i6++) {
+        for (var j = 0; j < nodes.length; j++) {
+          allDistances[_i6][j] *= allDistances[_i6][j];
+        }
+      }
+
+      powerIteration();
+
+      //    console.log(allDistances);
+      //    console.log(xCoords);
+      //    console.log(yCoords);
 
       // .layoutPositions() automatically handles the layout busywork for you
       nodes.layoutPositions(layout, options, getNodePos);
