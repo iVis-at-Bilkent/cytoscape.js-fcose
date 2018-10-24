@@ -38,33 +38,48 @@ class Layout {
     let eles = options.eles;
     let nodes = eles.nodes();
     let nodeIndexes = new Map();  // map to keep indexes to nodes
-    let allDistances = [];  //array to keep all distances between nodes
+    let allDistances = [];  // array to keep all distances between nodes
+    let allNodesNeighborhood = []; // array to keep neighborhood of all nodes
     let xCoords = [];
     let yCoords = [];
     const infinity = 100000000;
     const small = 0.000000001;
     let pi_tol = 0.0000001;
-    
-    // compute all pairs shortest path
-    let allBFS = function(){
+
+    // takes the index of the node(pivot) to initiate BFS as a parameter
+    let BFS = function(pivot){
+      let path = [];
+      let front = 0;
+      let back = 0;
+      let current = 0;
+      let temp;
+      let distance = [];
       
-      for(let i = 0; i <nodes.length; i++){
-        let distance = [];
+      for(let i = 0; i < nodes.length; i++){
+        distance[i] = infinity;
+      }
       
-        for(let j = 0; j < nodes.length; j++){
-          if(j == i)
-            distance[j] = 0;
-          else
-            distance[j] = infinity;
+      path[back] = pivot;
+      distance[pivot] = 0;
+      
+      while(back >= front){
+        current = path[front++];
+        
+        let neighbors = allNodesNeighborhood[current];
+        for(let i = 0; i < neighbors.length; i++){
+          temp = nodeIndexes.get(neighbors[i].id());
+          if(distance[temp] == infinity){
+            distance[temp] = distance[current] + 1;
+            path[++back] = temp;
+          }
         }
+        allDistances[pivot][current] = distance[current] * 45;
+      }
+    };
 
-        eles.bfs({roots: nodes[i], visit: function(v, e, u, i, depth){
-            distance[nodeIndexes.get(v.id())] = (15 + nodes[i].width()/2 + v.width()/2) * depth;
-          },
-          directed: false
-        });
-
-        allDistances.push(distance); 
+    let allBFS = function(){
+      for(let i = 0; i < nodes.length; i++){
+        BFS(i);
       }
     };
     
@@ -256,8 +271,18 @@ class Layout {
     };
     
     // assign indexes to nodes
-    for(let i=0; i<nodes.length; i++){
+    for(let i = 0; i < nodes.length; i++){
       nodeIndexes.set(nodes[i].id(), i);
+    }
+    
+    // instantiate the matrix keeping all-pairs-shortest path
+    for(let i = 0; i < nodes.length; i++){
+      allDistances[i] = [];
+    }
+    
+    // instantiate the array keeping neighborhood of all nodes
+    for(let i = 0; i < nodes.length; i++){
+      allNodesNeighborhood[i] = nodes[i].neighborhood().nodes();
     }
     
     allBFS();

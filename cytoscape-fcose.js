@@ -192,33 +192,48 @@ var Layout = function () {
       var eles = options.eles;
       var nodes = eles.nodes();
       var nodeIndexes = new Map(); // map to keep indexes to nodes
-      var allDistances = []; //array to keep all distances between nodes
+      var allDistances = []; // array to keep all distances between nodes
+      var allNodesNeighborhood = []; // array to keep neighborhood of all nodes
       var xCoords = [];
       var yCoords = [];
       var infinity = 100000000;
       var small = 0.000000001;
       var pi_tol = 0.0000001;
 
-      // compute all pairs shortest path
-      var allBFS = function allBFS() {
-        var _loop = function _loop(i) {
-          var distance = [];
-
-          for (var j = 0; j < nodes.length; j++) {
-            if (j == i) distance[j] = 0;else distance[j] = infinity;
-          }
-
-          eles.bfs({ roots: nodes[i], visit: function visit(v, e, u, i, depth) {
-              distance[nodeIndexes.get(v.id())] = (15 + nodes[i].width() / 2 + v.width() / 2) * depth;
-            },
-            directed: false
-          });
-
-          allDistances.push(distance);
-        };
+      // takes the index of the node(pivot) to initiate BFS as a parameter
+      var BFS = function BFS(pivot) {
+        var path = [];
+        var front = 0;
+        var back = 0;
+        var current = 0;
+        var temp = void 0;
+        var distance = [];
 
         for (var i = 0; i < nodes.length; i++) {
-          _loop(i);
+          distance[i] = infinity;
+        }
+
+        path[back] = pivot;
+        distance[pivot] = 0;
+
+        while (back >= front) {
+          current = path[front++];
+
+          var neighbors = allNodesNeighborhood[current];
+          for (var _i = 0; _i < neighbors.length; _i++) {
+            temp = nodeIndexes.get(neighbors[_i].id());
+            if (distance[temp] == infinity) {
+              distance[temp] = distance[current] + 1;
+              path[++back] = temp;
+            }
+          }
+          allDistances[pivot][current] = distance[current] * 45;
+        }
+      };
+
+      var allBFS = function allBFS() {
+        for (var i = 0; i < nodes.length; i++) {
+          BFS(i);
         }
       };
 
@@ -232,8 +247,8 @@ var Layout = function () {
 
         sum *= -1 / nodes.length;
 
-        for (var _i = 0; _i < nodes.length; _i++) {
-          result[_i] = sum + array[_i];
+        for (var _i2 = 0; _i2 < nodes.length; _i2++) {
+          result[_i2] = sum + array[_i2];
         }
         return result;
       };
@@ -328,8 +343,8 @@ var Layout = function () {
         while (true) {
           count++;
 
-          for (var _i2 = 0; _i2 < nodes.length; _i2++) {
-            V1[_i2] = Y1[_i2];
+          for (var _i3 = 0; _i3 < nodes.length; _i3++) {
+            V1[_i3] = Y1[_i3];
           }
 
           Y1 = multGamma(multL(multGamma(V1)));
@@ -347,8 +362,8 @@ var Layout = function () {
           previous = current;
         }
 
-        for (var _i3 = 0; _i3 < nodes.length; _i3++) {
-          V1[_i3] = Y1[_i3];
+        for (var _i4 = 0; _i4 < nodes.length; _i4++) {
+          V1[_i4] = Y1[_i4];
         }
 
         count = 0;
@@ -356,8 +371,8 @@ var Layout = function () {
         while (true) {
           count++;
 
-          for (var _i4 = 0; _i4 < nodes.length; _i4++) {
-            V2[_i4] = Y2[_i4];
+          for (var _i5 = 0; _i5 < nodes.length; _i5++) {
+            V2[_i5] = Y2[_i5];
           }
 
           V2 = minusOp(V2, multCons(V1, dotProduct(V1, V2)));
@@ -376,8 +391,8 @@ var Layout = function () {
           previous = current;
         }
 
-        for (var _i5 = 0; _i5 < nodes.length; _i5++) {
-          V2[_i5] = Y2[_i5];
+        for (var _i6 = 0; _i6 < nodes.length; _i6++) {
+          V2[_i6] = Y2[_i6];
         }
 
         // theta1 now contains dominant eigenvalue
@@ -412,12 +427,22 @@ var Layout = function () {
         nodeIndexes.set(nodes[i].id(), i);
       }
 
+      // instantiate the matrix keeping all-pairs-shortest path
+      for (var _i7 = 0; _i7 < nodes.length; _i7++) {
+        allDistances[_i7] = [];
+      }
+
+      // instantiate the array keeping neighborhood of all nodes
+      for (var _i8 = 0; _i8 < nodes.length; _i8++) {
+        allNodesNeighborhood[_i8] = nodes[_i8].neighborhood().nodes();
+      }
+
       allBFS();
 
       // get the distance squared matrix
-      for (var _i6 = 0; _i6 < nodes.length; _i6++) {
+      for (var _i9 = 0; _i9 < nodes.length; _i9++) {
         for (var j = 0; j < nodes.length; j++) {
-          allDistances[_i6][j] *= allDistances[_i6][j];
+          allDistances[_i9][j] *= allDistances[_i9][j];
         }
       }
 
