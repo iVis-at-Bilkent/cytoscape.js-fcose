@@ -203,12 +203,13 @@ class Layout {
 				Y[i] = [];
 				V[i] = [];
 
+				//Randomly initialize elements
 				for (let j = 0; j < nodes.length; j++) {
 					Y[i][j] = Math.random();
-					Y[i] = normalize(Y[i]);
-					console.log('Y[' + i + '] ' + Y[i]);
 				}
+				Y[i] = normalize(Y[i]); //unit vector
 			}
+
 			for (let i = 0; i < numEigenVectors; i++) {
 
 				do {
@@ -233,13 +234,15 @@ class Layout {
 			// V[0] now contains theta1's eigenvector
 			// V[1] now contains theta2's eigenvector
 
-			for (let i = 0; i < numEigenVectors; i++) {
-        console.log('Y['+i+'] :'+ Y[i]);
-        console.log('V['+i+'] :'+ V[i]);
-        console.log('theta['+i+']' + theta[i]);
-        V[i] = 1;
-        theta = 1;
-			}
+			// for (let i = 0; i < numEigenVectors; i++) {
+      //   console.log('Y['+i+'] :'+ Y[i]);
+      //   console.log('V['+i+'] :'+ V[i]);
+      //   console.log('theta['+i+']' + theta[i]);
+      //   V[i] = 1;
+      //   theta = 1;
+			// }
+
+
       //populate the two vectors
       xCoords = multCons(V[0], Math.sqrt(theta[0]));
       yCoords = multCons(V[1], Math.sqrt(theta[1]));

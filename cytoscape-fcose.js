@@ -356,11 +356,13 @@ var Layout = function () {
           Y[i] = [];
           V[i] = [];
 
+          //Randomly initialize Y values (eigenvectors)
           for (var j = 0; j < nodes.length; j++) {
             Y[i][j] = Math.random();
-            Y[i] = normalize(Y[i]);
-            console.log('Y[' + i + '] ' + Y[i]);
           }
+
+          Y[i] = normalize(Y[i]);
+          console.log('CCCY[' + i + '] ' + Y[i]);
         }
         for (var _i3 = 0; _i3 < numEigenVectors; _i3++) {
 
@@ -384,13 +386,15 @@ var Layout = function () {
         // V[0] now contains theta1's eigenvector
         // V[1] now contains theta2's eigenvector
 
-        for (var _i4 = 0; _i4 < numEigenVectors; _i4++) {
-          console.log('Y[' + _i4 + '] :' + Y[_i4]);
-          console.log('V[' + _i4 + '] :' + V[_i4]);
-          console.log('theta[' + _i4 + ']' + theta[_i4]);
-          V[_i4] = 1;
-          theta = 1;
-        }
+        // for (let i = 0; i < numEigenVectors; i++) {
+        //   console.log('Y['+i+'] :'+ Y[i]);
+        //   console.log('V['+i+'] :'+ V[i]);
+        //   console.log('theta['+i+']' + theta[i]);
+        //   V[i] = 1;
+        //   theta = 1;
+        // }
+
+
         //populate the two vectors
         xCoords = multCons(V[0], Math.sqrt(theta[0]));
         yCoords = multCons(V[1], Math.sqrt(theta[1]));
@@ -418,13 +422,13 @@ var Layout = function () {
       }
 
       // instantiate the matrix keeping all-pairs-shortest path
-      for (var _i5 = 0; _i5 < nodes.length; _i5++) {
-        allDistances[_i5] = [];
+      for (var _i4 = 0; _i4 < nodes.length; _i4++) {
+        allDistances[_i4] = [];
       }
 
       // instantiate the array keeping neighborhood of all nodes
-      for (var _i6 = 0; _i6 < nodes.length; _i6++) {
-        allNodesNeighborhood[_i6] = nodes[_i6].neighborhood().nodes();
+      for (var _i5 = 0; _i5 < nodes.length; _i5++) {
+        allNodesNeighborhood[_i5] = nodes[_i5].neighborhood().nodes();
       }
 
       if (nodes.length < 50) {
