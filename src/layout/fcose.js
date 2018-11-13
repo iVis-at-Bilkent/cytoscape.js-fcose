@@ -126,22 +126,17 @@ class Layout {
 			console.log("a rows:" + aNumRows + " a cols:" + aNumCols + " b rows:" + bNumRows + " b cols: " + bNumCols);
 
 			if (aNumCols != bNumRows) {
-				console.log("Error at multiplyMatrix dimensions do not match");
+				console.log("Error at multiplyMatrix: dimensions do not match");
 			}
 
 			if (bNumCols == undefined || bNumCols == null){ // matrix vector multiplication
 				m = [];
 
 				for (let r = 0; r < aNumRows; ++r) {
+					m[r] = 0;
 					for (let i = 0; i < aNumCols; ++i) {
-						m[r] += a[r][i] * b[i].toPrecision(5);
 
-						//TODO: Couldn't figure out why multiplication ended up with NaN. ASK
-
-						console.log(a[r][i] +"   " + b[i] + "  "+ m[r]);
-						if (isNaN(a[r][i])) console.log("a["+r+"]["+i+"] is NaN");
-						if (isNaN(b[i])) console.log("b["+i+"] is NaN");
-						if (isNaN(m[r])) console.log("m["+r+"] is NaN");
+						m[r] += a[r][i] * b[i];
 					}
 				}
 
@@ -291,9 +286,10 @@ class Layout {
 			printEigenvectors(V,Y,numEigenVectors);
 
       //populate the two vectors
-      xCoords = multiplyMatrix(pivotDistancesTranspose,V[0]);
+      //xCoords = multConsArray(multiplyMatrix(pivotDistancesTranspose,V[0]),3);
+			//yCoords = multConsArray(multiplyMatrix(pivotDistancesTranspose,V[1]),3);
+			xCoords = multiplyMatrix(pivotDistancesTranspose,V[0]);
 			yCoords = multiplyMatrix(pivotDistancesTranspose,V[1]);
-
 
 			//yCoords = multCons(V[1], Math.sqrt(theta[1]));
       console.log('xCoords at power iteration: '+ xCoords);

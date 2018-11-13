@@ -286,23 +286,22 @@ var Layout = function () {
 				console.log("a rows:" + aNumRows + " a cols:" + aNumCols + " b rows:" + bNumRows + " b cols: " + bNumCols);
 
 				if (aNumCols != bNumRows) {
-					console.log("Error at multiplyMatrix dimensions do not match");
+					console.log("Error at multiplyMatrix: dimensions do not match");
 				}
 
 				if (bNumCols == undefined || bNumCols == null) {
+					// matrix vector multiplication
 					m = [];
 
 					for (var r = 0; r < aNumRows; ++r) {
+						m[r] = 0;
 						for (var i = 0; i < aNumCols; ++i) {
-							m[r] += a[r][i] * b[i].toPrecision(5);
 
-							console.log(a[r][i] + "   " + b[i] + "  " + m[r]);
-							if (isNaN(a[r][i])) console.log("a[" + r + "][" + i + "] is NaN");
-							if (isNaN(b[i])) console.log("b[" + i + "] is NaN");
-							if (isNaN(m[r])) console.log("m[" + r + "] is NaN");
+							m[r] += a[r][i] * b[i];
 						}
 					}
 				} else {
+					// matrix matrix multiplication
 					m = new Array(aNumRows); // initialize array of rows
 
 					for (var _r = 0; _r < aNumRows; ++_r) {
@@ -315,7 +314,6 @@ var Layout = function () {
 						}
 					}
 				}
-
 				return m;
 			};
 
@@ -447,6 +445,8 @@ var Layout = function () {
 				printEigenvectors(V, Y, numEigenVectors);
 
 				//populate the two vectors
+				//xCoords = multConsArray(multiplyMatrix(pivotDistancesTranspose,V[0]),3);
+				//yCoords = multConsArray(multiplyMatrix(pivotDistancesTranspose,V[1]),3);
 				xCoords = multiplyMatrix(pivotDistancesTranspose, V[0]);
 				yCoords = multiplyMatrix(pivotDistancesTranspose, V[1]);
 
