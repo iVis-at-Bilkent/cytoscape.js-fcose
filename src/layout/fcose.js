@@ -47,12 +47,9 @@ class Layout {
 
     // takes the index of the node(pivot) to initiate BFS as a parameter
     let BFS = function(pivot){
-      let path = [];
-      let front = 0;
-      let back = 0;
-      let current = 0;
+      let path = [], distance = [];
+      let front = 0, back = 0, current = 0;
       let temp;
-      let distance = [];
 
       for(let i = 0; i < nodes.length; i++){
         distance[i] = infinity;
@@ -75,8 +72,119 @@ class Layout {
       }
     };
 
+		let multConsArray = function(array, constant){
+			let result = [];
 
-    let chooseNextPivot = function(i){
+			for(let i = 0; i < nodes.length; i++){
+				result[i] = array[i] * constant;
+			}
+
+			return result;
+		};
+
+		let multConsMatrix = function(matrix, constant) {
+			let result = [];
+			for (let i = 0; i < matrix.length; i++) {
+				result[i] = [];
+				for(let j = 0; j < matrix[0].length; j++){
+					result[i][j] = matrix[i][j] * constant;
+				}
+			}
+			return result;
+		};
+
+		let minusOp = function(array1, array2){
+			let result = [];
+
+			for(let i = 0; i < nodes.length; i++){
+				result[i] = array1[i] - array2[i];
+			}
+
+			return result;
+		};
+
+		let dotProduct = function(array1, array2){
+			if (array1.length != array2.length) {
+				console.log("Error at dotProduct: array lengths did not match");
+				return;
+			}
+
+			let product = 0;
+
+			for(let i = 0; i < array1.length; i++){
+				product += array1[i] * array2[i];
+			}
+
+			return product;
+		};
+
+		let multiplyMatrix = function(a, b) { //TODO: Beautify & optimize
+			let aNumRows = a.length, aNumCols = a[0].length;
+			let bNumRows = b.length, bNumCols = b[0].length;
+			let m;
+
+			console.log("a rows:" + aNumRows + " a cols:" + aNumCols + " b rows:" + bNumRows + " b cols: " + bNumCols);
+
+			if (aNumCols != bNumRows) {
+				console.log("Error at multiplyMatrix dimensions do not match");
+			}
+
+			if (bNumCols == undefined || bNumCols == null){ // matrix vector multiplication
+				m = [];
+
+				for (let r = 0; r < aNumRows; ++r) {
+					for (let i = 0; i < aNumCols; ++i) {
+						m[r] += a[r][i] * b[i].toPrecision(5);
+
+						//TODO: Couldn't figure out why multiplication ended up with NaN. ASK
+
+						console.log(a[r][i] +"   " + b[i] + "  "+ m[r]);
+						if (isNaN(a[r][i])) console.log("a["+r+"]["+i+"] is NaN");
+						if (isNaN(b[i])) console.log("b["+i+"] is NaN");
+						if (isNaN(m[r])) console.log("m["+r+"] is NaN");
+					}
+				}
+
+			}
+			else { // matrix matrix multiplication
+				m = new Array(aNumRows);  // initialize array of rows
+
+				for (let r = 0; r < aNumRows; ++r) {
+					m[r] = []; //m[r] = new Array(bNumCols); // initialize the current row
+					for (let c = 0; c < bNumCols; ++c) {
+						m[r][c] = 0;             // initialize the current cell
+						for (let i = 0; i < aNumCols; ++i) {
+							m[r][c] += a[r][i] * b[i][c];
+						}
+					}
+				}
+			}
+			return m;
+		};
+
+		let normalize = function(array){
+			let result = [];
+			let magnitude = Math.sqrt(dotProduct(array, array));
+
+			for(let i = 0; i < array.length; i++){
+				result[i] = array[i] / magnitude;
+			}
+			return result;
+		};
+
+		let transpose = function(array){
+			let result = [];
+			for (let i = 0; i < array[0].length; i++){
+				result[i] = [];
+				for (let j = 0; j < array.length; j++){
+					result[i][j] = array[j][i];
+				}
+			}
+			return result;
+		};
+
+		//TODO: This might not be working as intended. Check it later
+		let chooseNextPivot = function(i){
       //Find max in allDistances[i][j]
       let maxDistance = -infinity;
       let nextPivot = i;
@@ -94,6 +202,7 @@ class Layout {
     let highDimDraw = function(m){
       pivots[0] = Math.floor(Math.random() * nodes.length);
 
+      // TODO: change this to calculate only m pivots later.
       for(let i = 0; i < nodes.length; i++){
 				BFS(i); // allDistances[i][j] : dimension i of node j
 			}
@@ -105,147 +214,88 @@ class Layout {
       }
 		};
 
-    let multCons = function(array, constant){
-      let result = [];
-      
-      for(let i = 0; i < nodes.length; i++){
-        result[i] = array[i] * constant;
-      }
-      
-      return result;
-    };
-
-
-		let multConsMatrix = function(matrix, constant) {
-			let result = [];
-			for (let i = 0; i < matrix.length; i++) {
-        result[i] = [];
-        for(let j = 0; j < matrix[0].length; j++){
-					result[i][j] = matrix[i][j] * constant;
-				}
+    let printEigenvectors = function(V,Y, numEigenVectors){
+			for (let i = 0; i < numEigenVectors; i++) {
+				console.log('Y['+i+'] :'+ Y[i]);
+				console.log('V['+i+'] :'+ V[i]);
 			}
-			return result;
-		};
-
-
-    let minusOp = function(array1, array2){
-      let result = [];
-
-      for(let i = 0; i < nodes.length; i++){
-        result[i] = array1[i] - array2[i];
-      }
-
-      return result;
-    };
-
-    let dotProduct = function(array1, array2){
-      let product = 0;
-      
-      for(let i = 0; i < nodes.length; i++){
-        product += array1[i] * array2[i]; 
-      }
-      
-      return product;
-    };
-
-		let multiplyMatrix = function(a, b) { //TODO: Beautify & optimize
-			let aNumRows = a.length, aNumCols = a[0].length;
-			let bNumRows = b.length, bNumCols = b[0].length;
-			let m = new Array(aNumRows);  // initialize array of rows
-			for (let r = 0; r < aNumRows; ++r) {
-				m[r] = new Array(bNumCols); // initialize the current row
-				for (let c = 0; c < bNumCols; ++c) {
-					m[r][c] = 0;             // initialize the current cell
-					for (let i = 0; i < aNumCols; ++i) {
-						m[r][c] += a[r][i] * b[i][c];
-					}
-				}
-			}
-			return m;
-		};
-
-    
-    let normalize = function(array){
-      let result = [];
-      let magnitude = Math.sqrt(dotProduct(array, array));
-      
-      for(let i = 0; i < nodes.length; i++){
-        result[i] = array[i] / magnitude;
-      }
-      
-      return result;
-    };
-
-    let transpose = function(array){
-      let result = [];
-      for (let i = 0; i < array[0].length; i++){
-        result[i] = [];
-        for (let j = 0; j < array.length; j++){
-          result[i][j] = array[j][i];
-        }
-      }
-      return result;
-    };
+		}
 
     let powerIteration = function(numEigenVectors) {
 			const epsilon = 0.001;
-			let theta = []; // largest eigenvalues
+			let Y = [], V = [], mean = [], pivotDistances = [];
 
-			// initial guesses for eigenvectors
-			let Y = [];
-			let V = [];
+			// Prepare for PCA
+			for (let i = 0; i < pivots.length; i++){
+				pivotDistances[i] = [];
 
-			//compute covariance matrix
-			let cov = multConsMatrix(multiplyMatrix(allDistances, transpose(allDistances)), 1 / nodes.length);
+				// Compute mean of the axis
+				for (let j = 0; j < nodes.length; j++) {
+					mean[i] = allDistances[i][j] / nodes.length;
+				}
+
+				//Center the data
+				for (let j = 0; j < nodes.length; j++) {
+					pivotDistances[i][j] = allDistances[i][j] - mean[i];
+				}
+			}
+
+			let pivotDistancesTranspose = transpose(pivotDistances);
+
+			// Compute covariance matrix
+			let cov = multConsMatrix(multiplyMatrix(pivotDistances, pivotDistancesTranspose), 1 / nodes.length); // S matrix mxm
+			//console.log("cov dimensions: " + cov.length + "x" + cov[0].length);
 
 			// init eigenvectors to random unit vectors
 			for (let i = 0; i < numEigenVectors; i++) {
 				Y[i] = [];
 				V[i] = [];
 
-				//Randomly initialize elements
-				for (let j = 0; j < nodes.length; j++) {
-					Y[i][j] = Math.random();
+				//Randomly initialize eigenvector i
+				for (let m = 0; m < pivots.length; m++) {
+					Y[i][m] = Math.random();
 				}
-				Y[i] = normalize(Y[i]); //unit vector
-			}
-
-			for (let i = 0; i < numEigenVectors; i++) {
+				Y[i] = normalize(Y[i]); // unit vector of m x 1
 
 				do {
 					V[i] = Y[i];
-					theta[i] = dotProduct(V[i], V[i]);
-					// orthogonalize against prev eigenvectors
-					for (let j = 1; j < i; j++) {
-						V[i] = minusOp(V[i], dotProduct(dotProduct(V[i], V[j]), V[j]));
-					}
 
-					Y[i] = dotProduct(cov, V[i]);
-					Y[i] = normalize(Y[i]);
+					console.log("After assigning: ");
+					printEigenvectors(V,Y,numEigenVectors);
+
+					// orthogonalize against previous eigenvectors
+					for (let j = 1; j < i; j++) {
+						V[i] = minusOp(V[i], multConsArray(V[j]), dotProduct(V[i], V[j]));
+					}
+					console.log("After orthogonalization: ");
+					printEigenvectors(V,Y,numEigenVectors);
+
+					let tempMult = multiplyMatrix(cov, V[i]);
+					console.log("temp mult: "+ tempMult);
+					console.log("dimensions: " + tempMult.length + " " + tempMult[0].length);
+
+
+					Y[i] = normalize(tempMult);
+
+					console.log("After mult cov: ");
+					printEigenvectors(V,Y,numEigenVectors);
+
 
 				} while (dotProduct(Y[i], V[i]) < 1 - epsilon);
 
 				V[i] = Y[i];
-
 			}
 
-			// theta[0] now contains dominant eigenvalue
-			// theta[1] now contains the second-largest eigenvalue
-			// V[0] now contains theta1's eigenvector
-			// V[1] now contains theta2's eigenvector
 
-			// for (let i = 0; i < numEigenVectors; i++) {
-      //   console.log('Y['+i+'] :'+ Y[i]);
-      //   console.log('V['+i+'] :'+ V[i]);
-      //   console.log('theta['+i+']' + theta[i]);
-      //   V[i] = 1;
-      //   theta = 1;
-			// }
-
+			console.log("After eigenvector calculation finished: ");
+			printEigenvectors(V,Y,numEigenVectors);
 
       //populate the two vectors
-      xCoords = multCons(V[0], Math.sqrt(theta[0]));
-      yCoords = multCons(V[1], Math.sqrt(theta[1]));
+      xCoords = multiplyMatrix(pivotDistancesTranspose,V[0]);
+			yCoords = multiplyMatrix(pivotDistancesTranspose,V[1]);
+
+
+			//yCoords = multCons(V[1], Math.sqrt(theta[1]));
       console.log('xCoords at power iteration: '+ xCoords);
       
     };
@@ -264,12 +314,12 @@ class Layout {
 
       return getPositions( ele, i );
     };
-    
+
     // assign indexes to nodes
     for(let i = 0; i < nodes.length; i++){
       nodeIndexes.set(nodes[i].id(), i);
     }
-    
+
     // instantiate the matrix keeping all-pairs-shortest path
     for(let i = 0; i < nodes.length; i++){
       allDistances[i] = [];
@@ -293,8 +343,10 @@ class Layout {
     //     allDistances[i][j] *= allDistances[i][j];
     //   }
     // }
-    
-    powerIteration(2);
+
+		//calculate means of axis
+
+		powerIteration(2);
     
     console.log('allDistances : \n' + allDistances);
     console.log('xCoords : \n'+ xCoords);

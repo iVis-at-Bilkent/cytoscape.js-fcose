@@ -149,313 +149,368 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 var assign = __webpack_require__(1);
 
 var defaults = Object.freeze({
-  // animation
-  animate: true, // whether or not to animate the layout
-  animationDuration: 1000, // duration of animation in ms, if enabled
-  animationEasing: undefined, // easing of animation, if enabled
-  animateFilter: function animateFilter(node, i) {
-    return true;
-  }, // whether to animate specific nodes when animation is on; non-animated nodes immediately go to their final positions
+	// animation
+	animate: true, // whether or not to animate the layout
+	animationDuration: 1000, // duration of animation in ms, if enabled
+	animationEasing: undefined, // easing of animation, if enabled
+	animateFilter: function animateFilter(node, i) {
+		return true;
+	}, // whether to animate specific nodes when animation is on; non-animated nodes immediately go to their final positions
 
-  // viewport
-  pan: undefined, // pan the graph to the provided position, given as { x, y }
-  zoom: undefined, // zoom level as a positive number to set after animation
-  fit: true, // fit the viewport to the repositioned nodes, overrides pan and zoom
+	// viewport
+	pan: undefined, // pan the graph to the provided position, given as { x, y }
+	zoom: undefined, // zoom level as a positive number to set after animation
+	fit: true, // fit the viewport to the repositioned nodes, overrides pan and zoom
 
-  // modifications
-  padding: undefined, // padding around layout
-  boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
-  spacingFactor: undefined, // a positive value which adjusts spacing between nodes (>1 means greater than usual spacing)
-  nodeDimensionsIncludeLabels: undefined, // whether labels should be included in determining the space used by a node (default true)
-  transform: function transform(node, pos) {
-    return pos;
-  }, // a function that applies a transform to the final node position
+	// modifications
+	padding: undefined, // padding around layout
+	boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+	spacingFactor: undefined, // a positive value which adjusts spacing between nodes (>1 means greater than usual spacing)
+	nodeDimensionsIncludeLabels: undefined, // whether labels should be included in determining the space used by a node (default true)
+	transform: function transform(node, pos) {
+		return pos;
+	}, // a function that applies a transform to the final node position
 
-  // layout event callbacks
-  ready: function ready() {}, // on layoutready
-  stop: function stop() {} // on layoutstop
+	// layout event callbacks
+	ready: function ready() {}, // on layoutready
+	stop: function stop() {} // on layoutstop
 });
 
 var Layout = function () {
-  function Layout(options) {
-    _classCallCheck(this, Layout);
+	function Layout(options) {
+		_classCallCheck(this, Layout);
 
-    this.options = assign({}, defaults, options);
-  }
+		this.options = assign({}, defaults, options);
+	}
 
-  _createClass(Layout, [{
-    key: 'run',
-    value: function run() {
-      var layout = this;
-      var options = this.options;
-      var cy = options.cy;
-      var eles = options.eles;
-      var nodes = eles.nodes();
-      var nodeIndexes = new Map(); // map to keep indexes to nodes
-      var allDistances = []; // array to keep all distances between nodes
-      var allNodesNeighborhood = []; // array to keep neighborhood of all nodes
-      var xCoords = [];
-      var yCoords = [];
-      var infinity = 100000000;
-      var pivots = []; // pivot nodes
+	_createClass(Layout, [{
+		key: "run",
+		value: function run() {
+			var layout = this;
+			var options = this.options;
+			var cy = options.cy;
+			var eles = options.eles;
+			var nodes = eles.nodes();
+			var nodeIndexes = new Map(); // map to keep indexes to nodes
+			var allDistances = []; // array to keep all distances between nodes
+			var allNodesNeighborhood = []; // array to keep neighborhood of all nodes
+			var xCoords = [];
+			var yCoords = [];
+			var infinity = 100000000;
+			var pivots = []; // pivot nodes
 
-      // takes the index of the node(pivot) to initiate BFS as a parameter
-      var BFS = function BFS(pivot) {
-        var path = [];
-        var front = 0;
-        var back = 0;
-        var current = 0;
-        var temp = void 0;
-        var distance = [];
+			// takes the index of the node(pivot) to initiate BFS as a parameter
+			var BFS = function BFS(pivot) {
+				var path = [],
+				    distance = [];
+				var front = 0,
+				    back = 0,
+				    current = 0;
+				var temp = void 0;
 
-        for (var i = 0; i < nodes.length; i++) {
-          distance[i] = infinity;
-        }
+				for (var i = 0; i < nodes.length; i++) {
+					distance[i] = infinity;
+				}
 
-        path[back] = pivot;
-        distance[pivot] = 0;
+				path[back] = pivot;
+				distance[pivot] = 0;
 
-        while (back >= front) {
-          current = path[front++];
-          var neighbors = allNodesNeighborhood[current];
-          for (var _i = 0; _i < neighbors.length; _i++) {
-            temp = nodeIndexes.get(neighbors[_i].id());
-            if (distance[temp] == infinity) {
-              distance[temp] = distance[current] + 1;
-              path[++back] = temp;
-            }
-          }
-          allDistances[pivot][current] = distance[current] * 45;
-        }
-      };
+				while (back >= front) {
+					current = path[front++];
+					var neighbors = allNodesNeighborhood[current];
+					for (var _i = 0; _i < neighbors.length; _i++) {
+						temp = nodeIndexes.get(neighbors[_i].id());
+						if (distance[temp] == infinity) {
+							distance[temp] = distance[current] + 1;
+							path[++back] = temp;
+						}
+					}
+					allDistances[pivot][current] = distance[current] * 45;
+				}
+			};
 
-      var chooseNextPivot = function chooseNextPivot(i) {
-        //Find max in allDistances[i][j]
-        var maxDistance = -infinity;
-        var nextPivot = i;
+			var multConsArray = function multConsArray(array, constant) {
+				var result = [];
 
-        for (var j = 0; j < nodes.length; j++) {
-          if (allDistances[i][j] > maxDistance) {
-            nextPivot = j;
-            maxDistance = allDistances[i][j];
-          }
-        }
+				for (var i = 0; i < nodes.length; i++) {
+					result[i] = array[i] * constant;
+				}
 
-        return nextPivot;
-      };
+				return result;
+			};
 
-      var highDimDraw = function highDimDraw(m) {
-        pivots[0] = Math.floor(Math.random() * nodes.length);
+			var multConsMatrix = function multConsMatrix(matrix, constant) {
+				var result = [];
+				for (var i = 0; i < matrix.length; i++) {
+					result[i] = [];
+					for (var j = 0; j < matrix[0].length; j++) {
+						result[i][j] = matrix[i][j] * constant;
+					}
+				}
+				return result;
+			};
 
-        for (var i = 0; i < nodes.length; i++) {
-          BFS(i); // allDistances[i][j] : dimension i of node j
-        }
+			var minusOp = function minusOp(array1, array2) {
+				var result = [];
 
-        for (var _i2 = 0; _i2 < m - 1; _i2++) {
-          if (_i2 != m - 1) {
-            pivots[_i2 + 1] = chooseNextPivot(_i2);
-          }
-        }
-      };
+				for (var i = 0; i < nodes.length; i++) {
+					result[i] = array1[i] - array2[i];
+				}
 
-      var multCons = function multCons(array, constant) {
-        var result = [];
+				return result;
+			};
 
-        for (var i = 0; i < nodes.length; i++) {
-          result[i] = array[i] * constant;
-        }
+			var dotProduct = function dotProduct(array1, array2) {
+				if (array1.length != array2.length) {
+					console.log("Error at dotProduct: array lengths did not match");
+					return;
+				}
 
-        return result;
-      };
+				var product = 0;
 
-      var multConsMatrix = function multConsMatrix(matrix, constant) {
-        var result = [];
-        for (var i = 0; i < matrix.length; i++) {
-          result[i] = [];
-          for (var j = 0; j < matrix[0].length; j++) {
-            result[i][j] = matrix[i][j] * constant;
-          }
-        }
-        return result;
-      };
+				for (var i = 0; i < array1.length; i++) {
+					product += array1[i] * array2[i];
+				}
 
-      var minusOp = function minusOp(array1, array2) {
-        var result = [];
+				return product;
+			};
 
-        for (var i = 0; i < nodes.length; i++) {
-          result[i] = array1[i] - array2[i];
-        }
+			var multiplyMatrix = function multiplyMatrix(a, b) {
+				//TODO: Beautify & optimize
+				var aNumRows = a.length,
+				    aNumCols = a[0].length;
+				var bNumRows = b.length,
+				    bNumCols = b[0].length;
+				var m = void 0;
 
-        return result;
-      };
+				console.log("a rows:" + aNumRows + " a cols:" + aNumCols + " b rows:" + bNumRows + " b cols: " + bNumCols);
 
-      var dotProduct = function dotProduct(array1, array2) {
-        var product = 0;
+				if (aNumCols != bNumRows) {
+					console.log("Error at multiplyMatrix dimensions do not match");
+				}
 
-        for (var i = 0; i < nodes.length; i++) {
-          product += array1[i] * array2[i];
-        }
+				if (bNumCols == undefined || bNumCols == null) {
+					m = [];
 
-        return product;
-      };
+					for (var r = 0; r < aNumRows; ++r) {
+						for (var i = 0; i < aNumCols; ++i) {
+							m[r] += a[r][i] * b[i].toPrecision(5);
 
-      var multiplyMatrix = function multiplyMatrix(a, b) {
-        //TODO: Beautify & optimize
-        var aNumRows = a.length,
-            aNumCols = a[0].length;
-        var bNumRows = b.length,
-            bNumCols = b[0].length;
-        var m = new Array(aNumRows); // initialize array of rows
-        for (var r = 0; r < aNumRows; ++r) {
-          m[r] = new Array(bNumCols); // initialize the current row
-          for (var c = 0; c < bNumCols; ++c) {
-            m[r][c] = 0; // initialize the current cell
-            for (var i = 0; i < aNumCols; ++i) {
-              m[r][c] += a[r][i] * b[i][c];
-            }
-          }
-        }
-        return m;
-      };
+							console.log(a[r][i] + "   " + b[i] + "  " + m[r]);
+							if (isNaN(a[r][i])) console.log("a[" + r + "][" + i + "] is NaN");
+							if (isNaN(b[i])) console.log("b[" + i + "] is NaN");
+							if (isNaN(m[r])) console.log("m[" + r + "] is NaN");
+						}
+					}
+				} else {
+					m = new Array(aNumRows); // initialize array of rows
 
-      var normalize = function normalize(array) {
-        var result = [];
-        var magnitude = Math.sqrt(dotProduct(array, array));
+					for (var _r = 0; _r < aNumRows; ++_r) {
+						m[_r] = []; //m[r] = new Array(bNumCols); // initialize the current row
+						for (var c = 0; c < bNumCols; ++c) {
+							m[_r][c] = 0; // initialize the current cell
+							for (var _i2 = 0; _i2 < aNumCols; ++_i2) {
+								m[_r][c] += a[_r][_i2] * b[_i2][c];
+							}
+						}
+					}
+				}
 
-        for (var i = 0; i < nodes.length; i++) {
-          result[i] = array[i] / magnitude;
-        }
+				return m;
+			};
 
-        return result;
-      };
+			var normalize = function normalize(array) {
+				var result = [];
+				var magnitude = Math.sqrt(dotProduct(array, array));
 
-      var transpose = function transpose(array) {
-        var result = [];
-        for (var i = 0; i < array[0].length; i++) {
-          result[i] = [];
-          for (var j = 0; j < array.length; j++) {
-            result[i][j] = array[j][i];
-          }
-        }
-        return result;
-      };
+				for (var i = 0; i < array.length; i++) {
+					result[i] = array[i] / magnitude;
+				}
+				return result;
+			};
 
-      var powerIteration = function powerIteration(numEigenVectors) {
-        var epsilon = 0.001;
-        var theta = []; // largest eigenvalues
+			var transpose = function transpose(array) {
+				var result = [];
+				for (var i = 0; i < array[0].length; i++) {
+					result[i] = [];
+					for (var j = 0; j < array.length; j++) {
+						result[i][j] = array[j][i];
+					}
+				}
+				return result;
+			};
 
-        // initial guesses for eigenvectors
-        var Y = [];
-        var V = [];
+			//TODO: This might not be working as intended. Check it later
+			var chooseNextPivot = function chooseNextPivot(i) {
+				//Find max in allDistances[i][j]
+				var maxDistance = -infinity;
+				var nextPivot = i;
 
-        //compute covariance matrix
-        var cov = multConsMatrix(multiplyMatrix(allDistances, transpose(allDistances)), 1 / nodes.length);
+				for (var j = 0; j < nodes.length; j++) {
+					if (allDistances[i][j] > maxDistance) {
+						nextPivot = j;
+						maxDistance = allDistances[i][j];
+					}
+				}
 
-        // init eigenvectors to random unit vectors
-        for (var i = 0; i < numEigenVectors; i++) {
-          Y[i] = [];
-          V[i] = [];
+				return nextPivot;
+			};
 
-          //Randomly initialize Y values (eigenvectors)
-          for (var j = 0; j < nodes.length; j++) {
-            Y[i][j] = Math.random();
-          }
+			var highDimDraw = function highDimDraw(m) {
+				pivots[0] = Math.floor(Math.random() * nodes.length);
 
-          Y[i] = normalize(Y[i]);
-          console.log('CCCY[' + i + '] ' + Y[i]);
-        }
-        for (var _i3 = 0; _i3 < numEigenVectors; _i3++) {
+				// TODO: change this to calculate only m pivots later.
+				for (var i = 0; i < nodes.length; i++) {
+					BFS(i); // allDistances[i][j] : dimension i of node j
+				}
 
-          do {
-            V[_i3] = Y[_i3];
-            theta[_i3] = dotProduct(V[_i3], V[_i3]);
-            // orthogonalize against prev eigenvectors
-            for (var _j = 1; _j < _i3; _j++) {
-              V[_i3] = minusOp(V[_i3], dotProduct(dotProduct(V[_i3], V[_j]), V[_j]));
-            }
+				for (var _i3 = 0; _i3 < m - 1; _i3++) {
+					if (_i3 != m - 1) {
+						pivots[_i3 + 1] = chooseNextPivot(_i3);
+					}
+				}
+			};
 
-            Y[_i3] = dotProduct(cov, V[_i3]);
-            Y[_i3] = normalize(Y[_i3]);
-          } while (dotProduct(Y[_i3], V[_i3]) < 1 - epsilon);
+			var printEigenvectors = function printEigenvectors(V, Y, numEigenVectors) {
+				for (var i = 0; i < numEigenVectors; i++) {
+					console.log('Y[' + i + '] :' + Y[i]);
+					console.log('V[' + i + '] :' + V[i]);
+				}
+			};
 
-          V[_i3] = Y[_i3];
-        }
+			var powerIteration = function powerIteration(numEigenVectors) {
+				var epsilon = 0.001;
+				var Y = [],
+				    V = [],
+				    mean = [],
+				    pivotDistances = [];
 
-        // theta[0] now contains dominant eigenvalue
-        // theta[1] now contains the second-largest eigenvalue
-        // V[0] now contains theta1's eigenvector
-        // V[1] now contains theta2's eigenvector
+				// Prepare for PCA
+				for (var i = 0; i < pivots.length; i++) {
+					pivotDistances[i] = [];
 
-        // for (let i = 0; i < numEigenVectors; i++) {
-        //   console.log('Y['+i+'] :'+ Y[i]);
-        //   console.log('V['+i+'] :'+ V[i]);
-        //   console.log('theta['+i+']' + theta[i]);
-        //   V[i] = 1;
-        //   theta = 1;
-        // }
+					// Compute mean of the axis
+					for (var j = 0; j < nodes.length; j++) {
+						mean[i] = allDistances[i][j] / nodes.length;
+					}
 
+					//Center the data
+					for (var _j = 0; _j < nodes.length; _j++) {
+						pivotDistances[i][_j] = allDistances[i][_j] - mean[i];
+					}
+				}
 
-        //populate the two vectors
-        xCoords = multCons(V[0], Math.sqrt(theta[0]));
-        yCoords = multCons(V[1], Math.sqrt(theta[1]));
-        console.log('xCoords at power iteration: ' + xCoords);
-      };
+				var pivotDistancesTranspose = transpose(pivotDistances);
 
-      // example positioning algorithm
-      var getPositions = function getPositions(ele, i) {
-        return {
-          x: xCoords[i],
-          y: yCoords[i]
-        };
-      };
+				// Compute covariance matrix
+				var cov = multConsMatrix(multiplyMatrix(pivotDistances, pivotDistancesTranspose), 1 / nodes.length); // S matrix mxm
+				//console.log("cov dimensions: " + cov.length + "x" + cov[0].length);
 
-      // TODO replace this with your own positioning algorithm
-      var getNodePos = function getNodePos(ele, i) {
-        var dims = ele.layoutDimensions(options); // the space used by the node
+				// init eigenvectors to random unit vectors
+				for (var _i4 = 0; _i4 < numEigenVectors; _i4++) {
+					Y[_i4] = [];
+					V[_i4] = [];
 
-        return getPositions(ele, i);
-      };
+					//Randomly initialize eigenvector i
+					for (var m = 0; m < pivots.length; m++) {
+						Y[_i4][m] = Math.random();
+					}
+					Y[_i4] = normalize(Y[_i4]); // unit vector of m x 1
 
-      // assign indexes to nodes
-      for (var i = 0; i < nodes.length; i++) {
-        nodeIndexes.set(nodes[i].id(), i);
-      }
+					do {
+						V[_i4] = Y[_i4];
 
-      // instantiate the matrix keeping all-pairs-shortest path
-      for (var _i4 = 0; _i4 < nodes.length; _i4++) {
-        allDistances[_i4] = [];
-      }
+						console.log("After assigning: ");
+						printEigenvectors(V, Y, numEigenVectors);
 
-      // instantiate the array keeping neighborhood of all nodes
-      for (var _i5 = 0; _i5 < nodes.length; _i5++) {
-        allNodesNeighborhood[_i5] = nodes[_i5].neighborhood().nodes();
-      }
+						// orthogonalize against previous eigenvectors
+						for (var _j2 = 1; _j2 < _i4; _j2++) {
+							V[_i4] = minusOp(V[_i4], multConsArray(V[_j2]), dotProduct(V[_i4], V[_j2]));
+						}
+						console.log("After orthogonalization: ");
+						printEigenvectors(V, Y, numEigenVectors);
 
-      if (nodes.length < 50) {
-        highDimDraw(nodes.length - 1);
-      } else {
-        highDimDraw(50);
-      }
+						var tempMult = multiplyMatrix(cov, V[_i4]);
+						console.log("temp mult: " + tempMult);
+						console.log("dimensions: " + tempMult.length + " " + tempMult[0].length);
 
-      // // get the distance squared matrix
-      // for(let i = 0; i < nodes.length; i++){
-      //   for(let j = 0; j < nodes.length; j++){
-      //     allDistances[i][j] *= allDistances[i][j];
-      //   }
-      // }
+						Y[_i4] = normalize(tempMult);
 
-      powerIteration(2);
+						console.log("After mult cov: ");
+						printEigenvectors(V, Y, numEigenVectors);
+					} while (dotProduct(Y[_i4], V[_i4]) < 1 - epsilon);
 
-      console.log('allDistances : \n' + allDistances);
-      console.log('xCoords : \n' + xCoords);
-      console.log('yCoords : \n' + yCoords);
+					V[_i4] = Y[_i4];
+				}
 
-      // .layoutPositions() automatically handles the layout busywork for you
-      nodes.layoutPositions(layout, options, getNodePos);
-    }
-  }]);
+				console.log("After eigenvector calculation finished: ");
+				printEigenvectors(V, Y, numEigenVectors);
 
-  return Layout;
+				//populate the two vectors
+				xCoords = multiplyMatrix(pivotDistancesTranspose, V[0]);
+				yCoords = multiplyMatrix(pivotDistancesTranspose, V[1]);
+
+				//yCoords = multCons(V[1], Math.sqrt(theta[1]));
+				console.log('xCoords at power iteration: ' + xCoords);
+			};
+
+			// example positioning algorithm
+			var getPositions = function getPositions(ele, i) {
+				return {
+					x: xCoords[i],
+					y: yCoords[i]
+				};
+			};
+
+			// TODO replace this with your own positioning algorithm
+			var getNodePos = function getNodePos(ele, i) {
+				var dims = ele.layoutDimensions(options); // the space used by the node
+
+				return getPositions(ele, i);
+			};
+
+			// assign indexes to nodes
+			for (var i = 0; i < nodes.length; i++) {
+				nodeIndexes.set(nodes[i].id(), i);
+			}
+
+			// instantiate the matrix keeping all-pairs-shortest path
+			for (var _i5 = 0; _i5 < nodes.length; _i5++) {
+				allDistances[_i5] = [];
+			}
+
+			// instantiate the array keeping neighborhood of all nodes
+			for (var _i6 = 0; _i6 < nodes.length; _i6++) {
+				allNodesNeighborhood[_i6] = nodes[_i6].neighborhood().nodes();
+			}
+
+			if (nodes.length < 50) {
+				highDimDraw(nodes.length - 1);
+			} else {
+				highDimDraw(50);
+			}
+
+			// // get the distance squared matrix
+			// for(let i = 0; i < nodes.length; i++){
+			//   for(let j = 0; j < nodes.length; j++){
+			//     allDistances[i][j] *= allDistances[i][j];
+			//   }
+			// }
+
+			//calculate means of axis
+
+			powerIteration(2);
+
+			console.log('allDistances : \n' + allDistances);
+			console.log('xCoords : \n' + xCoords);
+			console.log('yCoords : \n' + yCoords);
+
+			// .layoutPositions() automatically handles the layout busywork for you
+			nodes.layoutPositions(layout, options, getNodePos);
+		}
+	}]);
+
+	return Layout;
 }();
 
 module.exports = Layout;
