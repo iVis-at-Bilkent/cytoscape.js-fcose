@@ -182,13 +182,18 @@ class Layout {
 		let chooseNextPivot = function(i){
       //Find max in allDistances[i][j]
       let maxDistance = -infinity;
-      let nextPivot = i;
+      let sumDistance;
+			let nextPivot = i;
 
-      for(let j = 0; j < nodes.length; j++){
-        if (allDistances[i][j] > maxDistance){
-          nextPivot = j;
-          maxDistance = allDistances[i][j];
-        }
+      for(let j = 0; j < nodes.length; j++) {
+				sumDistance = 0;
+				for (let p = 0; p <= i; p++) {
+					sumDistance += allDistances[pivots[p]][j];
+				}
+				if (maxDistance < sumDistance) {
+					nextPivot = j;
+					maxDistance = sumDistance;
+				}
       }
 
       return nextPivot;
@@ -265,12 +270,7 @@ class Layout {
 					console.log("After orthogonalization: ");
 					printEigenvectors(V,Y,numEigenVectors);
 
-					let tempMult = multiplyMatrix(cov, V[i]);
-					console.log("temp mult: "+ tempMult);
-					console.log("dimensions: " + tempMult.length + " " + tempMult[0].length);
-
-
-					Y[i] = normalize(tempMult);
+					Y[i] = normalize(multiplyMatrix(cov, V[i]));
 
 					console.log("After mult cov: ");
 					printEigenvectors(V,Y,numEigenVectors);
@@ -284,6 +284,11 @@ class Layout {
 
 			console.log("After eigenvector calculation finished: ");
 			printEigenvectors(V,Y,numEigenVectors);
+
+			console.log("")
+			for (let i = 0; i < pivots.length; i++){
+				console.log("V[0]["+i+"]/V[1]["+i+"]" + V[0][i]/V[1][i]);
+			}
 
       //populate the two vectors
       //xCoords = multConsArray(multiplyMatrix(pivotDistancesTranspose,V[0]),3);
@@ -328,7 +333,7 @@ class Layout {
 
 
     if (nodes.length < 50 ) {
-			highDimDraw(nodes.length-1);
+			highDimDraw(4); // highDimDraw(nodes.length-1);
     }else {
 			highDimDraw(50);
     }

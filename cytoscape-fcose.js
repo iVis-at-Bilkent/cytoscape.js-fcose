@@ -342,12 +342,17 @@ var Layout = function () {
 			var chooseNextPivot = function chooseNextPivot(i) {
 				//Find max in allDistances[i][j]
 				var maxDistance = -infinity;
+				var sumDistance = void 0;
 				var nextPivot = i;
 
 				for (var j = 0; j < nodes.length; j++) {
-					if (allDistances[i][j] > maxDistance) {
+					sumDistance = 0;
+					for (var p = 0; p <= i; p++) {
+						sumDistance += allDistances[pivots[p]][j];
+					}
+					if (maxDistance < sumDistance) {
 						nextPivot = j;
-						maxDistance = allDistances[i][j];
+						maxDistance = sumDistance;
 					}
 				}
 
@@ -428,11 +433,7 @@ var Layout = function () {
 						console.log("After orthogonalization: ");
 						printEigenvectors(V, Y, numEigenVectors);
 
-						var tempMult = multiplyMatrix(cov, V[_i4]);
-						console.log("temp mult: " + tempMult);
-						console.log("dimensions: " + tempMult.length + " " + tempMult[0].length);
-
-						Y[_i4] = normalize(tempMult);
+						Y[_i4] = normalize(multiplyMatrix(cov, V[_i4]));
 
 						console.log("After mult cov: ");
 						printEigenvectors(V, Y, numEigenVectors);
@@ -443,6 +444,11 @@ var Layout = function () {
 
 				console.log("After eigenvector calculation finished: ");
 				printEigenvectors(V, Y, numEigenVectors);
+
+				console.log("");
+				for (var _i5 = 0; _i5 < pivots.length; _i5++) {
+					console.log("V[0][" + _i5 + "]/V[1][" + _i5 + "]" + V[0][_i5] / V[1][_i5]);
+				}
 
 				//populate the two vectors
 				//xCoords = multConsArray(multiplyMatrix(pivotDistancesTranspose,V[0]),3);
@@ -475,17 +481,17 @@ var Layout = function () {
 			}
 
 			// instantiate the matrix keeping all-pairs-shortest path
-			for (var _i5 = 0; _i5 < nodes.length; _i5++) {
-				allDistances[_i5] = [];
+			for (var _i6 = 0; _i6 < nodes.length; _i6++) {
+				allDistances[_i6] = [];
 			}
 
 			// instantiate the array keeping neighborhood of all nodes
-			for (var _i6 = 0; _i6 < nodes.length; _i6++) {
-				allNodesNeighborhood[_i6] = nodes[_i6].neighborhood().nodes();
+			for (var _i7 = 0; _i7 < nodes.length; _i7++) {
+				allNodesNeighborhood[_i7] = nodes[_i7].neighborhood().nodes();
 			}
 
 			if (nodes.length < 50) {
-				highDimDraw(nodes.length - 1);
+				highDimDraw(4); // highDimDraw(nodes.length-1);
 			} else {
 				highDimDraw(50);
 			}
