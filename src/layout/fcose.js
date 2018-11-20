@@ -34,7 +34,6 @@ class Layout {
   run(){
     let layout = this;
     let options = this.options;
-    let cy = options.cy;
     let eles = options.eles;
     let nodes = eles.nodes();
     let nodeIndexes = new Map();  // map to keep indexes to nodes
@@ -75,7 +74,7 @@ class Layout {
 		let multConsArray = function(array, constant){
 			let result = [];
 
-			for(let i = 0; i < nodes.length; i++){
+			for(let i = 0; i < array.length; i++){
 				result[i] = array[i] * constant;
 			}
 
@@ -93,10 +92,24 @@ class Layout {
 			return result;
 		};
 
+		let sleep = function(milliseconds) {
+			var start = new Date().getTime();
+			for (var i = 0; i < 1e7; i++) {
+				if ((new Date().getTime() - start) > milliseconds){
+					break;
+				}
+			}
+		};
+
 		let minusOp = function(array1, array2){
+			if (array1.length != array2.length) {
+				console.log("Error at dotProduct: array lengths did not match");
+				return;
+			}
+
 			let result = [];
 
-			for(let i = 0; i < nodes.length; i++){
+			for(let i = 0; i < array1.length; i++){
 				result[i] = array1[i] - array2[i];
 			}
 
@@ -118,15 +131,14 @@ class Layout {
 			return product;
 		};
 
-		let multiplyMatrix = function(a, b) { //TODO: Beautify & optimize
+		let multiplyMatrix = function(a, b) { //TODO: optimize
 			let aNumRows = a.length, aNumCols = a[0].length;
 			let bNumRows = b.length, bNumCols = b[0].length;
 			let m;
 
-			console.log("a rows:" + aNumRows + " a cols:" + aNumCols + " b rows:" + bNumRows + " b cols: " + bNumCols);
-
 			if (aNumCols != bNumRows) {
 				console.log("Error at multiplyMatrix: dimensions do not match");
+				return;
 			}
 
 			if (bNumCols == undefined || bNumCols == null){ // matrix vector multiplication
@@ -135,7 +147,6 @@ class Layout {
 				for (let r = 0; r < aNumRows; ++r) {
 					m[r] = 0;
 					for (let i = 0; i < aNumCols; ++i) {
-
 						m[r] += a[r][i] * b[i];
 					}
 				}
@@ -178,40 +189,45 @@ class Layout {
 			return result;
 		};
 
-		//TODO: This might not be working as intended. Check it later
-		let chooseNextPivot = function(i){
-      //Find max in allDistances[i][j]
+		let chooseNextPivot = function(i, d){
       let maxDistance = -infinity;
-      let sumDistance;
-			let nextPivot = i;
+      let nextPivot = i;
 
-      for(let j = 0; j < nodes.length; j++) {
-				sumDistance = 0;
-				for (let p = 0; p <= i; p++) {
-					sumDistance += allDistances[pivots[p]][j];
-				}
-				if (maxDistance < sumDistance) {
+			for(let j = 0; j < nodes.length; j++){
+				if (d[j] > maxDistance){
 					nextPivot = j;
-					maxDistance = sumDistance;
+					maxDistance = d[j];
 				}
-      }
+			}
 
       return nextPivot;
     };
 
     let highDimDraw = function(m){
-      pivots[0] = Math.floor(Math.random() * nodes.length);
+			// Choose p1 randomly
+			pivots[0] = Math.floor(Math.random() * nodes.length);
 
-      // TODO: change this to calculate only m pivots later.
-      for(let i = 0; i < nodes.length; i++){
-				BFS(i); // allDistances[i][j] : dimension i of node j
+			//d[1,...,n] <-- inf
+			let d = []; //for distances
+			for (let i = 0; i < nodes.length; i++){
+				d[i] = infinity;
 			}
 
-      for(let i  = 0; i < m -1; i ++) {
+      for(let i  = 0; i < m; i ++) {
+				// TODO: Make a check, if all distances are positive use dijkstra's algorithm instead
+				BFS(pivots[i]); // allDistances[i][j] : dimension i of node j
+
+				for (let j = 0; j < nodes.length; j++)
+					d[j] = ( d[j] < allDistances[pivots[i]][j] ) ? d[j] : allDistances[pivots[i]][j];
+
 				if (i != m-1) {
-          pivots[i+1] = chooseNextPivot(i);
+          pivots[i+1] = chooseNextPivot(i, d);
 				}
       }
+
+      // for (let i = 0; i < nodes.length; i++)
+			// 	console.log("alldist["+i+"]: "+allDistances[i]);
+
 		};
 
     let printEigenvectors = function(V,Y, numEigenVectors){
@@ -219,24 +235,27 @@ class Layout {
 				console.log('Y['+i+'] :'+ Y[i]);
 				console.log('V['+i+'] :'+ V[i]);
 			}
+			console.log("");
 		}
 
     let powerIteration = function(numEigenVectors) {
 			const epsilon = 0.001;
-			let Y = [], V = [], mean = [], pivotDistances = [];
+			let Y = [], V = [], pivotDistances = [];
+			let pivotDistancesTranspose;
 
 			// Prepare for PCA
-			for (let i = 0; i < pivots.length; i++){
+			console.log("pivots " + pivots);
+			for (let i = 0, mean = 0; i < pivots.length; i++, mean = 0){
 				pivotDistances[i] = [];
 
 				// Compute mean of the axis
 				for (let j = 0; j < nodes.length; j++) {
-					mean[i] = allDistances[i][j] / nodes.length;
+					mean += allDistances[pivots[i]][j] / nodes.length;
 				}
 
 				//Center the data
 				for (let j = 0; j < nodes.length; j++) {
-					pivotDistances[i][j] = allDistances[i][j] - mean[i];
+					pivotDistances[i][j] = allDistances[pivots[i]][j] - mean;
 				}
 			}
 
@@ -244,19 +263,20 @@ class Layout {
 
 			// Compute covariance matrix
 			let cov = multConsMatrix(multiplyMatrix(pivotDistances, pivotDistancesTranspose), 1 / nodes.length); // S matrix mxm
-			//console.log("cov dimensions: " + cov.length + "x" + cov[0].length);
+			console.log(cov);
 
 			// init eigenvectors to random unit vectors
 			for (let i = 0; i < numEigenVectors; i++) {
 				Y[i] = [];
 				V[i] = [];
 
-				//Randomly initialize eigenvector i
+				// Randomly initialize eigenvector i
 				for (let m = 0; m < pivots.length; m++) {
 					Y[i][m] = Math.random();
 				}
 				Y[i] = normalize(Y[i]); // unit vector of m x 1
 
+				console.log("\n\nAT I : "+ i);
 				do {
 					V[i] = Y[i];
 
@@ -264,9 +284,11 @@ class Layout {
 					printEigenvectors(V,Y,numEigenVectors);
 
 					// orthogonalize against previous eigenvectors
-					for (let j = 1; j < i; j++) {
-						V[i] = minusOp(V[i], multConsArray(V[j]), dotProduct(V[i], V[j]));
+					for (let j = 0; j < i; j++) {
+						V[i] = minusOp(V[i], multConsArray(V[j], dotProduct(V[i], V[j])));
+						console.log("ortho V["+i+"]: "+V[i]);
 					}
+
 					console.log("After orthogonalization: ");
 					printEigenvectors(V,Y,numEigenVectors);
 
@@ -285,10 +307,10 @@ class Layout {
 			console.log("After eigenvector calculation finished: ");
 			printEigenvectors(V,Y,numEigenVectors);
 
-			console.log("")
-			for (let i = 0; i < pivots.length; i++){
-				console.log("V[0]["+i+"]/V[1]["+i+"]" + V[0][i]/V[1][i]);
-			}
+			// console.log("")
+			// for (let i = 0; i < pivots.length; i++){
+			// 	console.log("V[0]["+i+"]/V[1]["+i+"]" + V[0][i]/V[1][i]);
+			// }
 
       //populate the two vectors
       //xCoords = multConsArray(multiplyMatrix(pivotDistancesTranspose,V[0]),3);
@@ -298,8 +320,8 @@ class Layout {
 
 			//yCoords = multCons(V[1], Math.sqrt(theta[1]));
       console.log('xCoords at power iteration: '+ xCoords);
-      
-    };
+			console.log('yCoords at power iteration: '+ yCoords);
+		};
 
     // example positioning algorithm
     let getPositions = function( ele, i ){
@@ -331,23 +353,13 @@ class Layout {
       allNodesNeighborhood[i] = nodes[i].neighborhood().nodes();
     }
 
-
     if (nodes.length < 50 ) {
-			highDimDraw(4); // highDimDraw(nodes.length-1);
+			highDimDraw(Math.floor(nodes.length / 2)); // highDimDraw(nodes.length-1);
     }else {
 			highDimDraw(50);
     }
 
-    // // get the distance squared matrix
-    // for(let i = 0; i < nodes.length; i++){
-    //   for(let j = 0; j < nodes.length; j++){
-    //     allDistances[i][j] *= allDistances[i][j];
-    //   }
-    // }
-
-		//calculate means of axis
-
-		powerIteration(2);
+		powerIteration(3);
     
     console.log('allDistances : \n' + allDistances);
     console.log('xCoords : \n'+ xCoords);
