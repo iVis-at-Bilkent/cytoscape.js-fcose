@@ -1,0 +1,28 @@
+Average of minimum 5 experiments with each document (in milliseconds):
+
+1st column : epsilon = 0.001 , max Iter = nlogn*100, 3 eigenvectors, HDE
+2nd column : epsilon = 0.002 , max Iter = nlogn*100, 3 eigenvectors, HDE 
+3rd column : epsilon = 0.002 , max Iter = nlogn*100, 2 eigenvectors, HDE
+4th column : CMDS
+
+demo : 		7.3600000018	|| 7.10000000108	|| 4.01999999885	|| 0.8600000001
+demo10-0.1 :	5.92000000034	|| 10.8199999988	|| 3.84444444514	|| 1.54000000039
+demo10-0.5 :	6.3599999994	|| 6.40000000276	|| 5.7750000020557	|| 2.11999999883
+demo10-1.0 :	7.47999999917	|| 1.1800000022		||1.0923076926981	|| 1.5 (but sometimes crashes - I believe its due to convergence problem that I had also faced)
+
+demo100-0.1 : 394.22		|| 127		|| 9.2899999996007	|| 32.799999998
+demo100-0.5 : 205.460000002	|| 205.47999998 || 104.23636363637	|| 61.0400000005
+demo100-1.0 : 41.840000001	|| 44.7		|| 42.563636365892	|| 52.1800000002 (draws all the nodes as 1)
+
+demo200-0.1 : 582.18		|| 43.3000000005 || 34.60909090923	|| 133.34
+demo200-0.5 : 579.54		|| 96.2800000023 || 90.772727272865	|| 343.220000001
+demo200-1.0 : 117.099999999	|| 97.6199999976 || 89.227272726765	|| 283.479999998 
+
+demo1000-0.1 : 746.400000002 || 751.84 || 748.33999999973 || 17406.6
+
+Conclusion: 
+- HDE draws a social network like graph, CMDS tends to couple the nodes with the same properties. Hence, they both need spring embedder polishing, but HDE needs less. 
+- HDE might never reach its convergence point with epsilon = 0.001, but according to my experiments, it gets stuck when dot product is somewhere > 0.998, so it would converge with epsilon = 0.002. 
+I added a max number of iterations. I then changed epsilon to 0.002 to achieve faster convergence. The graph layouts don't seem to be effected from the change of epsilon.
+- CMDS seems to do better on small graphs, and HDE seems to do better on larger graphs. The comparison seems obvious at n=1000, but that might have been due to my change in epsilon adding max iterations. However, if I didn't add that, the algorithm might have not converged.
+- CMDS doesn't converge sometimes with a fully connected graph of 10 nodes. That might be due to the same problem I faced with HDE, although it should be confirmed with Hasan. 

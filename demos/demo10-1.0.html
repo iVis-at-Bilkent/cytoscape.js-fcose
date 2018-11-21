@@ -1,0 +1,220 @@
+
+<!DOCTYPE>
+
+<html>
+
+  <head>
+    <title>cytoscape-fcose.js demo</title>
+
+      <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+
+      <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+
+      <!-- for testing with local version of cytoscape.js -->
+      <!--<script src="../cytoscape.js/build/cytoscape.js"></script>-->
+
+      <script src="cytoscape-fcose.js"></script>
+
+      <style>
+        body {
+          font-family: helvetica neue, helvetica, liberation sans, arial, sans-serif;
+          font-size: 14px;
+        }
+
+        #cy {
+          position: absolute;
+          width: 100%;
+          height: 90%;
+          z-index: 999;
+        }
+
+        h1 {
+          opacity: 0.5;
+          font-size: 1em;
+          font-weight: bold;
+        }
+      </style>
+
+      <script>
+        document.addEventListener('DOMContentLoaded', function(){
+
+          var cy = window.cy = cytoscape({
+            container: document.getElementById('cy'),
+
+            // demo your layout
+            layout: {
+              name: 'fcose',
+
+              // some more options here...
+            },
+
+            style: [
+              {
+                selector: 'node',
+                style: {
+                  'content': 'data(id)',
+                }
+              },
+
+              {
+                selector: 'edge',
+                style: {
+                  //'width': 0.1
+                }
+              }
+            ],
+
+            elements: {
+              nodes: [
+                { data: { id: 'n0'} },
+                { data: { id: 'n1'} },
+                { data: { id: 'n2'} },
+                { data: { id: 'n3'} },
+                { data: { id: 'n4'} },
+                { data: { id: 'n5'} },
+                { data: { id: 'n6'} },
+                { data: { id: 'n7'} },
+                { data: { id: 'n8'} },
+                { data: { id: 'n9'} }
+              ],
+              edges: [
+                { data: { source: 'n0', target: 'n0' } },
+                { data: { source: 'n0', target: 'n1' } },
+                { data: { source: 'n0', target: 'n2' } },
+                { data: { source: 'n0', target: 'n3' } },
+                { data: { source: 'n0', target: 'n4' } },
+                { data: { source: 'n0', target: 'n5' } },
+                { data: { source: 'n0', target: 'n6' } },
+                { data: { source: 'n0', target: 'n7' } },
+                { data: { source: 'n0', target: 'n8' } },
+                { data: { source: 'n0', target: 'n9' } },
+                { data: { source: 'n1', target: 'n0' } },
+                { data: { source: 'n1', target: 'n1' } },
+                { data: { source: 'n1', target: 'n2' } },
+                { data: { source: 'n1', target: 'n3' } },
+                { data: { source: 'n1', target: 'n4' } },
+                { data: { source: 'n1', target: 'n5' } },
+                { data: { source: 'n1', target: 'n6' } },
+                { data: { source: 'n1', target: 'n7' } },
+                { data: { source: 'n1', target: 'n8' } },
+                { data: { source: 'n1', target: 'n9' } },
+                { data: { source: 'n2', target: 'n0' } },
+                { data: { source: 'n2', target: 'n1' } },
+                { data: { source: 'n2', target: 'n2' } },
+                { data: { source: 'n2', target: 'n3' } },
+                { data: { source: 'n2', target: 'n4' } },
+                { data: { source: 'n2', target: 'n5' } },
+                { data: { source: 'n2', target: 'n6' } },
+                { data: { source: 'n2', target: 'n7' } },
+                { data: { source: 'n2', target: 'n8' } },
+                { data: { source: 'n2', target: 'n9' } },
+                { data: { source: 'n3', target: 'n0' } },
+                { data: { source: 'n3', target: 'n1' } },
+                { data: { source: 'n3', target: 'n2' } },
+                { data: { source: 'n3', target: 'n3' } },
+                { data: { source: 'n3', target: 'n4' } },
+                { data: { source: 'n3', target: 'n5' } },
+                { data: { source: 'n3', target: 'n6' } },
+                { data: { source: 'n3', target: 'n7' } },
+                { data: { source: 'n3', target: 'n8' } },
+                { data: { source: 'n3', target: 'n9' } },
+                { data: { source: 'n4', target: 'n0' } },
+                { data: { source: 'n4', target: 'n1' } },
+                { data: { source: 'n4', target: 'n2' } },
+                { data: { source: 'n4', target: 'n3' } },
+                { data: { source: 'n4', target: 'n4' } },
+                { data: { source: 'n4', target: 'n5' } },
+                { data: { source: 'n4', target: 'n6' } },
+                { data: { source: 'n4', target: 'n7' } },
+                { data: { source: 'n4', target: 'n8' } },
+                { data: { source: 'n4', target: 'n9' } },
+                { data: { source: 'n5', target: 'n0' } },
+                { data: { source: 'n5', target: 'n1' } },
+                { data: { source: 'n5', target: 'n2' } },
+                { data: { source: 'n5', target: 'n3' } },
+                { data: { source: 'n5', target: 'n4' } },
+                { data: { source: 'n5', target: 'n5' } },
+                { data: { source: 'n5', target: 'n6' } },
+                { data: { source: 'n5', target: 'n7' } },
+                { data: { source: 'n5', target: 'n8' } },
+                { data: { source: 'n5', target: 'n9' } },
+                { data: { source: 'n6', target: 'n0' } },
+                { data: { source: 'n6', target: 'n1' } },
+                { data: { source: 'n6', target: 'n2' } },
+                { data: { source: 'n6', target: 'n3' } },
+                { data: { source: 'n6', target: 'n4' } },
+                { data: { source: 'n6', target: 'n5' } },
+                { data: { source: 'n6', target: 'n6' } },
+                { data: { source: 'n6', target: 'n7' } },
+                { data: { source: 'n6', target: 'n8' } },
+                { data: { source: 'n6', target: 'n9' } },
+                { data: { source: 'n7', target: 'n0' } },
+                { data: { source: 'n7', target: 'n1' } },
+                { data: { source: 'n7', target: 'n2' } },
+                { data: { source: 'n7', target: 'n3' } },
+                { data: { source: 'n7', target: 'n4' } },
+                { data: { source: 'n7', target: 'n5' } },
+                { data: { source: 'n7', target: 'n6' } },
+                { data: { source: 'n7', target: 'n7' } },
+                { data: { source: 'n7', target: 'n8' } },
+                { data: { source: 'n7', target: 'n9' } },
+                { data: { source: 'n8', target: 'n0' } },
+                { data: { source: 'n8', target: 'n1' } },
+                { data: { source: 'n8', target: 'n2' } },
+                { data: { source: 'n8', target: 'n3' } },
+                { data: { source: 'n8', target: 'n4' } },
+                { data: { source: 'n8', target: 'n5' } },
+                { data: { source: 'n8', target: 'n6' } },
+                { data: { source: 'n8', target: 'n7' } },
+                { data: { source: 'n8', target: 'n8' } },
+                { data: { source: 'n8', target: 'n9' } },
+                { data: { source: 'n9', target: 'n0' } },
+                { data: { source: 'n9', target: 'n1' } },
+                { data: { source: 'n9', target: 'n2' } },
+                { data: { source: 'n9', target: 'n3' } },
+                { data: { source: 'n9', target: 'n4' } },
+                { data: { source: 'n9', target: 'n5' } },
+                { data: { source: 'n9', target: 'n6' } },
+                { data: { source: 'n9', target: 'n7' } },
+                { data: { source: 'n9', target: 'n8' } },
+                { data: { source: 'n9', target: 'n9' } }
+
+              ]
+            }
+          });
+
+          document.getElementById("layoutButton").addEventListener("click", function(){
+            var layout = cy.layout({
+              name: 'fcose'
+            });
+            
+            layout.run();
+          });
+          
+          document.getElementById("randomize").addEventListener("click", function(){
+            var layout = cy.layout({
+              name: 'random',
+              fit: true,
+              animate: true,
+              animationDuration: 1000
+            });
+            
+            layout.run();
+          });
+
+
+        });
+      </script>
+  </head>
+
+  <body>
+          <h1>cytoscape-fcose demo</h1>
+
+          <button id="randomize" type="button">Randomize</button>
+          <button id="layoutButton" type="button">fcose</button>             
+
+          <div id="cy"></div>
+
+  </body>
+
+</html>
