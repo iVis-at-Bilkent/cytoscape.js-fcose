@@ -249,15 +249,6 @@ var Layout = function () {
 				return result;
 			};
 
-			var sleep = function sleep(milliseconds) {
-				var start = new Date().getTime();
-				for (var i = 0; i < 1e7; i++) {
-					if (new Date().getTime() - start > milliseconds) {
-						break;
-					}
-				}
-			};
-
 			var minusOp = function minusOp(array1, array2) {
 				if (array1.length != array2.length) {
 					console.log("Error at dotProduct: array lengths did not match");
@@ -383,9 +374,6 @@ var Layout = function () {
 						pivots[_i3 + 1] = chooseNextPivot(_i3, d);
 					}
 				}
-
-				// for (let i = 0; i < nodes.length; i++)
-				// 	console.log("alldist["+i+"]: "+allDistances[i]);
 			};
 
 			var printEigenvectors = function printEigenvectors(V, Y, numEigenVectors) {
@@ -397,10 +385,13 @@ var Layout = function () {
 			};
 
 			var powerIteration = function powerIteration(numEigenVectors) {
-				var epsilon = 0.001;
+				var epsilon = 0.001,
+				    maxIterations = nodes.length * Math.log10(nodes.length) * 100;
 				var Y = [],
 				    V = [],
 				    pivotDistances = [];
+				var pivotDistancesTranspose = void 0,
+				    iteration = void 0;
 
 				// Prepare for PCA
 				console.log("pivots " + pivots);
@@ -418,65 +409,52 @@ var Layout = function () {
 					}
 				}
 
-				var pivotDistancesTranspose = transpose(pivotDistances);
+				pivotDistancesTranspose = transpose(pivotDistances);
 
 				// Compute covariance matrix
 				var cov = multConsMatrix(multiplyMatrix(pivotDistances, pivotDistancesTranspose), 1 / nodes.length); // S matrix mxm
 				console.log(cov);
 
-				// init eigenvectors to random unit vectors
+				// Compute eigenvectors
 				for (var _i4 = 0; _i4 < numEigenVectors; _i4++) {
 					Y[_i4] = [];
 					V[_i4] = [];
 
-					// Randomly initialize eigenvector i
+					// initialize eigenvector to random unit vectors
 					for (var m = 0; m < pivots.length; m++) {
 						Y[_i4][m] = Math.random();
 					}
 					Y[_i4] = normalize(Y[_i4]); // unit vector of m x 1
 
 					console.log("\n\nAT I : " + _i4);
+					iteration = 0;
 					do {
+						iteration++;
 						V[_i4] = Y[_i4];
-
-						console.log("After assigning: ");
-						printEigenvectors(V, Y, numEigenVectors);
 
 						// orthogonalize against previous eigenvectors
 						for (var _j2 = 0; _j2 < _i4; _j2++) {
 							V[_i4] = minusOp(V[_i4], multConsArray(V[_j2], dotProduct(V[_i4], V[_j2])));
-							console.log("ortho V[" + _i4 + "]: " + V[_i4]);
+							// console.log("ortho V["+i+"]: "+V[i]);
 						}
-
-						console.log("After orthogonalization: ");
-						printEigenvectors(V, Y, numEigenVectors);
 
 						Y[_i4] = normalize(multiplyMatrix(cov, V[_i4]));
 
-						console.log("After mult cov: ");
-						printEigenvectors(V, Y, numEigenVectors);
-					} while (dotProduct(Y[_i4], V[_i4]) < 1 - epsilon);
+						// console.log("After mult cov: ");
+						// printEigenvectors(V,Y,numEigenVectors);
+
+						console.log("CONVERGE: " + dotProduct(Y[_i4], V[_i4]));
+					} while (dotProduct(Y[_i4], V[_i4]) < 1 - epsilon && iteration < maxIterations);
 
 					V[_i4] = Y[_i4];
 				}
 
-				console.log("After eigenvector calculation finished: ");
-				printEigenvectors(V, Y, numEigenVectors);
-
-				// console.log("")
-				// for (let i = 0; i < pivots.length; i++){
-				// 	console.log("V[0]["+i+"]/V[1]["+i+"]" + V[0][i]/V[1][i]);
-				// }
-
 				//populate the two vectors
-				//xCoords = multConsArray(multiplyMatrix(pivotDistancesTranspose,V[0]),3);
-				//yCoords = multConsArray(multiplyMatrix(pivotDistancesTranspose,V[1]),3);
 				xCoords = multiplyMatrix(pivotDistancesTranspose, V[0]);
 				yCoords = multiplyMatrix(pivotDistancesTranspose, V[1]);
 
-				//yCoords = multCons(V[1], Math.sqrt(theta[1]));
-				console.log('xCoords at power iteration: ' + xCoords);
-				console.log('yCoords at power iteration: ' + yCoords);
+				// console.log('xCoords at power iteration: '+ xCoords);
+				// console.log('yCoords at power iteration: '+ yCoords);
 			};
 
 			// example positioning algorithm
