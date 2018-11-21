@@ -43,6 +43,7 @@
             // demo your layout
             layout: {
               name: 'fcose',
+              CMDS:  true,
 
               // some more options here...
             },
@@ -92,11 +93,21 @@
             }
           });
 
-          document.getElementById("layoutButton").addEventListener("click", function(){
+          document.getElementById("CMDSlayoutButton").addEventListener("click", function(){
             var layout = cy.layout({
-              name: 'fcose'
+              name: 'fcose',
+              CMDS: true
             });
             
+            layout.run();
+          });
+
+          document.getElementById("HDElayoutButton").addEventListener("click", function(){
+            var layout = cy.layout({
+              name: 'fcose',
+              CMDS: false
+            });
+
             layout.run();
           });
           
@@ -111,16 +122,18 @@
             layout.run();
           });
 
-
         });
       </script>
   </head>
 
   <body>
           <h1>cytoscape-fcose demo</h1>
+          <h1>Average of 10 runtimes: <span id="runtime"></span></h1>
 
           <button id="randomize" type="button">Randomize</button>
-          <button id="layoutButton" type="button">fcose</button>             
+          <button id="CMDSlayoutButton" type="button">CMDS</button>
+          <button id="HDElayoutButton" type="button">HDE</button>
+
 
           <div id="cy"></div>
 
