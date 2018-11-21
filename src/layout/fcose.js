@@ -41,8 +41,8 @@ class Layout {
     let allNodesNeighborhood = []; // array to keep neighborhood of all nodes
     let xCoords = [];
     let yCoords = [];
-    const infinity = 100000000;
     let pivots = []; // pivot nodes
+    const infinity = 100000000;
 
     // takes the index of the node(pivot) to initiate BFS as a parameter
     let BFS = function(pivot){
@@ -52,13 +52,13 @@ class Layout {
 
       for(let i = 0; i < nodes.length; i++){
         distance[i] = infinity;
-        allDistances[pivot][i] = (nodes.length+1) * Math.log10(nodes.length) * Math.log2(nodes.length) * 45;
-        //TODO: ask about this choice
+        allDistances[pivot][i] = (nodes.length+1) * 100;
+        //TODO: change the distance with something that is constant. Not log squared. Experiment.
       }
-      
+
       path[back] = pivot;
       distance[pivot] = 0;
-      
+
       while(back >= front){
         current = path[front++];
         let neighbors = allNodesNeighborhood[current];
@@ -69,7 +69,8 @@ class Layout {
             path[++back] = temp;
           }
         }
-        allDistances[pivot][current] = distance[current] * Math.log10(nodes.length) * Math.log2(nodes.length) * 45;
+        //TODO: distance multiplier --> constant between 450 & 45
+        allDistances[pivot][current] = distance[current] * 100;
       }
     };
 
@@ -172,12 +173,12 @@ class Layout {
 			return result;
 		};
 
-		let transpose = function(array){
+		let transpose = function(matrix){
 			let result = [];
-			for (let i = 0; i < array[0].length; i++){
+			for (let i = 0; i < matrix[0].length; i++){
 				result[i] = [];
-				for (let j = 0; j < array.length; j++){
-					result[i][j] = array[j][i];
+				for (let j = 0; j < matrix.length; j++){
+					result[i][j] = matrix[j][i];
 				}
 			}
 			return result;
@@ -208,11 +209,8 @@ class Layout {
 			}
 
       for(let i  = 0; i < m; i ++) {
-
-				// console.log("d :" + d);
-				// TODO: Make a check, if all distances are positive use dijkstra's algorithm instead
+				// TODO: If the graph is positively weighted then use dijkstra's algorithm instead
 				BFS(pivots[i]); // allDistances[i][j] : dimension i of node j
-				// console.log("allDistances["+pivots[i]+"] " + allDistances[pivots[i]]);
 
 				for (let j = 0; j < nodes.length; j++)
 					d[j] = ( d[j] < allDistances[pivots[i]][j] ) ? d[j] : allDistances[pivots[i]][j];
@@ -223,14 +221,45 @@ class Layout {
 		};
 
     // let printEigenvectors = function(V,Y, numEigenVectors){
+		// 	console.log("printEigenvectors");
 		// 	for (let i = 0; i < numEigenVectors; i++) {
 		// 		console.log('Y['+i+'] :'+ Y[i]);
 		// 		console.log('V['+i+'] :'+ V[i]);
 		// 	}
 		// 	console.log("");
-		// }
+		// };
+
+    // let printEigenvectorsNaN = function(V,Y, numEigenVectors){
+    //   console.log("printEigenvectorsNaN");
+    //   for (let i = 0; i < numEigenVectors; i++) {
+		// 		if (V[i] != undefined) {
+    //       for (let j = 0; j < V[i].length; j++){
+    //         if(isNaN( V[i][j]) || V[i][j] == null || V[i][j] == undefined)
+    //           console.log('V['+i+']['+j+'] :'+ V[i]);
+    //       }
+		// 		}
+		// 		if (Y[i] != undefined) {
+    //       for (let j = 0; j < Y[i].length; j++){
+    //         if(isNaN( Y[i][j]) || Y[i][j] == null || Y[i][j] == undefined)
+    //           console.log('Y['+i+']['+j+'] :'+ Y[i]);
+    //       }
+		// 		}
+		//
+    //   }
+    //   console.log("");
+    // };
+
+		// let printMatrixNaN = function(matrix){
+    //   console.log("printMatrixNaN");
+    //   for (let i = 0; i < matrix.length;i++)
+    //     for (let j = 0; j < matrix[0].length; j++)
+    //       if (isNaN( matrix[i][j]) || matrix[i][j] == null || matrix[i][j] == undefined)
+    //         console.log("matrix["+i+"]["+j+"]" + matrix[i][j]);
+		// };
 
     let powerIteration = function(numEigenVectors) {
+			// TODO: Make epsilon increase from 0.001 to 0.002 as the number of iterations increase
+			// TODO: Experiment with the maxIterations needed when the layout reaches its convergence: if possible make maxIterations in correlation with n.
 			const epsilon = 0.002, maxIterations = nodes.length * Math.log10(nodes.length) * 100;
 			let Y = [], V = [], pivotDistances = [];
 			let pivotDistancesTranspose, iteration;
@@ -253,9 +282,13 @@ class Layout {
 
 			pivotDistancesTranspose = transpose(pivotDistances);
 
+			// console.log("pivotDistancesTranspose: ");
+      // printMatrixNaN(pivotDistancesTranspose);
+
 			// Compute covariance matrix
 			let cov = multConsMatrix(multiplyMatrix(pivotDistances, pivotDistancesTranspose), 1 / nodes.length); // S matrix mxm
-			// console.log(cov);
+			// console.log("cov :");
+      // printMatrixNaN(cov);
 
 			// Compute eigenvectors
 			for (let i = 0; i < numEigenVectors; i++) {
@@ -274,6 +307,9 @@ class Layout {
 					iteration++;
 					V[i] = Y[i];
 
+          // console.log("After assigning: ");
+          // printEigenvectorsNaN(V,Y,numEigenVectors);
+
 					// orthogonalize against previous eigenvectors
 					for (let j = 0; j < i; j++) {
 						V[i] = minusOp(V[i], multConsArray(V[j], dotProduct(V[i], V[j])));
@@ -283,7 +319,7 @@ class Layout {
 					Y[i] = normalize(multiplyMatrix(cov, V[i]));
 
 					// console.log("After mult cov: ");
-					// printEigenvectors(V,Y,numEigenVectors);
+					// printEigenvectorsNaN(V,Y,numEigenVectors);
 
 					// console.log("CONVERGE: "+ dotProduct(Y[i], V[i]));
 				} while (dotProduct(Y[i], V[i]) < 1 - epsilon && iteration < maxIterations);
@@ -331,8 +367,8 @@ class Layout {
 
     let t0 = performance.now();
 
-    if (nodes.length < 50 ) {
-			highDimDraw(Math.floor(nodes.length / 2)); // highDimDraw(nodes.length-1);
+    if (nodes.length < 100 ) {
+			highDimDraw(Math.floor(nodes.length / 2));
     }else {
 			highDimDraw(50);
     }

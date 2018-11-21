@@ -1,0 +1,331 @@
+
+<!DOCTYPE>
+
+<html>
+
+  <head>
+    <title>cytoscape-fcose.js demo</title>
+
+      <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+
+      <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+
+      <!-- for testing with local version of cytoscape.js -->
+      <!--<script src="../cytoscape.js/build/cytoscape.js"></script>-->
+
+      <script src="cytoscape-fcose.js"></script>
+
+      <style>
+        body {
+          font-family: helvetica neue, helvetica, liberation sans, arial, sans-serif;
+          font-size: 14px;
+        }
+
+        #cy {
+          position: absolute;
+          width: 100%;
+          height: 90%;
+          z-index: 999;
+        }
+
+        h1 {
+          opacity: 0.5;
+          font-size: 1em;
+          font-weight: bold;
+        }
+      </style>
+
+      <script>
+        document.addEventListener('DOMContentLoaded', function(){
+
+          var cy = window.cy = cytoscape({
+            container: document.getElementById('cy'),
+
+            // demo your layout
+            layout: {
+              name: 'fcose',
+
+              // some more options here...
+            },
+
+            style: [
+              {
+                selector: 'node',
+                style: {
+                  'content': 'data(id)',
+                }
+              },
+
+              {
+                selector: 'edge',
+                style: {
+                  //'width': 0.1
+                }
+              }
+            ],
+
+            elements: {
+              nodes: [
+                { data: { id: 'n0'} },
+                { data: { id: 'n1'} },
+                { data: { id: 'n2'} },
+                { data: { id: 'n3'} },
+                { data: { id: 'n4'} },
+                { data: { id: 'n5'} },
+                { data: { id: 'n6'} },
+                { data: { id: 'n7'} },
+                { data: { id: 'n8'} },
+                { data: { id: 'n9'} },
+                { data: { id: 'n10'} },
+                { data: { id: 'n11'} },
+                { data: { id: 'n12'} },
+                { data: { id: 'n13'} },
+                { data: { id: 'n14'} },
+                { data: { id: 'n15'} },
+                { data: { id: 'n16'} },
+                { data: { id: 'n17'} },
+                { data: { id: 'n18'} },
+                { data: { id: 'n19'} },
+                { data: { id: 'n20'} },
+                { data: { id: 'n21'} },
+                { data: { id: 'n22'} },
+                { data: { id: 'n23'} },
+                { data: { id: 'n24'} },
+                { data: { id: 'n25'} },
+                { data: { id: 'n26'} },
+                { data: { id: 'n27'} },
+                { data: { id: 'n28'} },
+                { data: { id: 'n29'} },
+                { data: { id: 'n30'} },
+                { data: { id: 'n31'} },
+                { data: { id: 'n32'} },
+                { data: { id: 'n33'} },
+                { data: { id: 'n34'} },
+                { data: { id: 'n35'} },
+                { data: { id: 'n36'} },
+                { data: { id: 'n37'} },
+                { data: { id: 'n38'} },
+                { data: { id: 'n39'} },
+                { data: { id: 'n40'} },
+                { data: { id: 'n41'} },
+                { data: { id: 'n42'} },
+                { data: { id: 'n43'} },
+                { data: { id: 'n44'} },
+                { data: { id: 'n45'} },
+                { data: { id: 'n46'} },
+                { data: { id: 'n47'} },
+                { data: { id: 'n48'} },
+                { data: { id: 'n49'} },
+                { data: { id: 'n50'} },
+                { data: { id: 'n51'} },
+                { data: { id: 'n52'} },
+                { data: { id: 'n53'} },
+                { data: { id: 'n54'} },
+                { data: { id: 'n55'} },
+                { data: { id: 'n56'} },
+                { data: { id: 'n57'} },
+                { data: { id: 'n58'} },
+                { data: { id: 'n59'} },
+                { data: { id: 'n60'} },
+                { data: { id: 'n61'} },
+                { data: { id: 'n62'} },
+                { data: { id: 'n63'} },
+                { data: { id: 'n64'} },
+                { data: { id: 'n65'} },
+                { data: { id: 'n66'} },
+                { data: { id: 'n67'} },
+                { data: { id: 'n68'} },
+                { data: { id: 'n69'} },
+                { data: { id: 'n70'} },
+                { data: { id: 'n71'} },
+                { data: { id: 'n72'} },
+                { data: { id: 'n73'} },
+                { data: { id: 'n74'} },
+                { data: { id: 'n75'} },
+                { data: { id: 'n76'} },
+                { data: { id: 'n77'} },
+                { data: { id: 'n78'} },
+                { data: { id: 'n79'} },
+                { data: { id: 'n80'} },
+                { data: { id: 'n81'} },
+                { data: { id: 'n82'} },
+                { data: { id: 'n83'} },
+                { data: { id: 'n84'} },
+                { data: { id: 'n85'} },
+                { data: { id: 'n86'} },
+                { data: { id: 'n87'} },
+                { data: { id: 'n88'} },
+                { data: { id: 'n89'} },
+                { data: { id: 'n90'} },
+                { data: { id: 'n91'} },
+                { data: { id: 'n92'} },
+                { data: { id: 'n93'} },
+                { data: { id: 'n94'} },
+                { data: { id: 'n95'} },
+                { data: { id: 'n96'} },
+                { data: { id: 'n97'} },
+                { data: { id: 'n98'} },
+                { data: { id: 'n99'} },
+                { data: { id: 'n100'} },
+                { data: { id: 'n101'} },
+                { data: { id: 'n102'} },
+                { data: { id: 'n103'} },
+                { data: { id: 'n104'} },
+                { data: { id: 'n105'} },
+                { data: { id: 'n106'} },
+                { data: { id: 'n107'} },
+                { data: { id: 'n108'} },
+                { data: { id: 'n109'} },
+                { data: { id: 'n110'} },
+                { data: { id: 'n111'} },
+                { data: { id: 'n112'} },
+                { data: { id: 'n113'} },
+                { data: { id: 'n114'} },
+                { data: { id: 'n115'} },
+                { data: { id: 'n116'} },
+                { data: { id: 'n117'} },
+                { data: { id: 'n118'} },
+                { data: { id: 'n119'} },
+                { data: { id: 'n120'} },
+                { data: { id: 'n121'} },
+                { data: { id: 'n122'} },
+                { data: { id: 'n123'} },
+                { data: { id: 'n124'} },
+                { data: { id: 'n125'} },
+                { data: { id: 'n126'} },
+                { data: { id: 'n127'} },
+                { data: { id: 'n128'} },
+                { data: { id: 'n129'} },
+                { data: { id: 'n130'} },
+                { data: { id: 'n131'} },
+                { data: { id: 'n132'} },
+                { data: { id: 'n133'} },
+                { data: { id: 'n134'} },
+                { data: { id: 'n135'} },
+                { data: { id: 'n136'} },
+                { data: { id: 'n137'} },
+                { data: { id: 'n138'} },
+                { data: { id: 'n139'} },
+                { data: { id: 'n140'} },
+                { data: { id: 'n141'} },
+                { data: { id: 'n142'} },
+                { data: { id: 'n143'} },
+                { data: { id: 'n144'} },
+                { data: { id: 'n145'} },
+                { data: { id: 'n146'} },
+                { data: { id: 'n147'} },
+                { data: { id: 'n148'} },
+                { data: { id: 'n149'} },
+                { data: { id: 'n150'} },
+                { data: { id: 'n151'} },
+                { data: { id: 'n152'} },
+                { data: { id: 'n153'} },
+                { data: { id: 'n154'} },
+                { data: { id: 'n155'} },
+                { data: { id: 'n156'} },
+                { data: { id: 'n157'} },
+                { data: { id: 'n158'} },
+                { data: { id: 'n159'} },
+                { data: { id: 'n160'} },
+                { data: { id: 'n161'} },
+                { data: { id: 'n162'} },
+                { data: { id: 'n163'} },
+                { data: { id: 'n164'} },
+                { data: { id: 'n165'} },
+                { data: { id: 'n166'} },
+                { data: { id: 'n167'} },
+                { data: { id: 'n168'} },
+                { data: { id: 'n169'} },
+                { data: { id: 'n170'} },
+                { data: { id: 'n171'} },
+                { data: { id: 'n172'} },
+                { data: { id: 'n173'} },
+                { data: { id: 'n174'} },
+                { data: { id: 'n175'} },
+                { data: { id: 'n176'} },
+                { data: { id: 'n177'} },
+                { data: { id: 'n178'} },
+                { data: { id: 'n179'} },
+                { data: { id: 'n180'} },
+                { data: { id: 'n181'} },
+                { data: { id: 'n182'} },
+                { data: { id: 'n183'} },
+                { data: { id: 'n184'} },
+                { data: { id: 'n185'} },
+                { data: { id: 'n186'} },
+                { data: { id: 'n187'} },
+                { data: { id: 'n188'} },
+                { data: { id: 'n189'} },
+                { data: { id: 'n190'} },
+                { data: { id: 'n191'} },
+                { data: { id: 'n192'} },
+                { data: { id: 'n193'} },
+                { data: { id: 'n194'} },
+                { data: { id: 'n195'} },
+                { data: { id: 'n196'} },
+                { data: { id: 'n197'} },
+                { data: { id: 'n198'} },
+                { data: { id: 'n199'} }
+              ],
+              edges: [
+                { data: { source: 'n3', target: 'n180' } },
+                { data: { source: 'n8', target: 'n143' } },
+                { data: { source: 'n8', target: 'n192' } },
+                { data: { source: 'n19', target: 'n50' } },
+                { data: { source: 'n31', target: 'n67' } },
+                { data: { source: 'n45', target: 'n33' } },
+                { data: { source: 'n51', target: 'n191' } },
+                { data: { source: 'n59', target: 'n192' } },
+                { data: { source: 'n63', target: 'n71' } },
+                { data: { source: 'n69', target: 'n78' } },
+                { data: { source: 'n89', target: 'n162' } },
+                { data: { source: 'n90', target: 'n1' } },
+                { data: { source: 'n96', target: 'n16' } },
+                { data: { source: 'n96', target: 'n34' } },
+                { data: { source: 'n96', target: 'n159' } },
+                { data: { source: 'n105', target: 'n62' } },
+                { data: { source: 'n119', target: 'n36' } },
+                { data: { source: 'n147', target: 'n141' } },
+                { data: { source: 'n187', target: 'n156' } },
+                { data: { source: 'n189', target: 'n158' } },
+                { data: { source: 'n196', target: 'n151' } }
+
+              ]
+            }
+          });
+
+          document.getElementById("layoutButton").addEventListener("click", function(){
+            var layout = cy.layout({
+              name: 'fcose'
+            });
+            
+            layout.run();
+          });
+          
+          document.getElementById("randomize").addEventListener("click", function(){
+            var layout = cy.layout({
+              name: 'random',
+              fit: true,
+              animate: true,
+              animationDuration: 1000
+            });
+            
+            layout.run();
+          });
+
+
+        });
+      </script>
+  </head>
+
+  <body>
+          <h1>cytoscape-fcose demo</h1>
+
+          <button id="randomize" type="button">Randomize</button>
+          <button id="layoutButton" type="button">fcose</button>             
+
+          <div id="cy"></div>
+
+  </body>
+
+</html>
