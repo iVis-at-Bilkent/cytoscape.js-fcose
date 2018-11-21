@@ -52,7 +52,7 @@ class Layout {
 
       for(let i = 0; i < nodes.length; i++){
         distance[i] = infinity;
-        allDistances[pivot][i] = nodes.length * Math.log10(nodes.length) * Math.log2(nodes.length) * 45;
+        allDistances[pivot][i] = (nodes.length+1) * Math.log10(nodes.length) * Math.log2(nodes.length) * 45;
         //TODO: ask about this choice
       }
       
