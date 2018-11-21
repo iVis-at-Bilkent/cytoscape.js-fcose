@@ -52,6 +52,8 @@ class Layout {
 
       for(let i = 0; i < nodes.length; i++){
         distance[i] = infinity;
+        allDistances[pivot][i] = nodes.length * Math.log10(nodes.length) * Math.log2(nodes.length) * 45;
+        //TODO: ask about this choice
       }
       
       path[back] = pivot;
@@ -67,7 +69,7 @@ class Layout {
             path[++back] = temp;
           }
         }
-        allDistances[pivot][current] = distance[current] * 45;
+        allDistances[pivot][current] = distance[current] * Math.log10(nodes.length) * Math.log2(nodes.length) * 45;
       }
     };
 
@@ -83,6 +85,7 @@ class Layout {
 
 		let multConsMatrix = function(matrix, constant) {
 			let result = [];
+
 			for (let i = 0; i < matrix.length; i++) {
 				result[i] = [];
 				for(let j = 0; j < matrix[0].length; j++){
@@ -205,33 +208,35 @@ class Layout {
 			}
 
       for(let i  = 0; i < m; i ++) {
+
+				// console.log("d :" + d);
 				// TODO: Make a check, if all distances are positive use dijkstra's algorithm instead
 				BFS(pivots[i]); // allDistances[i][j] : dimension i of node j
+				// console.log("allDistances["+pivots[i]+"] " + allDistances[pivots[i]]);
 
 				for (let j = 0; j < nodes.length; j++)
 					d[j] = ( d[j] < allDistances[pivots[i]][j] ) ? d[j] : allDistances[pivots[i]][j];
 
-				if (i != m-1) {
+				if (i != m-1)
           pivots[i+1] = chooseNextPivot(i, d);
-				}
       }
 		};
 
-    let printEigenvectors = function(V,Y, numEigenVectors){
-			for (let i = 0; i < numEigenVectors; i++) {
-				console.log('Y['+i+'] :'+ Y[i]);
-				console.log('V['+i+'] :'+ V[i]);
-			}
-			console.log("");
-		}
+    // let printEigenvectors = function(V,Y, numEigenVectors){
+		// 	for (let i = 0; i < numEigenVectors; i++) {
+		// 		console.log('Y['+i+'] :'+ Y[i]);
+		// 		console.log('V['+i+'] :'+ V[i]);
+		// 	}
+		// 	console.log("");
+		// }
 
     let powerIteration = function(numEigenVectors) {
-			const epsilon = 0.001, maxIterations = nodes.length * Math.log10(nodes.length) * 100;
+			const epsilon = 0.002, maxIterations = nodes.length * Math.log10(nodes.length) * 100;
 			let Y = [], V = [], pivotDistances = [];
 			let pivotDistancesTranspose, iteration;
 
 			// Prepare for PCA
-			console.log("pivots " + pivots);
+			// console.log("pivots " + pivots);
 			for (let i = 0, mean = 0; i < pivots.length; i++, mean = 0){
 				pivotDistances[i] = [];
 
@@ -250,7 +255,7 @@ class Layout {
 
 			// Compute covariance matrix
 			let cov = multConsMatrix(multiplyMatrix(pivotDistances, pivotDistancesTranspose), 1 / nodes.length); // S matrix mxm
-			console.log(cov);
+			// console.log(cov);
 
 			// Compute eigenvectors
 			for (let i = 0; i < numEigenVectors; i++) {
@@ -263,7 +268,7 @@ class Layout {
 				}
 				Y[i] = normalize(Y[i]); // unit vector of m x 1
 
-				console.log("\n\nAT I : "+ i);
+				// console.log("\n\nAT I : "+ i);
 				iteration = 0;
 				do {
 					iteration++;
@@ -280,7 +285,7 @@ class Layout {
 					// console.log("After mult cov: ");
 					// printEigenvectors(V,Y,numEigenVectors);
 
-					console.log("CONVERGE: "+ dotProduct(Y[i], V[i]));
+					// console.log("CONVERGE: "+ dotProduct(Y[i], V[i]));
 				} while (dotProduct(Y[i], V[i]) < 1 - epsilon && iteration < maxIterations);
 
 				V[i] = Y[i];
@@ -324,18 +329,24 @@ class Layout {
       allNodesNeighborhood[i] = nodes[i].neighborhood().nodes();
     }
 
+    let t0 = performance.now();
+
     if (nodes.length < 50 ) {
 			highDimDraw(Math.floor(nodes.length / 2)); // highDimDraw(nodes.length-1);
     }else {
 			highDimDraw(50);
     }
 
-		powerIteration(3);
-    
-    console.log('allDistances : \n' + allDistances);
-    console.log('xCoords : \n'+ xCoords);
-    console.log('yCoords : \n' + yCoords);
-    
+		powerIteration(2);
+
+		let t1 = performance.now();
+
+    // console.log('allDistances : \n' + allDistances);
+    // console.log('xCoords : \n'+ xCoords);
+    // console.log('yCoords : \n' + yCoords);
+
+    console.log("\nTotal runtime : " +(t1-t0) + " ms");
+
     // .layoutPositions() automatically handles the layout busywork for you
     nodes.layoutPositions( layout, options, getNodePos );
   }

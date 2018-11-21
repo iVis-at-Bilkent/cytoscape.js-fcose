@@ -209,6 +209,8 @@ var Layout = function () {
 
 				for (var i = 0; i < nodes.length; i++) {
 					distance[i] = infinity;
+					allDistances[pivot][i] = nodes.length * Math.log10(nodes.length) * Math.log2(nodes.length) * 45;
+					//TODO: ask about this choice
 				}
 
 				path[back] = pivot;
@@ -224,7 +226,7 @@ var Layout = function () {
 							path[++back] = temp;
 						}
 					}
-					allDistances[pivot][current] = distance[current] * 45;
+					allDistances[pivot][current] = distance[current] * Math.log10(nodes.length) * Math.log2(nodes.length) * 45;
 				}
 			};
 
@@ -240,6 +242,7 @@ var Layout = function () {
 
 			var multConsMatrix = function multConsMatrix(matrix, constant) {
 				var result = [];
+
 				for (var i = 0; i < matrix.length; i++) {
 					result[i] = [];
 					for (var j = 0; j < matrix[0].length; j++) {
@@ -365,27 +368,28 @@ var Layout = function () {
 				}
 
 				for (var _i3 = 0; _i3 < m; _i3++) {
+
+					// console.log("d :" + d);
 					// TODO: Make a check, if all distances are positive use dijkstra's algorithm instead
 					BFS(pivots[_i3]); // allDistances[i][j] : dimension i of node j
+					// console.log("allDistances["+pivots[i]+"] " + allDistances[pivots[i]]);
 
 					for (var j = 0; j < nodes.length; j++) {
 						d[j] = d[j] < allDistances[pivots[_i3]][j] ? d[j] : allDistances[pivots[_i3]][j];
-					}if (_i3 != m - 1) {
-						pivots[_i3 + 1] = chooseNextPivot(_i3, d);
-					}
+					}if (_i3 != m - 1) pivots[_i3 + 1] = chooseNextPivot(_i3, d);
 				}
 			};
 
-			var printEigenvectors = function printEigenvectors(V, Y, numEigenVectors) {
-				for (var i = 0; i < numEigenVectors; i++) {
-					console.log('Y[' + i + '] :' + Y[i]);
-					console.log('V[' + i + '] :' + V[i]);
-				}
-				console.log("");
-			};
+			// let printEigenvectors = function(V,Y, numEigenVectors){
+			// 	for (let i = 0; i < numEigenVectors; i++) {
+			// 		console.log('Y['+i+'] :'+ Y[i]);
+			// 		console.log('V['+i+'] :'+ V[i]);
+			// 	}
+			// 	console.log("");
+			// }
 
 			var powerIteration = function powerIteration(numEigenVectors) {
-				var epsilon = 0.001,
+				var epsilon = 0.002,
 				    maxIterations = nodes.length * Math.log10(nodes.length) * 100;
 				var Y = [],
 				    V = [],
@@ -394,7 +398,7 @@ var Layout = function () {
 				    iteration = void 0;
 
 				// Prepare for PCA
-				console.log("pivots " + pivots);
+				// console.log("pivots " + pivots);
 				for (var i = 0, mean = 0; i < pivots.length; i++, mean = 0) {
 					pivotDistances[i] = [];
 
@@ -413,7 +417,7 @@ var Layout = function () {
 
 				// Compute covariance matrix
 				var cov = multConsMatrix(multiplyMatrix(pivotDistances, pivotDistancesTranspose), 1 / nodes.length); // S matrix mxm
-				console.log(cov);
+				// console.log(cov);
 
 				// Compute eigenvectors
 				for (var _i4 = 0; _i4 < numEigenVectors; _i4++) {
@@ -426,7 +430,7 @@ var Layout = function () {
 					}
 					Y[_i4] = normalize(Y[_i4]); // unit vector of m x 1
 
-					console.log("\n\nAT I : " + _i4);
+					// console.log("\n\nAT I : "+ i);
 					iteration = 0;
 					do {
 						iteration++;
@@ -443,7 +447,7 @@ var Layout = function () {
 						// console.log("After mult cov: ");
 						// printEigenvectors(V,Y,numEigenVectors);
 
-						console.log("CONVERGE: " + dotProduct(Y[_i4], V[_i4]));
+						// console.log("CONVERGE: "+ dotProduct(Y[i], V[i]));
 					} while (dotProduct(Y[_i4], V[_i4]) < 1 - epsilon && iteration < maxIterations);
 
 					V[_i4] = Y[_i4];
@@ -487,17 +491,23 @@ var Layout = function () {
 				allNodesNeighborhood[_i6] = nodes[_i6].neighborhood().nodes();
 			}
 
+			var t0 = performance.now();
+
 			if (nodes.length < 50) {
 				highDimDraw(Math.floor(nodes.length / 2)); // highDimDraw(nodes.length-1);
 			} else {
 				highDimDraw(50);
 			}
 
-			powerIteration(3);
+			powerIteration(2);
 
-			console.log('allDistances : \n' + allDistances);
-			console.log('xCoords : \n' + xCoords);
-			console.log('yCoords : \n' + yCoords);
+			var t1 = performance.now();
+
+			// console.log('allDistances : \n' + allDistances);
+			// console.log('xCoords : \n'+ xCoords);
+			// console.log('yCoords : \n' + yCoords);
+
+			console.log("\nTotal runtime : " + (t1 - t0) + " ms");
 
 			// .layoutPositions() automatically handles the layout busywork for you
 			nodes.layoutPositions(layout, options, getNodePos);
