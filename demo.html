@@ -7,8 +7,9 @@
 
       <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
-      <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
-
+      <script src="https://unpkg.com/cytoscape@3.2.20/dist/cytoscape.min.js"></script>
+      <script src="https://code.jquery.com/jquery-3.0.0.min.js" crossorigin="anonymous"></script>
+      <script src="cytoscape-graphml.js"></script>
       <!-- for testing with local version of cytoscape.js -->
       <!--<script src="../cytoscape.js/build/cytoscape.js"></script>-->
 
@@ -39,7 +40,7 @@
 
           var cy = window.cy = cytoscape({
             container: document.getElementById('cy'),
-
+            
             // demo your layout
             layout: {
               name: 'fcose',
@@ -109,18 +110,22 @@
             });
 
             layout.run();
-          });
+          });         
           
-          document.getElementById("randomize").addEventListener("click", function(){
-            var layout = cy.layout({
-              name: 'random',
-              fit: true,
-              animate: true,
-              animationDuration: 1000
-            });
-            
-            layout.run();
-          });
+          document.getElementById('input').addEventListener("change", function() {
+            var inputFile = this.files[0];
+            if (inputFile) {
+              var r = new FileReader();
+              r.onload = function(e) {
+               cy.remove(cy.elements());
+               var content = e.target.result;
+               cy.graphml(content);
+              }
+              r.readAsText(inputFile);
+            } else { 
+              alert("Failed to load file");
+            }
+          }, true);
 
         });
       </script>
@@ -130,10 +135,9 @@
           <h1>cytoscape-fcose demo</h1>
           <h1>Average of 10 runtimes: <span id="runtime"></span></h1>
 
-          <button id="randomize" type="button">Randomize</button>
           <button id="CMDSlayoutButton" type="button">CMDS</button>
           <button id="HDElayoutButton" type="button">HDE</button>
-
+          <input type="file" id="input">
 
           <div id="cy"></div>
 
