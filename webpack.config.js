@@ -22,7 +22,14 @@ let config = {
       { test: /\.js$/, exclude: /node_modules/, use: 'babel-loader' }
     ]
   },
-  externals: PROD ? Object.keys( pkg.dependencies || {} ) : [],
+//  externals: PROD ? { 
+//    'ml-matrix': {
+//      commonjs2: 'ml-matrix',
+//      commonjs: 'ml-matrix',
+//      amd: 'ml-matrix',
+//      root: 'ml-matrix'
+//    }
+//  } : {},
   plugins: MIN ? [
     new webpack.optimize.UglifyJsPlugin({
       compress: {

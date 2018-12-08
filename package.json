@@ -55,5 +55,7 @@
   "peerDependencies": {
     "cytoscape": "^3.2.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "ml-matrix": "5.2.0"
+  }
 }
