@@ -8,6 +8,8 @@
       <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
       <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+      <script src="https://unpkg.com/numeric/numeric-1.2.6.js"></script> 
+      <script src="cytoscape-tsv.js"></script>
 
       <!-- for testing with local version of cytoscape.js -->
       <!--<script src="../cytoscape.js/build/cytoscape.js"></script>-->
@@ -92,7 +94,7 @@
             }
           });
 
-          document.getElementById("layoutButton").addEventListener("click", function(){
+          document.getElementById("CMDSlayoutButton").addEventListener("click", function(){
             var layout = cy.layout({
               name: 'fcose'
             });
@@ -100,16 +102,27 @@
             layout.run();
           });
           
-          document.getElementById("randomize").addEventListener("click", function(){
-            var layout = cy.layout({
-              name: 'random',
-              fit: true,
-              animate: true,
-              animationDuration: 1000
-            });
-            
-            layout.run();
-          });
+          document.getElementById('input').addEventListener("change", function() {
+            var inputFile = this.files[0];
+            if (inputFile) {
+              var fileExtension = inputFile.name.split('.').pop();
+              var r = new FileReader();
+              r.onload = function(e) {
+                cy.remove(cy.elements());
+                var content = e.target.result;
+                if(fileExtension == "graphml" || fileExtension == "xml"){
+                  cy.graphml(content);
+                }
+                else{  
+                  var tsv = cy.tsv();
+                  tsv.importTo(content);
+                }
+            }
+              r.readAsText(inputFile);
+            } else { 
+              alert("Failed to load file");
+            }
+          }, true);
 
 
         });
@@ -119,8 +132,8 @@
   <body>
           <h1>cytoscape-fcose demo</h1>
 
-          <button id="randomize" type="button">Randomize</button>
-          <button id="layoutButton" type="button">fcose</button>             
+          <button id="CMDSlayoutButton" type="button">CMDS-sampling</button>
+          <input type="file" id="input">              
 
           <div id="cy"></div>
 

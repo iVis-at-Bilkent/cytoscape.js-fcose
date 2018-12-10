@@ -6,7 +6,7 @@ cytoscape-fcose
 
  This Cytoscape.js extension provides a fast graph layout using spectral distance embedding.
 
- ([demo](https://iVis-at-Bilkent.github.io/cytoscape.js-fcose))
+ ([demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/CMDS-sampling/demo.html))
 
 ## Dependencies
 

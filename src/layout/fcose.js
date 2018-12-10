@@ -1,8 +1,7 @@
 // n.b. .layoutPositions() handles all these options for you
 
 const assign = require('../assign');
-const Matrix = require('ml-matrix').Matrix;
-const SVD = require('ml-matrix').SVD;
+var numeric = require('numeric');
 
 const defaults = Object.freeze({
   
@@ -169,7 +168,7 @@ class Layout {
         }
         else{
           sample = Math.floor(Math.random() * nodes.length) + 1;
-//          sample = 2;
+//          sample = 1;
           firstSample = sample;
           
           for(let i = 1; i <= nodes.length; i++){
@@ -208,48 +207,66 @@ class Layout {
     let sample = function(){
 //      console.log("Performing SVD");      
       
-      let a_A = Matrix.zeros(sampleSize, sampleSize);
+      let a_A = [];
       
       for(let i = 0; i < sampleSize; i++){
+        a_A[i] = [];
         for(let j = 0; j < sampleSize; j++){
-          a_A.set(i, j, PHI[i+1][j+1]);
+          a_A[i][j] = PHI[i+1][j+1];
         }
-      }
+      }      
       
 //      console.log(a_A);
       
-      let SVDResult = new SVD(a_A);
-      let a_w = SVDResult.diagonal;
-      let a_u = SVDResult.leftSingularVectors;
-      let a_v = SVDResult.rightSingularVectors;
+      let SVDResult = numeric.svd(a_A);
+//      console.log(SVDResult);
+      let a_w = SVDResult.S;
+      let a_u = SVDResult.U;
+      let a_v = SVDResult.V;
       
 //      console.log(a_w);  
 //      console.log(a_u);        
 //      console.log(a_v);        
       
       let max_s = a_w[0]*a_w[0]*a_w[0];
-      let a_Sig = Matrix.zeros(sampleSize, sampleSize);
       
+      let a_Sig = [];
+     
       for(let i = 0; i < sampleSize; i++){
+        a_Sig[i] = [];
         for(let j = 0; j < sampleSize; j++){
+          a_Sig[i][j] = 0;
           if(i == j){
-            a_Sig.set(i, j, a_w[i]/(a_w[i]*a_w[i] + max_s/(a_w[i]*a_w[i])));
+            a_Sig[i][j] = a_w[i]/(a_w[i]*a_w[i] + max_s/(a_w[i]*a_w[i]));
           }
         }
       }
       
-      let a_INV = Matrix.zeros(sampleSize, sampleSize);
-      a_INV = a_v.mmul(a_Sig);
-      a_INV = a_INV.mmul(a_u.transpose());
-      
-//      console.log(a_INV);
-      
+      let a_INV = multMat(multMat(a_v, a_Sig), numeric.transpose(a_u));
+        
+////      console.log(a_INV);
+ 
       for(let i = 0; i < sampleSize; i++){
         for(let j = 0; j < sampleSize; j++){
-          INV[i+1][j+1] = a_INV.get(i, j);
+          INV[i+1][j+1] = a_INV[i][j];
         }
       }
     };
+ 
+    let multMat = function(array1, array2){
+      let result = [];
+      
+      for(let i = 0; i < array1.length; i++){
+          result[i] = [];
+          for(let j = 0; j < array2[0].length; j++){
+            result[i][j] = 0;
+            for(let k = 0; k < array1[0].length; k++){
+              result[i][j] += array1[i][k] * array2[k][j]; 
+            }
+          }
+        } 
+      return result;
+    }; 
  
     let multGamma = function(array){
       let result = [];
