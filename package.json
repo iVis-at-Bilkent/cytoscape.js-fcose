@@ -55,5 +55,7 @@
   "peerDependencies": {
     "cytoscape": "^3.2.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "numeric": "1.2.6"
+  }
 }

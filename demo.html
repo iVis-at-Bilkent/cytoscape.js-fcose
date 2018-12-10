@@ -9,6 +9,7 @@
 
       <script src="https://unpkg.com/cytoscape@3.2.20/dist/cytoscape.min.js"></script>
       <script src="https://code.jquery.com/jquery-3.0.0.min.js" crossorigin="anonymous"></script>
+      <script src="https://unpkg.com/numeric/numeric-1.2.6.js"></script> 
       <script src="cytoscape-graphml.js"></script>
       <script src="cytoscape-tsv.js"></script>
       <!-- for testing with local version of cytoscape.js -->
@@ -46,6 +47,7 @@
             layout: {
               name: 'fcose',
               CMDS:  true,
+              sampling: false
 
               // some more options here...
             },
@@ -96,18 +98,36 @@
           });
 
           document.getElementById("CMDSlayoutButton").addEventListener("click", function(){
+            var runNumber = document.getElementById("number").value;
             var layout = cy.layout({
               name: 'fcose',
-              CMDS: true
+              CMDS: true,
+              sampling: false,
+              totalRuns: runNumber
             });
-            
+
             layout.run();
           });
-
-          document.getElementById("HDElayoutButton").addEventListener("click", function(){
+          
+          document.getElementById("CMDSSamplinglayoutButton").addEventListener("click", function(){
+            var runNumber = document.getElementById("number").value;
             var layout = cy.layout({
               name: 'fcose',
-              CMDS: false
+              CMDS: true,
+              sampling: true,
+              totalRuns: runNumber
+            });
+
+                      console.log(runNumber);
+            layout.run();
+          });          
+
+          document.getElementById("HDElayoutButton").addEventListener("click", function(){
+            var runNumber = document.getElementById("number").value;
+            var layout = cy.layout({
+              name: 'fcose',
+              CMDS: false,
+              totalRuns: runNumber
             });
 
             layout.run();
@@ -142,9 +162,10 @@
 
   <body>
           <h1>cytoscape-fcose demo</h1>
-          <h1>Average of 10 runtimes: <span id="runtime"></span></h1>
+          <h1>Average of <input type="text" id="number" size="3" value="1"> runtimes: <span id="runtime"></span></h1>
 
           <button id="CMDSlayoutButton" type="button">CMDS</button>
+          <button id="CMDSSamplinglayoutButton" type="button">CMDS-sampling</button>
           <button id="HDElayoutButton" type="button">HDE</button>
           <input type="file" id="input">
 

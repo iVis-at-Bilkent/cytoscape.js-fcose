@@ -1,8 +1,15 @@
 // n.b. .layoutPositions() handles all these options for you
 
 const assign = require('../assign');
+let numeric = require('numeric');
 
 const defaults = Object.freeze({
+  
+  CMDS: true,
+  totalRuns: 1,
+  // CMDS options
+  sampling: false,
+  
   // animation
   animate: true, // whether or not to animate the layout
   animationDuration: 1000, // duration of animation in ms, if enabled
@@ -37,27 +44,70 @@ class Layout {
     let cy = options.cy;
     let eles = options.eles;
     let nodes = eles.nodes();
+    
     let nodeIndexes = new Map();  // map to keep indexes to nodes
     let allDistances = [];  // array to keep all distances between nodes
     let allNodesNeighborhood = []; // array to keep neighborhood of all nodes
     let xCoords = [];
     let yCoords = [];
+    
+    let samplesColumn = [];   // sampled vertices
+    let minDistancesColumn = [];
+    let C = [];   // column sampling matrix
+    let PHI = [];   // intersection of column and row sampling matrices 
+    let INV = [];   // inverse of PHI  
+    
+    let firstSample;    // the first sampled node
+    
     let pivots = []; // pivot nodes
 		let runtime = 0;
+    let sampling = options.sampling;
+    let sampleSize = 25;
     let pi_tol = 0.0000001;
     const infinity = 100000000;
     const small = 0.000000001;
-    const totalRuns = 10;
+    let samplingType = 1;   // 0 for random, 1 for greedy
+    
+     // determine which columns(or rows) to be sampled
+    let randomSampleCR = function() {
+      let sample = 0;
+      let count = 0;
+      let flag = false;
+
+      while(count < sampleSize){
+        sample = Math.floor(Math.random() * nodes.length); 
+       
+        flag = false;
+        for(let i = 0; i < count; i++){
+          if(samplesColumn[i] == sample){
+            flag = true;
+            break;
+          }
+        }
+        
+        if(!flag){
+          samplesColumn[count] = sample;
+          count++;
+        }
+        else{
+          continue;
+        }
+      }    
+    };   
 
     // takes the index of the node(pivot) to initiate BFS as a parameter
-    let BFS = function(pivot){
+    let BFS = function(pivot, index, samplingMethod){
       let path = [], distance = [];
       let front = 0, back = 0, current = 0;
       let temp;
+      
+      let max_dist = 0;    // the furthest node to be returned
+      let max_ind = 1;
 
       for(let i = 0; i < nodes.length; i++){
         distance[i] = infinity;
-        allDistances[pivot][i] = (nodes.length+1) * 100;
+        if(!options.CMDS)
+          allDistances[pivot][i] = (nodes.length+1) * 100;
         //TODO: change the distance with something that is constant. Not log squared. Experiment.
       }
 
@@ -75,15 +125,127 @@ class Layout {
           }
         }
         //TODO: distance multiplier --> constant between 450 & 45
-        allDistances[pivot][current] = distance[current] * 100;
+        if(!sampling){
+          allDistances[pivot][current] = distance[current] * 100;
+        }
+        else{
+          C[current][index] = distance[current] * 100;
+        }
       }
+      
+      if(sampling){
+        if(samplingMethod == 1){
+          for(let i = 0; i < nodes.length; i++){
+            if(C[i][index] < minDistancesColumn[i])
+              minDistancesColumn[i] = C[i][index];
+          }
+
+          for(let i = 0; i < nodes.length; i++){
+            if(minDistancesColumn[i] > max_dist ){
+              max_dist = minDistancesColumn[i];
+              max_ind = i;
+
+            }
+          }            
+        }
+      }
+      return max_ind;      
     };
 
-    let allBFS = function(){
-      for(let i = 0; i < nodes.length; i++){
-        BFS(i);
+    let allBFS = function(samplingMethod){
+      if(!sampling){
+        for(let i = 0; i < nodes.length; i++){
+          BFS(i);
+        }
+      }
+      else{
+        let sample;
+        
+        if(samplingMethod == 0){
+          randomSampleCR();
+
+          // call BFS
+          for(let i = 0; i < sampleSize; i++){
+            BFS(samplesColumn[i], i, samplingMethod, false);
+          }          
+        }
+        else{
+          sample = Math.floor(Math.random() * nodes.length);
+//          sample = 1;
+          firstSample = sample;
+          
+          for(let i = 0; i < nodes.length; i++){
+            minDistancesColumn[i] = infinity;
+          } 
+          
+          for(let i = 0; i < sampleSize; i++){
+            samplesColumn[i] = sample;
+            sample = BFS(sample, i, samplingMethod);
+          } 
+                    
+        }
+
+        // form the squared distances for C
+        for(let i = 0; i < nodes.length; i++){
+          for(let j = 0; j < sampleSize; j++){
+            C[i][j] *= C[i][j];  
+          }
+        }
+        
+        // form PHI
+        for(let i = 0; i < sampleSize; i++){
+          PHI[i] = [];  
+        }
+
+        for(let i = 0; i < sampleSize; i++){
+          for(let j = 0; j < sampleSize; j++){
+            PHI[i][j] = C[samplesColumn[j]][i];  
+          }
+        }        
       }
     };
+    
+    // calculates all the necessary matrices involved in sampling (also performs the SVD algorithm)
+    let sample = function(){
+      
+      let SVDResult = numeric.svd(PHI);
+;
+      let a_w = SVDResult.S;
+      let a_u = SVDResult.U;
+      let a_v = SVDResult.V;       
+      
+      let max_s = a_w[0]*a_w[0]*a_w[0];
+      
+      let a_Sig = [];
+     
+      for(let i = 0; i < sampleSize; i++){
+        a_Sig[i] = [];
+        for(let j = 0; j < sampleSize; j++){
+          a_Sig[i][j] = 0;
+          if(i == j){
+            a_Sig[i][j] = a_w[i]/(a_w[i]*a_w[i] + max_s/(a_w[i]*a_w[i]));
+          }
+        }
+      }
+      
+      INV = multMat(multMat(a_v, a_Sig), numeric.transpose(a_u));
+
+    };    
+    
+    let multMat = function(array1, array2){
+      let result = [];
+      
+      for(let i = 0; i < array1.length; i++){
+          result[i] = [];
+          for(let j = 0; j < array2[0].length; j++){
+            result[i][j] = 0;
+            for(let k = 0; k < array1[0].length; k++){
+              result[i][j] += array1[i][k] * array2[k][j]; 
+            }
+          }
+        } 
+      return result;
+    }; 
     
     let multGamma = function(array){
       let result = [];
@@ -103,16 +265,45 @@ class Layout {
 
     let multL = function(array){
       let result = [];
-//      let sum = 0;
-      
-      for(let i = 0; i < nodes.length; i++){
-        let sum = 0;
-        for(let j = 0; j < nodes.length; j++){
-          sum += -0.5 * allDistances[i][j] * array[j]; 
+      let temp1 = [];
+      let temp2 = [];
+     
+      if(!sampling){
+        for(let i = 0; i < nodes.length; i++){
+          let sum = 0;
+          for(let j = 0; j < nodes.length; j++){
+            sum += -0.5 * allDistances[i][j] * array[j]; 
+          }
+          result[i] = sum;
         }
-        result[i] = sum;
       }
-      
+      else{
+        // multiply by C^T
+        for(let i = 0; i < sampleSize; i++){
+          let sum = 0;
+          for(let j = 0; j < nodes.length; j++){
+            sum += -0.5 * C[j][i] * array[j]; 
+          }
+          temp1[i] = sum;
+        }
+        // multiply the result by INV
+        for(let i = 0; i < sampleSize; i++){
+          let sum = 0;
+          for(let j = 0; j < sampleSize; j++){
+            sum += INV[i][j] * temp1[j]; 
+          }
+          temp2[i] = sum;
+        }  
+        // multiply the result by C
+        for(let i = 0; i < nodes.length; i++){
+          let sum = 0;
+          for(let j = 0; j < sampleSize; j++){
+            sum += C[i][j] * temp2[j]; 
+          }
+          result[i] = sum;
+        } 
+      }
+
       return result;
     };
 
@@ -457,8 +648,20 @@ class Layout {
     }
     
     // instantiate the matrix keeping all-pairs-shortest path
-    for(let i = 0; i < nodes.length; i++){
-      allDistances[i] = [];
+    if(!sampling){
+      // instantiates the whole matrix
+      for(let i = 0; i < nodes.length; i++){
+        allDistances[i] = [];
+      }
+    }
+    else{
+      // instantiates the partial matrices
+      for(let i = 0; i < nodes.length; i++){
+        C[i] = [];
+      }
+      for(let i = 0; i < sampleSize; i++){
+        INV[i] = [];
+      }      
     }
     
     // instantiate the array keeping neighborhood of all nodes
@@ -466,32 +669,40 @@ class Layout {
       allNodesNeighborhood[i] = nodes[i].neighborhood().nodes();
     }
 
-
     if (options.CMDS) {
-      console.log("CMDS");
+      if(!sampling)
+        console.log("CMDS");
+      else
+        console.log("CMDS-sampling");
 
       runtime = performance.now();
-			for (let i = 0; i < totalRuns; i++) {
-        allBFS();
+			for (let i = 0; i < options.totalRuns; i++) {
+        allBFS(samplingType);
+        
+        if(sampling){
+          sample();
+        }
 
         // get the distance squared matrix
-        for(let i = 0; i < nodes.length; i++){
-          for(let j = 0; j < nodes.length; j++){
-            allDistances[i][j] *= allDistances[i][j];
+        if(!sampling){
+          for(let i = 0; i < nodes.length; i++){
+            for(let j = 0; j < nodes.length; j++){
+              allDistances[i][j] *= allDistances[i][j];
+            }
           }
         }
 
         powerIterationCMDS();
 			}
 
-			runtime = (performance.now() - runtime)/totalRuns;
+			runtime = (performance.now() - runtime)/options.totalRuns;
 
     }
     else {
       console.log("HDE");
       runtime = performance.now();
 
-      for (let i = 0; i < totalRuns; i++) {
+      for (let i = 0; i < options.totalRuns; i++) {
         if (nodes.length < 100 ) {
           highDimDraw(Math.floor(nodes.length / 2));
         }else {
@@ -500,7 +711,7 @@ class Layout {
 
         powerIterationHDE(2);
       }
-      runtime = (performance.now() - runtime)/totalRuns;
+      runtime = (performance.now() - runtime)/options.totalRuns;
     }
 
     document.getElementById("runtime").innerHTML = runtime;
