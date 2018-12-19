@@ -566,7 +566,7 @@ class Layout {
 
       //populate the two vectors
       xCoords = multiplyMatrix(pivotDistancesTranspose,V[0]);
-      yCoords = multiplyMatrix(pivotDistancesTranspose,V[1]);
+      yCoords = multiplyMatrix(pivotDistancesTranspose,V[2]);
     };
 
     let powerIterationCMDS = function(){
@@ -676,7 +676,7 @@ class Layout {
       let mapIterator = nodeIndexes.keys();
       let n, newSize;
       const defaultSize = 30;
-
+      cy.startBatch();
       for (let i = 0; i < nodeIndexes.size; i++) {
         n = cy.$('#' + mapIterator.next().value);
 
@@ -691,7 +691,7 @@ class Layout {
 
         // console.log("width of "+n+": "+ n.width());
       }
-
+      cy.endBatch();
     };
 
     let edgeMapKey = function(source, target){
@@ -720,7 +720,7 @@ class Layout {
         } else {
           weight += target.height();
         }
-
+  
         edgeMap.set(edgeMapKey(edges[i].data('source'), edges[i].data('target')), weight);
         // console.log("weight " + edges[i].data('weight'));
       }
@@ -771,7 +771,10 @@ class Layout {
       edgeMap = setEdgeWeightMap();
     }
     else {
-      setSizeOfRandomNodes(30,1);
+      cy.startBatch();
+      cy.style().selector('node').style('width', '30').update();
+      cy.style().selector('node').style('height', '30').update();
+      cy.endBatch();
     }
 
     if (options.CMDS) {
@@ -815,7 +818,7 @@ class Layout {
           highDimDraw(50, options.weightedEdges);
         }
 
-        powerIterationHDE(2);
+        powerIterationHDE(3);
       }
       runtime = (performance.now() - runtime)/options.totalRuns;
     }

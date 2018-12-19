@@ -155,6 +155,9 @@ var defaults = Object.freeze({
   totalRuns: 1,
   // CMDS options
   sampling: false,
+  // HDE options
+  weightedEdges: false,
+  maxNodeSize: 30,
 
   // animation
   animate: true, // whether or not to animate the layout
@@ -200,6 +203,7 @@ var Layout = function () {
       var nodes = eles.nodes();
 
       var nodeIndexes = new Map(); // map to keep indexes to nodes
+      var edgeMap = new Map(); // map from source+target nodes to edge weight
       var allDistances = []; // array to keep all distances between nodes
       var allNodesNeighborhood = []; // array to keep neighborhood of all nodes
       var xCoords = [];
@@ -263,7 +267,7 @@ var Layout = function () {
         for (var i = 0; i < nodes.length; i++) {
           distance[i] = infinity;
           if (!options.CMDS) allDistances[pivot][i] = (nodes.length + 1) * 100;
-          //TODO: change the distance with something that is constant. Not log squared. Experiment.
+          //TODO: change the distance with something that is constant. Experiment.
         }
 
         path[back] = pivot;
@@ -279,7 +283,6 @@ var Layout = function () {
               path[++back] = temp;
             }
           }
-          //TODO: distance multiplier --> constant between 450 & 45
           if (!sampling) {
             allDistances[pivot][current] = distance[current] * 100;
           } else {
@@ -354,11 +357,57 @@ var Layout = function () {
         }
       };
 
+      var dijkstra = function dijkstra(pivot) {
+        var sptSet = []; //sptSet : shortest path tree set
+        var min = void 0,
+            minIndex = void 0,
+            neighborIndex = void 0;
+        var weight = void 0,
+            neighbors = void 0;
+
+        for (var i = 0; i < nodes.length; i++) {
+          sptSet[i] = false;
+          allDistances[pivot][i] = infinity;
+        }
+        allDistances[pivot][pivot] = 0; // assign distance as 0 for pivot so it's picked first
+
+        for (var _i10 = 0; _i10 < nodes.length; _i10++) {
+          // choose the node with the minimum distance & is not in sptSet
+          min = infinity;
+          for (var j = 0; j < nodes.length; j++) {
+            //TODO: check if nodes.length -1 or nodes.length
+            if (!sptSet[j] && allDistances[pivot][j] <= min) {
+              min = allDistances[pivot][j];
+              minIndex = j;
+            }
+          }
+
+          // console.log("minIndex: "+ minIndex);
+          sptSet[minIndex] = true;
+          neighbors = allNodesNeighborhood[minIndex];
+
+          // update distance of all adjacent nodes of minIndex
+          for (var k = 0; k < neighbors.length; k++) {
+            neighborIndex = nodeIndexes.get(neighbors[k].id());
+
+            weight = edgeMap.get(edgeMapKey(nodes[minIndex].id(), neighbors[k].id()));
+            if (weight == undefined) {
+              weight = edgeMap.get(edgeMapKey(neighbors[k].id(), nodes[minIndex].id()));
+            }
+
+            if (!sptSet[neighborIndex] && allDistances[pivot][minIndex] < infinity && allDistances[pivot][minIndex] + weight < allDistances[pivot][neighborIndex]) {
+              allDistances[pivot][neighborIndex] = allDistances[pivot][minIndex] + weight;
+            }
+          }
+        }
+        // console.log("allDistances["+pivot+"]: " + allDistances[pivot]);
+      };
+
       // calculates all the necessary matrices involved in sampling (also performs the SVD algorithm)
       var sample = function sample() {
 
         var SVDResult = numeric.svd(PHI);
-        ;
+
         var a_w = SVDResult.S;
         var a_u = SVDResult.U;
         var a_v = SVDResult.V;
@@ -405,8 +454,8 @@ var Layout = function () {
 
         sum *= -1 / nodes.length;
 
-        for (var _i10 = 0; _i10 < nodes.length; _i10++) {
-          result[_i10] = sum + array[_i10];
+        for (var _i11 = 0; _i11 < nodes.length; _i11++) {
+          result[_i11] = sum + array[_i11];
         }
         return result;
       };
@@ -426,28 +475,28 @@ var Layout = function () {
           }
         } else {
           // multiply by C^T
-          for (var _i11 = 0; _i11 < sampleSize; _i11++) {
+          for (var _i12 = 0; _i12 < sampleSize; _i12++) {
             var _sum = 0;
             for (var _j2 = 0; _j2 < nodes.length; _j2++) {
-              _sum += -0.5 * C[_j2][_i11] * array[_j2];
+              _sum += -0.5 * C[_j2][_i12] * array[_j2];
             }
-            temp1[_i11] = _sum;
+            temp1[_i12] = _sum;
           }
           // multiply the result by INV
-          for (var _i12 = 0; _i12 < sampleSize; _i12++) {
+          for (var _i13 = 0; _i13 < sampleSize; _i13++) {
             var _sum2 = 0;
             for (var _j3 = 0; _j3 < sampleSize; _j3++) {
-              _sum2 += INV[_i12][_j3] * temp1[_j3];
+              _sum2 += INV[_i13][_j3] * temp1[_j3];
             }
-            temp2[_i12] = _sum2;
+            temp2[_i13] = _sum2;
           }
           // multiply the result by C
-          for (var _i13 = 0; _i13 < nodes.length; _i13++) {
+          for (var _i14 = 0; _i14 < nodes.length; _i14++) {
             var _sum3 = 0;
             for (var _j4 = 0; _j4 < sampleSize; _j4++) {
-              _sum3 += C[_i13][_j4] * temp2[_j4];
+              _sum3 += C[_i14][_j4] * temp2[_j4];
             }
-            result[_i13] = _sum3;
+            result[_i14] = _sum3;
           }
         }
 
@@ -537,8 +586,8 @@ var Layout = function () {
             m[_r] = []; //m[r] = new Array(bNumCols); // initialize the current row
             for (var c = 0; c < bNumCols; ++c) {
               m[_r][c] = 0; // initialize the current cell
-              for (var _i14 = 0; _i14 < aNumCols; ++_i14) {
-                m[_r][c] += a[_r][_i14] * b[_i14][c];
+              for (var _i15 = 0; _i15 < aNumCols; ++_i15) {
+                m[_r][c] += a[_r][_i15] * b[_i15][c];
               }
             }
           }
@@ -581,7 +630,7 @@ var Layout = function () {
         return nextPivot;
       };
 
-      var highDimDraw = function highDimDraw(m) {
+      var highDimDraw = function highDimDraw(m, weighted) {
         // Choose p1 randomly
         pivots[0] = Math.floor(Math.random() * nodes.length);
 
@@ -591,26 +640,26 @@ var Layout = function () {
           d[i] = infinity;
         }
 
-        for (var _i15 = 0; _i15 < m; _i15++) {
-          // TODO: If the graph is positively weighted then use dijkstra's algorithm instead
-          BFS(pivots[_i15]); // allDistances[i][j] : dimension i of node j
+        for (var _i16 = 0; _i16 < m; _i16++) {
+          if (weighted) dijkstra(pivots[_i16]);else BFS(pivots[_i16]); // allDistances[i][j] : dimension i of node j
 
           for (var j = 0; j < nodes.length; j++) {
-            d[j] = d[j] < allDistances[pivots[_i15]][j] ? d[j] : allDistances[pivots[_i15]][j];
-          }if (_i15 != m - 1) pivots[_i15 + 1] = chooseNextPivot(_i15, d);
+            d[j] = d[j] < allDistances[pivots[_i16]][j] ? d[j] : allDistances[pivots[_i16]][j];
+          }
+
+          if (_i16 != m - 1) pivots[_i16 + 1] = chooseNextPivot(_i16, d);
         }
       };
 
       var powerIterationHDE = function powerIterationHDE(numEigenVectors) {
-        // TODO: Make epsilon increase from 0.001 to 0.002 as the number of iterations increase
-        // TODO: Experiment with the maxIterations needed when the layout reaches its convergence: if possible make maxIterations in correlation with n.
-        var epsilon = 0.002,
-            maxIterations = nodes.length * Math.log10(nodes.length) * 100;
+        var maxIterations = nodes.length * 250;
+        var epsilon = 0.001;
         var Y = [],
             V = [],
             pivotDistances = [];
         var pivotDistancesTranspose = void 0,
             iteration = void 0;
+        var notConverged = true;
 
         // Prepare for PCA
         // console.log("pivots " + pivots);
@@ -630,57 +679,45 @@ var Layout = function () {
 
         pivotDistancesTranspose = transpose(pivotDistances);
 
-        // console.log("pivotDistancesTranspose: ");
-        // printMatrixNaN(pivotDistancesTranspose);
-
         // Compute covariance matrix
         var cov = multConsMatrix(multiplyMatrix(pivotDistances, pivotDistancesTranspose), 1 / nodes.length); // S matrix mxm
-        // console.log("cov :");
-        // printMatrixNaN(cov);
 
         // Compute eigenvectors
-        for (var _i16 = 0; _i16 < numEigenVectors; _i16++) {
-          Y[_i16] = [];
-          V[_i16] = [];
+        for (var _i17 = 0; _i17 < numEigenVectors; _i17++) {
+          Y[_i17] = [];
+          V[_i17] = [];
 
           // initialize eigenvector to random unit vectors
           for (var m = 0; m < pivots.length; m++) {
-            Y[_i16][m] = Math.random();
+            Y[_i17][m] = Math.random();
           }
-          Y[_i16] = normalize(Y[_i16]); // unit vector of m x 1
+          Y[_i17] = normalize(Y[_i17]); // unit vector of m x 1
 
-          // console.log("\n\nAT I : "+ i);
           iteration = 0;
           do {
             iteration++;
-            V[_i16] = Y[_i16];
-
-            // console.log("After assigning: ");
-            // printEigenvectorsNaN(V,Y,numEigenVectors);
+            V[_i17] = Y[_i17];
 
             // orthogonalize against previous eigenvectors
-            for (var _j6 = 0; _j6 < _i16; _j6++) {
-              V[_i16] = minusOp(V[_i16], multConsArray(V[_j6], dotProduct(V[_i16], V[_j6])));
-              // console.log("ortho V["+i+"]: "+V[i]);
+            for (var _j6 = 0; _j6 < _i17; _j6++) {
+              V[_i17] = minusOp(V[_i17], multConsArray(V[_j6], dotProduct(V[_i17], V[_j6])));
             }
 
-            Y[_i16] = normalize(multiplyMatrix(cov, V[_i16]));
+            Y[_i17] = normalize(multiplyMatrix(cov, V[_i17]));
 
-            // console.log("After mult cov: ");
-            // printEigenvectorsNaN(V,Y,numEigenVectors);
+            if (iteration % 5 == 0) {
+              // epsilon += 0.001/maxIterations;
+              notConverged = dotProduct(Y[_i17], V[_i17]) < 1 - epsilon;
+            }
+          } while (notConverged && iteration < maxIterations);
+          // console.log("iter: "+iteration);
 
-            // console.log("CONVERGE: "+ dotProduct(Y[i], V[i]));
-          } while (dotProduct(Y[_i16], V[_i16]) < 1 - epsilon && iteration < maxIterations);
-
-          V[_i16] = Y[_i16];
+          V[_i17] = Y[_i17];
         }
 
         //populate the two vectors
         xCoords = multiplyMatrix(pivotDistancesTranspose, V[0]);
-        yCoords = multiplyMatrix(pivotDistancesTranspose, V[1]);
-
-        // console.log('xCoords at power iteration: '+ xCoords);
-        // console.log('yCoords at power iteration: '+ yCoords);
+        yCoords = multiplyMatrix(pivotDistancesTranspose, V[2]);
       };
 
       var powerIterationCMDS = function powerIterationCMDS() {
@@ -713,8 +750,8 @@ var Layout = function () {
         while (true) {
           count++;
 
-          for (var _i17 = 0; _i17 < nodes.length; _i17++) {
-            V1[_i17] = Y1[_i17];
+          for (var _i18 = 0; _i18 < nodes.length; _i18++) {
+            V1[_i18] = Y1[_i18];
           }
 
           Y1 = multGamma(multL(multGamma(V1)));
@@ -732,8 +769,8 @@ var Layout = function () {
           previous = current;
         }
 
-        for (var _i18 = 0; _i18 < nodes.length; _i18++) {
-          V1[_i18] = Y1[_i18];
+        for (var _i19 = 0; _i19 < nodes.length; _i19++) {
+          V1[_i19] = Y1[_i19];
         }
 
         count = 0;
@@ -741,8 +778,8 @@ var Layout = function () {
         while (true) {
           count++;
 
-          for (var _i19 = 0; _i19 < nodes.length; _i19++) {
-            V2[_i19] = Y2[_i19];
+          for (var _i20 = 0; _i20 < nodes.length; _i20++) {
+            V2[_i20] = Y2[_i20];
           }
 
           V2 = minusOp(V2, multConsArray(V1, dotProduct(V1, V2)));
@@ -761,8 +798,8 @@ var Layout = function () {
           previous = current;
         }
 
-        for (var _i20 = 0; _i20 < nodes.length; _i20++) {
-          V2[_i20] = Y2[_i20];
+        for (var _i21 = 0; _i21 < nodes.length; _i21++) {
+          V2[_i21] = Y2[_i21];
         }
 
         // theta1 now contains dominant eigenvalue
@@ -785,6 +822,64 @@ var Layout = function () {
         };
       };
 
+      var setSizeOfRandomNodes = function setSizeOfRandomNodes(size, probThreshold) {
+        var mapIterator = nodeIndexes.keys();
+        var n = void 0,
+            newSize = void 0;
+        var defaultSize = 30;
+        cy.startBatch();
+        for (var i = 0; i < nodeIndexes.size; i++) {
+          n = cy.$('#' + mapIterator.next().value);
+
+          if (Math.random() < probThreshold) {
+            newSize = size;
+          } else {
+            //convert back to default position (in case a previous run altered the size)
+            newSize = defaultSize;
+          }
+
+          cy.style().selector(n).style('width', '' + newSize).update();
+          cy.style().selector(n).style('height', '' + newSize).update();
+
+          // console.log("width of "+n+": "+ n.width());
+        }
+        cy.endBatch();
+      };
+
+      var edgeMapKey = function edgeMapKey(source, target) {
+        return source + "-" + target;
+      };
+
+      var setEdgeWeightMap = function setEdgeWeightMap() {
+        var source = void 0,
+            target = void 0;
+        var edges = cy.edges();
+        var weight = void 0;
+        var edgeMap = new Map();
+
+        for (var i = 0; i < edges.length; i++) {
+          weight = 0;
+
+          source = cy.$('#' + edges[i].data('source'));
+          target = cy.$('#' + edges[i].data('target'));
+
+          if (source.width() > source.height()) {
+            weight += source.width();
+          } else {
+            weight += source.height();
+          }
+          if (target.width() > target.height()) {
+            weight += target.width();
+          } else {
+            weight += target.height();
+          }
+
+          edgeMap.set(edgeMapKey(edges[i].data('source'), edges[i].data('target')), weight);
+          // console.log("weight " + edges[i].data('weight'));
+        }
+        return edgeMap;
+      };
+
       // TODO replace this with your own positioning algorithm
       var getNodePos = function getNodePos(ele, i) {
         var dims = ele.layoutDimensions(options); // the space used by the node
@@ -800,29 +895,43 @@ var Layout = function () {
       // instantiate the matrix keeping all-pairs-shortest path
       if (!sampling) {
         // instantiates the whole matrix
-        for (var _i21 = 0; _i21 < nodes.length; _i21++) {
-          allDistances[_i21] = [];
+        for (var _i22 = 0; _i22 < nodes.length; _i22++) {
+          allDistances[_i22] = [];
         }
       } else {
         // instantiates the partial matrices
-        for (var _i22 = 0; _i22 < nodes.length; _i22++) {
-          C[_i22] = [];
+        for (var _i23 = 0; _i23 < nodes.length; _i23++) {
+          C[_i23] = [];
         }
-        for (var _i23 = 0; _i23 < sampleSize; _i23++) {
-          INV[_i23] = [];
+        for (var _i24 = 0; _i24 < sampleSize; _i24++) {
+          INV[_i24] = [];
         }
       }
 
       // instantiate the array keeping neighborhood of all nodes
-      for (var _i24 = 0; _i24 < nodes.length; _i24++) {
-        allNodesNeighborhood[_i24] = nodes[_i24].neighborhood().nodes();
+      for (var _i25 = 0; _i25 < nodes.length; _i25++) {
+        allNodesNeighborhood[_i25] = nodes[_i25].neighborhood().nodes();
+        // console.log("neighborhood of node i: "+ i);
+        // console.log(allNodesNeighborhood[i]);
+      }
+
+      if (options.weightedEdges) {
+        console.log("checked!");
+        console.log(options.maxNodeSize);
+        setSizeOfRandomNodes(options.maxNodeSize, 1 / 3);
+        edgeMap = setEdgeWeightMap();
+      } else {
+        cy.startBatch();
+        cy.style().selector('node').style('width', '30').update();
+        cy.style().selector('node').style('height', '30').update();
+        cy.endBatch();
       }
 
       if (options.CMDS) {
         if (!sampling) console.log("CMDS");else console.log("CMDS-sampling");
 
         runtime = performance.now();
-        for (var _i25 = 0; _i25 < options.totalRuns; _i25++) {
+        for (var _i26 = 0; _i26 < options.totalRuns; _i26++) {
           allBFS(samplingType);
 
           if (sampling) {
@@ -831,9 +940,9 @@ var Layout = function () {
 
           // get the distance squared matrix
           if (!sampling) {
-            for (var _i26 = 0; _i26 < nodes.length; _i26++) {
+            for (var _i27 = 0; _i27 < nodes.length; _i27++) {
               for (var j = 0; j < nodes.length; j++) {
-                allDistances[_i26][j] *= allDistances[_i26][j];
+                allDistances[_i27][j] *= allDistances[_i27][j];
               }
             }
           }
@@ -844,16 +953,17 @@ var Layout = function () {
         runtime = (performance.now() - runtime) / options.totalRuns;
       } else {
         console.log("HDE");
+
         runtime = performance.now();
 
-        for (var _i27 = 0; _i27 < options.totalRuns; _i27++) {
+        for (var _i28 = 0; _i28 < options.totalRuns; _i28++) {
           if (nodes.length < 100) {
-            highDimDraw(Math.floor(nodes.length / 2));
+            highDimDraw(Math.floor(nodes.length / 2), options.weightedEdges);
           } else {
-            highDimDraw(50);
+            highDimDraw(50, options.weightedEdges);
           }
 
-          powerIterationHDE(2);
+          powerIterationHDE(3);
         }
         runtime = (performance.now() - runtime) / options.totalRuns;
       }
