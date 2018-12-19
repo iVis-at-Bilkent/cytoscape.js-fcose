@@ -9,7 +9,10 @@ const defaults = Object.freeze({
   totalRuns: 1,
   // CMDS options
   sampling: false,
-  
+  // HDE options
+  weightedEdges: false,
+  maxNodeSize: 30,
+
   // animation
   animate: true, // whether or not to animate the layout
   animationDuration: 1000, // duration of animation in ms, if enabled
@@ -46,6 +49,7 @@ class Layout {
     let nodes = eles.nodes();
     
     let nodeIndexes = new Map();  // map to keep indexes to nodes
+    let edgeMap = new Map(); // map from source+target nodes to edge weight
     let allDistances = [];  // array to keep all distances between nodes
     let allNodesNeighborhood = []; // array to keep neighborhood of all nodes
     let xCoords = [];
@@ -108,7 +112,7 @@ class Layout {
         distance[i] = infinity;
         if(!options.CMDS)
           allDistances[pivot][i] = (nodes.length+1) * 100;
-        //TODO: change the distance with something that is constant. Not log squared. Experiment.
+        //TODO: change the distance with something that is constant. Experiment.
       }
 
       path[back] = pivot;
@@ -124,7 +128,6 @@ class Layout {
             path[++back] = temp;
           }
         }
-        //TODO: distance multiplier --> constant between 450 & 45
         if(!sampling){
           allDistances[pivot][current] = distance[current] * 100;
         }
@@ -204,12 +207,55 @@ class Layout {
         }        
       }
     };
-    
+
+    let dijkstra = function(pivot){
+      let sptSet = []; //sptSet : shortest path tree set
+      let min, minIndex, neighborIndex;
+      let weight, neighbors;
+
+      for (let i = 0; i < nodes.length; i++){
+        sptSet[i] = false;
+        allDistances[pivot][i] = infinity;
+      }
+      allDistances[pivot][pivot] = 0; // assign distance as 0 for pivot so it's picked first
+
+      for (let i = 0; i < nodes.length; i++){
+        // choose the node with the minimum distance & is not in sptSet
+        min = infinity;
+        for(let j = 0; j < nodes.length; j++){ //TODO: check if nodes.length -1 or nodes.length
+          if(!sptSet[j] && allDistances[pivot][j] <= min){
+            min = allDistances[pivot][j];
+            minIndex = j;
+          }
+        }
+
+        // console.log("minIndex: "+ minIndex);
+        sptSet[minIndex] = true;
+        neighbors = allNodesNeighborhood[minIndex];
+
+        // update distance of all adjacent nodes of minIndex
+        for(let k = 0; k < neighbors.length; k++){
+          neighborIndex = nodeIndexes.get(neighbors[k].id());
+
+          weight = edgeMap.get(edgeMapKey(nodes[minIndex].id(), neighbors[k].id()));
+          if (weight == undefined) {
+            weight = edgeMap.get(edgeMapKey(neighbors[k].id(), nodes[minIndex].id()));
+          }
+
+          if(!sptSet[neighborIndex] && allDistances[pivot][minIndex] < infinity
+                                    && allDistances[pivot][minIndex] + weight < allDistances[pivot][neighborIndex]){
+            allDistances[pivot][neighborIndex] = allDistances[pivot][minIndex] + weight;
+          }
+        }
+      }
+      // console.log("allDistances["+pivot+"]: " + allDistances[pivot]);
+    };
+
     // calculates all the necessary matrices involved in sampling (also performs the SVD algorithm)
     let sample = function(){
       
       let SVDResult = numeric.svd(PHI);
-;
+
       let a_w = SVDResult.S;
       let a_u = SVDResult.U;
       let a_v = SVDResult.V;       
@@ -245,7 +291,7 @@ class Layout {
           }
         } 
       return result;
-    }; 
+    };
     
     let multGamma = function(array){
       let result = [];
@@ -431,7 +477,7 @@ class Layout {
       return nextPivot;
     };
 
-    let highDimDraw = function(m){
+    let highDimDraw = function(m, weighted){
       // Choose p1 randomly
       pivots[0] = Math.floor(Math.random() * nodes.length);
 
@@ -442,11 +488,14 @@ class Layout {
       }
 
       for(let i  = 0; i < m; i ++) {
-        // TODO: If the graph is positively weighted then use dijkstra's algorithm instead
-        BFS(pivots[i]); // allDistances[i][j] : dimension i of node j
+        if(weighted)
+          dijkstra(pivots[i]);
+        else
+          BFS(pivots[i]); // allDistances[i][j] : dimension i of node j
 
-        for (let j = 0; j < nodes.length; j++)
-          d[j] = ( d[j] < allDistances[pivots[i]][j] ) ? d[j] : allDistances[pivots[i]][j];
+        for (let j = 0; j < nodes.length; j++) {
+          d[j] = (d[j] < allDistances[pivots[i]][j]) ? d[j] : allDistances[pivots[i]][j];
+        }
 
         if (i != m-1)
           pivots[i+1] = chooseNextPivot(i, d);
@@ -454,11 +503,11 @@ class Layout {
     };
 
     let powerIterationHDE = function(numEigenVectors) {
-      // TODO: Make epsilon increase from 0.001 to 0.002 as the number of iterations increase
-      // TODO: Experiment with the maxIterations needed when the layout reaches its convergence: if possible make maxIterations in correlation with n.
-      const epsilon = 0.002, maxIterations = nodes.length * Math.log10(nodes.length) * 100;
+      const maxIterations = nodes.length * 250;
+      let epsilon = 0.001;
       let Y = [], V = [], pivotDistances = [];
       let pivotDistancesTranspose, iteration;
+      let notConverged = true;
 
       // Prepare for PCA
       // console.log("pivots " + pivots);
@@ -478,13 +527,8 @@ class Layout {
 
       pivotDistancesTranspose = transpose(pivotDistances);
 
-      // console.log("pivotDistancesTranspose: ");
-      // printMatrixNaN(pivotDistancesTranspose);
-
       // Compute covariance matrix
       let cov = multConsMatrix(multiplyMatrix(pivotDistances, pivotDistancesTranspose), 1 / nodes.length); // S matrix mxm
-      // console.log("cov :");
-      // printMatrixNaN(cov);
 
       // Compute eigenvectors
       for (let i = 0; i < numEigenVectors; i++) {
@@ -497,28 +541,25 @@ class Layout {
         }
         Y[i] = normalize(Y[i]); // unit vector of m x 1
 
-        // console.log("\n\nAT I : "+ i);
         iteration = 0;
         do {
           iteration++;
           V[i] = Y[i];
 
-          // console.log("After assigning: ");
-          // printEigenvectorsNaN(V,Y,numEigenVectors);
-
           // orthogonalize against previous eigenvectors
           for (let j = 0; j < i; j++) {
             V[i] = minusOp(V[i], multConsArray(V[j], dotProduct(V[i], V[j])));
-            // console.log("ortho V["+i+"]: "+V[i]);
           }
 
           Y[i] = normalize(multiplyMatrix(cov, V[i]));
 
-          // console.log("After mult cov: ");
-          // printEigenvectorsNaN(V,Y,numEigenVectors);
+          if(iteration % 5 == 0){
+            // epsilon += 0.001/maxIterations;
+            notConverged = dotProduct(Y[i], V[i]) < 1 - epsilon;
+          }
 
-          // console.log("CONVERGE: "+ dotProduct(Y[i], V[i]));
-        } while (dotProduct(Y[i], V[i]) < 1 - epsilon && iteration < maxIterations);
+        } while (notConverged && iteration < maxIterations);
+        // console.log("iter: "+iteration);
 
         V[i] = Y[i];
       }
@@ -526,9 +567,6 @@ class Layout {
       //populate the two vectors
       xCoords = multiplyMatrix(pivotDistancesTranspose,V[0]);
       yCoords = multiplyMatrix(pivotDistancesTranspose,V[1]);
-
-      // console.log('xCoords at power iteration: '+ xCoords);
-      // console.log('yCoords at power iteration: '+ yCoords);
     };
 
     let powerIterationCMDS = function(){
@@ -623,7 +661,6 @@ class Layout {
       yCoords = multConsArray(V2, Math.sqrt(theta2));
       
     };
-        
 
     // example positioning algorithm
     let getPositions = function( ele, i ){
@@ -635,13 +672,68 @@ class Layout {
       };
     };
 
+    let setSizeOfRandomNodes = function(size, probThreshold) {
+      let mapIterator = nodeIndexes.keys();
+      let n, newSize;
+      const defaultSize = 30;
+
+      for (let i = 0; i < nodeIndexes.size; i++) {
+        n = cy.$('#' + mapIterator.next().value);
+
+        if (Math.random() < probThreshold) {
+          newSize = size;
+        } else { //convert back to default position (in case a previous run altered the size)
+          newSize = defaultSize;
+        }
+
+        cy.style().selector(n).style('width', '' + newSize).update();
+        cy.style().selector(n).style('height', '' + newSize).update();
+
+        // console.log("width of "+n+": "+ n.width());
+      }
+
+    };
+
+    let edgeMapKey = function(source, target){
+      return source + "-" + target;
+    };
+
+    let setEdgeWeightMap = function(){
+      let source, target;
+      let edges = cy.edges();
+      let weight;
+      let edgeMap = new Map;
+
+      for (let i = 0; i < edges.length; i++) {
+        weight = 0;
+
+        source = cy.$('#' + edges[i].data('source'));
+        target = cy.$('#' + edges[i].data('target'));
+
+        if (source.width() > source.height()) {
+          weight += source.width();
+        } else {
+          weight += source.height();
+        }
+        if (target.width() > target.height()) {
+          weight += target.width();
+        } else {
+          weight += target.height();
+        }
+
+        edgeMap.set(edgeMapKey(edges[i].data('source'), edges[i].data('target')), weight);
+        // console.log("weight " + edges[i].data('weight'));
+      }
+      return edgeMap;
+    };
+
     // TODO replace this with your own positioning algorithm
     let getNodePos = function( ele, i ){
       let dims = ele.layoutDimensions( options ); // the space used by the node
 
       return getPositions( ele, i );
     };
-    
+
     // assign indexes to nodes
     for(let i = 0; i < nodes.length; i++){
       nodeIndexes.set(nodes[i].id(), i);
@@ -663,10 +755,23 @@ class Layout {
         INV[i] = [];
       }      
     }
-    
+
+
     // instantiate the array keeping neighborhood of all nodes
     for(let i = 0; i < nodes.length; i++){
       allNodesNeighborhood[i] = nodes[i].neighborhood().nodes();
+      // console.log("neighborhood of node i: "+ i);
+      // console.log(allNodesNeighborhood[i]);
+    }
+
+    if (options.weightedEdges) {
+      console.log("checked!");
+      console.log(options.maxNodeSize);
+      setSizeOfRandomNodes(options.maxNodeSize,1/3);
+      edgeMap = setEdgeWeightMap();
+    }
+    else {
+      setSizeOfRandomNodes(30,1);
     }
 
     if (options.CMDS) {
@@ -700,13 +805,14 @@ class Layout {
     }
     else {
       console.log("HDE");
+
       runtime = performance.now();
 
       for (let i = 0; i < options.totalRuns; i++) {
         if (nodes.length < 100 ) {
-          highDimDraw(Math.floor(nodes.length / 2));
+          highDimDraw(Math.floor(nodes.length / 2), options.weightedEdges);
         }else {
-          highDimDraw(50);
+          highDimDraw(50, options.weightedEdges);
         }
 
         powerIterationHDE(2);
@@ -716,7 +822,6 @@ class Layout {
 
     document.getElementById("runtime").innerHTML = runtime;
 
-    
 //    console.log(allDistances);
 //    console.log(xCoords);
 //    console.log(yCoords);

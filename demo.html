@@ -99,11 +99,16 @@
 
           document.getElementById("CMDSlayoutButton").addEventListener("click", function(){
             var runNumber = document.getElementById("number").value;
+            var isWeighted = document.getElementById("weightsCheckbox").checked;
+            var size = document.getElementById("nodesize").value;
+
             var layout = cy.layout({
               name: 'fcose',
               CMDS: true,
               sampling: false,
-              totalRuns: runNumber
+              totalRuns: runNumber,
+              weightedEdges: isWeighted,
+              maxNodeSize: size
             });
 
             layout.run();
@@ -111,11 +116,16 @@
           
           document.getElementById("CMDSSamplinglayoutButton").addEventListener("click", function(){
             var runNumber = document.getElementById("number").value;
+            var isWeighted = document.getElementById("weightsCheckbox").checked;
+            var size = document.getElementById("nodesize").value;
+
             var layout = cy.layout({
               name: 'fcose',
               CMDS: true,
               sampling: true,
-              totalRuns: runNumber
+              totalRuns: runNumber,
+              weightedEdges: isWeighted,
+              maxNodeSize: size
             });
 
                       console.log(runNumber);
@@ -124,14 +134,19 @@
 
           document.getElementById("HDElayoutButton").addEventListener("click", function(){
             var runNumber = document.getElementById("number").value;
+            var isWeighted = document.getElementById("weightsCheckbox").checked;
+            var size = document.getElementById("nodesize").value;
+
             var layout = cy.layout({
               name: 'fcose',
               CMDS: false,
-              totalRuns: runNumber
+              totalRuns: runNumber,
+              weightedEdges: isWeighted,
+              maxNodeSize: size
             });
 
             layout.run();
-          });         
+          });
           
           document.getElementById('input').addEventListener("change", function() {
             var inputFile = this.files[0];
@@ -162,8 +177,9 @@
 
   <body>
           <h1>cytoscape-fcose demo</h1>
-          <h1>Average of <input type="text" id="number" size="3" value="1"> runtimes: <span id="runtime"></span></h1>
-
+          <p>Average of <input type="text" id="number" size="3" value="1"> runtimes: <span id="runtime"></span></p>
+          <p>Edge weights: <input type="checkbox" id="weightsCheckbox" value="false">
+              Large Node: <input type="text" id="nodesize" size="3" value="30"></p>
           <button id="CMDSlayoutButton" type="button">CMDS</button>
           <button id="CMDSSamplinglayoutButton" type="button">CMDS-sampling</button>
           <button id="HDElayoutButton" type="button">HDE</button>
