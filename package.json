@@ -56,6 +56,7 @@
     "cytoscape": "^3.2.0"
   },
   "dependencies": {
-    "numeric": "1.2.6"
+    "numeric": "1.2.6",
+    "cytoscape-cose-bilkent": "github:cytoscape/cytoscape.js-cose-bilkent#unstable"
   }
 }

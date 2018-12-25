@@ -8,7 +8,9 @@
       <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
       <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+      <script src="https://code.jquery.com/jquery-3.0.0.min.js" crossorigin="anonymous"></script>
       <script src="https://unpkg.com/numeric/numeric-1.2.6.js"></script> 
+      <script src="cytoscape-graphml.js"></script>
       <script src="cytoscape-tsv.js"></script>
 
       <!-- for testing with local version of cytoscape.js -->
@@ -45,7 +47,8 @@
             // demo your layout
             layout: {
               name: 'fcose',
-
+              postProcessing: document.getElementById("post").checked ? true : false,
+              initialEnergyOnIncremental: document.getElementById("energy").value
               // some more options here...
             },
 
@@ -94,9 +97,13 @@
             }
           });
 
+          document.getElementById("nodes").innerHTML = cy.nodes().length;
+          
           document.getElementById("CMDSlayoutButton").addEventListener("click", function(){
             var layout = cy.layout({
-              name: 'fcose'
+              name: 'fcose',
+              postProcessing: document.getElementById("post").checked ? true : false,
+              initialEnergyOnIncremental: document.getElementById("energy").value
             });
             
             layout.run();
@@ -112,10 +119,12 @@
                 var content = e.target.result;
                 if(fileExtension == "graphml" || fileExtension == "xml"){
                   cy.graphml(content);
+                  document.getElementById("nodes").innerHTML = cy.nodes().length;
                 }
                 else{  
                   var tsv = cy.tsv();
                   tsv.importTo(content);
+                  document.getElementById("nodes").innerHTML = cy.nodes().length;
                 }
             }
               r.readAsText(inputFile);
@@ -133,8 +142,14 @@
           <h1>cytoscape-fcose demo</h1>
 
           <button id="CMDSlayoutButton" type="button">CMDS-sampling</button>
-          <input type="file" id="input">              
-
+          <input type="file" id="input"><br><br>
+          Nodes: <span id="nodes"></span><br>
+          <label for="layout" style="vertical-align:middle;">Post-processing</label>
+          <input type="checkbox" id="post" name="layout" style="vertical-align:middle;" checked>
+          Initial Energy: <input type="text" id="energy" value="0.2" size="2"><br>
+          Spectral: <span id="spectral"></span><br>
+          CoSE: <span id="cose"></span><br>
+          Total: <span id="total"></span><br>
           <div id="cy"></div>
 
   </body>

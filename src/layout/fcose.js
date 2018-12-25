@@ -2,11 +2,14 @@
 
 const assign = require('../assign');
 var numeric = require('numeric');
+var cose = require('cytoscape-cose-bilkent');
 
 const defaults = Object.freeze({
   
   // CMDS options
   sampling: true,
+  postProcessing: true,
+  initialEnergyOnIncremental: 0.2,
   
   // animation
   animate: true, // whether or not to animate the layout
@@ -52,7 +55,6 @@ class Layout {
     let samplesColumn = [];   // sampled vertices
     let minDistancesColumn = [];
     let C = [];   // column sampling matrix
-    let R = [];   // row sampling matrix
     let PHI = [];   // intersection of column and row sampling matrices 
     let INV = [];   // inverse of PHI 
     
@@ -63,8 +65,6 @@ class Layout {
     let piTol = 0.0000001;
     let sampling = options.sampling;
     let sampleSize = 25;
-    let svdTol = 0.000000000001;
-    let regParam = 3;   // this is the power of the first singular values in regularization parameter
     let samplingType = 1;   // 0 for random, 1 for greedy
     
     // determine which columns(or rows) to be sampled
@@ -124,10 +124,10 @@ class Layout {
           }
         }
         if(!sampling){
-          allDistances[pivot][current] = distance[current] * 45;
+          allDistances[pivot][current] = distance[current] * 75;
         }
         else{
-          C[current][index] = distance[current] * 45;
+          C[current][index] = distance[current] * 75;
         }
       }
       
@@ -464,24 +464,25 @@ class Layout {
       //populate the two vectors
       xCoords = multCons(V1, Math.sqrt(Math.abs(theta1)));
       yCoords = multCons(V2, Math.sqrt(Math.abs(theta2)));
-//      console.log(xCoords);
-//      console.log(yCoords);
+
     };
-        
 
     // example positioning algorithm
-    let getPositions = function( ele, i ){
-      return {
-        x: xCoords[i],
-        y: yCoords[i]
-      };
-    };
-
-    // TODO replace this with your own positioning algorithm
-    let getNodePos = function( ele, i ){
-      let dims = ele.layoutDimensions( options ); // the space used by the node
-
-      return getPositions( ele, i );
+    let getPositions = function(ele, i ){
+      if(options.postProcessing) {
+        cy.nodes().positions(function( node, i ){
+          return {
+            x: xCoords[i],
+            y: yCoords[i]
+          };
+        });
+      }
+      else{
+        return {
+          x: xCoords[i],
+          y: yCoords[i]
+        };
+      }
     };
     
     // assign indexes to nodes
@@ -507,6 +508,7 @@ class Layout {
 //      console.log(INV);
     }
     
+    var spectral = performance.now();
     // instantiate the array keeping neighborhood of all nodes
     for(let i = 0; i < nodes.length; i++){
       allNodesNeighborhood[i] = nodes[i].neighborhood().nodes();
@@ -529,12 +531,34 @@ class Layout {
     
     powerIteration();
     
-//    console.log(allDistances);
-//    console.log(xCoords);
-//    console.log(yCoords);
+    spectral = performance.now() - spectral;
 
-    // .layoutPositions() automatically handles the layout busywork for you
-    nodes.layoutPositions( layout, options, getNodePos );
+    if(options.postProcessing){
+      getPositions();
+      var cose = performance.now();
+      var coseLayout = cy.layout({
+        name: "cose-bilkent",
+        randomize: false,
+        initialEnergyOnIncremental: options.initialEnergyOnIncremental
+      });
+
+      coseLayout.run();
+      cose = performance.now() - cose;
+    }
+    else{
+      // .layoutPositions() automatically handles the layout busywork for you
+      nodes.layoutPositions( layout, options, getPositions );
+    }
+    
+    document.getElementById("spectral").innerHTML = Math.floor(spectral) + " ms";
+    if(options.postProcessing){
+      document.getElementById("cose").innerHTML = Math.floor(cose) + " ms";
+      document.getElementById("total").innerHTML = Math.floor(spectral + cose) + " ms";
+    }
+    else{
+      document.getElementById("cose").innerHTML = "N/A";
+      document.getElementById("total").innerHTML = Math.floor(spectral) + " ms";
+    }
   }
 }
 
