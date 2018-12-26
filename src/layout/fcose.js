@@ -64,7 +64,7 @@ class Layout {
     let firstSample;    // the first sampled node
     
     let pivots = []; // pivot nodes
-		let runtime = 0;
+    let runtime = 0;
     let sampling = options.sampling;
     let sampleSize = 25;
     let pi_tol = 0.0000001;
@@ -112,7 +112,6 @@ class Layout {
         distance[i] = infinity;
         if(!options.CMDS)
           allDistances[pivot][i] = (nodes.length+1) * 100;
-        //TODO: change the distance with something that is constant. Experiment.
       }
 
       path[back] = pivot;
@@ -553,20 +552,22 @@ class Layout {
 
           Y[i] = normalize(multiplyMatrix(cov, V[i]));
 
-          if(iteration % 5 == 0){
+          if(iteration % 5 == 1){
             // epsilon += 0.001/maxIterations;
             notConverged = dotProduct(Y[i], V[i]) < 1 - epsilon;
+            // console.log(dotProduct(Y[i], V[i]));
           }
 
         } while (notConverged && iteration < maxIterations);
-        // console.log("iter: "+iteration);
+        console.log("iter: "+iteration);
+
 
         V[i] = Y[i];
       }
 
       //populate the two vectors
       xCoords = multiplyMatrix(pivotDistancesTranspose,V[0]);
-      yCoords = multiplyMatrix(pivotDistancesTranspose,V[2]);
+      yCoords = multiplyMatrix(pivotDistancesTranspose,V[1]);// V[numEigenVectors-1]);
     };
 
     let powerIterationCMDS = function(){
@@ -756,7 +757,6 @@ class Layout {
       }      
     }
 
-
     // instantiate the array keeping neighborhood of all nodes
     for(let i = 0; i < nodes.length; i++){
       allNodesNeighborhood[i] = nodes[i].neighborhood().nodes();
@@ -818,7 +818,7 @@ class Layout {
           highDimDraw(50, options.weightedEdges);
         }
 
-        powerIterationHDE(3);
+        powerIterationHDE(2);
       }
       runtime = (performance.now() - runtime)/options.totalRuns;
     }

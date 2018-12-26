@@ -267,7 +267,6 @@ var Layout = function () {
         for (var i = 0; i < nodes.length; i++) {
           distance[i] = infinity;
           if (!options.CMDS) allDistances[pivot][i] = (nodes.length + 1) * 100;
-          //TODO: change the distance with something that is constant. Experiment.
         }
 
         path[back] = pivot;
@@ -705,19 +704,20 @@ var Layout = function () {
 
             Y[_i17] = normalize(multiplyMatrix(cov, V[_i17]));
 
-            if (iteration % 5 == 0) {
+            if (iteration % 5 == 1) {
               // epsilon += 0.001/maxIterations;
               notConverged = dotProduct(Y[_i17], V[_i17]) < 1 - epsilon;
+              // console.log(dotProduct(Y[i], V[i]));
             }
           } while (notConverged && iteration < maxIterations);
-          // console.log("iter: "+iteration);
+          console.log("iter: " + iteration);
 
           V[_i17] = Y[_i17];
         }
 
         //populate the two vectors
         xCoords = multiplyMatrix(pivotDistancesTranspose, V[0]);
-        yCoords = multiplyMatrix(pivotDistancesTranspose, V[2]);
+        yCoords = multiplyMatrix(pivotDistancesTranspose, V[1]); // V[numEigenVectors-1]);
       };
 
       var powerIterationCMDS = function powerIterationCMDS() {
@@ -963,7 +963,7 @@ var Layout = function () {
             highDimDraw(50, options.weightedEdges);
           }
 
-          powerIterationHDE(3);
+          powerIterationHDE(2);
         }
         runtime = (performance.now() - runtime) / options.totalRuns;
       }
