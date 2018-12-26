@@ -9,7 +9,9 @@
 
       <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
       <script src="https://code.jquery.com/jquery-3.0.0.min.js" crossorigin="anonymous"></script>
-      <script src="https://unpkg.com/numeric/numeric-1.2.6.js"></script> 
+      <script src="https://unpkg.com/numeric/numeric-1.2.6.js"></script>
+      <script src="https://raw.githack.com/iVis-at-Bilkent/layout-base/unstable/layout-base.js"></script>
+      <script src="https://raw.githack.com/cytoscape/cytoscape.js-cose-bilkent/unstable/cytoscape-cose-bilkent.js"></script>
       <script src="cytoscape-graphml.js"></script>
       <script src="cytoscape-tsv.js"></script>
 
@@ -25,9 +27,9 @@
         }
 
         #cy {
-          position: absolute;
+          position: relative;
           width: 100%;
-          height: 90%;
+          height: 85%;
           z-index: 999;
         }
 
@@ -98,6 +100,7 @@
           });
 
           document.getElementById("nodes").innerHTML = cy.nodes().length;
+          document.getElementById("edges").innerHTML = cy.edges().length;
           
           document.getElementById("CMDSlayoutButton").addEventListener("click", function(){
             var layout = cy.layout({
@@ -106,8 +109,19 @@
               initialEnergyOnIncremental: document.getElementById("energy").value
             });
             
-            layout.run();
+            layout.run();        
           });
+          
+          document.getElementById("CoSEButton").addEventListener("click", function(){
+            var layout = cy.layout({
+              name: 'cose-bilkent',
+            });
+            var runtime = performance.now();
+            layout.run();
+            runtime = performance.now() - runtime;
+            
+            document.getElementById("totalCose").innerHTML = Math.floor(runtime) + " ms";
+          });          
           
           document.getElementById('input').addEventListener("change", function() {
             var inputFile = this.files[0];
@@ -120,11 +134,13 @@
                 if(fileExtension == "graphml" || fileExtension == "xml"){
                   cy.graphml(content);
                   document.getElementById("nodes").innerHTML = cy.nodes().length;
+                  document.getElementById("edges").innerHTML = cy.edges().length;
                 }
                 else{  
                   var tsv = cy.tsv();
                   tsv.importTo(content);
                   document.getElementById("nodes").innerHTML = cy.nodes().length;
+                  document.getElementById("edges").innerHTML = cy.edges().length;
                 }
             }
               r.readAsText(inputFile);
@@ -141,15 +157,21 @@
   <body>
           <h1>cytoscape-fcose demo</h1>
 
-          <button id="CMDSlayoutButton" type="button">CMDS-sampling</button>
-          <input type="file" id="input"><br><br>
-          Nodes: <span id="nodes"></span><br>
+          <input type="file" id="input" style="margin-bottom: 5px">
+          Nodes: <span id="nodes"></span>&nbsp &nbsp
+          Edges: <span id="edges"></span><br>
+          
+          <button id="CMDSlayoutButton" type="button" style="margin-bottom: 5px">fcose</button>
           <label for="layout" style="vertical-align:middle;">Post-processing</label>
           <input type="checkbox" id="post" name="layout" style="vertical-align:middle;" checked>
-          Initial Energy: <input type="text" id="energy" value="0.2" size="2"><br>
-          Spectral: <span id="spectral"></span><br>
-          CoSE: <span id="cose"></span><br>
-          Total: <span id="total"></span><br>
+          Initial Energy: <input type="text" id="energy" value="0.2" size="2">
+          <b>Spectral: </b><span id="spectral"></span>
+          <b>Post-processing: </b><span id="cose"></span>
+          <b>Total: </b><span id="total"></span><br>  
+          
+          <button id="CoSEButton" type="button" style="margin-bottom: 5px">CoSE</button>      
+          <b>Total: </b><span id="totalCose">N/A</span><br>
+      
           <div id="cy"></div>
 
   </body>
