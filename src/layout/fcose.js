@@ -45,6 +45,7 @@ class Layout {
     let cy = options.cy;
     let eles = options.eles;
     let nodes = eles.nodes();
+    let nodeSize = nodes.length;
     
     let nodeIndexes = new Map();  // map to keep indexes to nodes    
     let allDistances = [];  // array to keep all distances between nodes
@@ -74,7 +75,7 @@ class Layout {
       let flag = false;
 
       while(count < sampleSize){
-        sample = Math.floor(Math.random() * nodes.length); 
+        sample = Math.floor(Math.random() * nodeSize); 
        
         flag = false;
         for(let i = 0; i < count; i++){
@@ -106,7 +107,7 @@ class Layout {
       let max_dist = 0;    // the furthest node to be returned
       let max_ind = 1;
       
-      for(let i = 0; i < nodes.length; i++){
+      for(let i = 0; i < nodeSize; i++){
         distance[i] = infinity;
       }
       
@@ -133,12 +134,12 @@ class Layout {
       
       if(sampling){
         if(samplingMethod == 1){
-          for(let i = 0; i < nodes.length; i++){
+          for(let i = 0; i < nodeSize; i++){
             if(C[i][index] < minDistancesColumn[i])
               minDistancesColumn[i] = C[i][index];
           }
 
-          for(let i = 0; i < nodes.length; i++){
+          for(let i = 0; i < nodeSize; i++){
             if(minDistancesColumn[i] > max_dist ){
               max_dist = minDistancesColumn[i];
               max_ind = i;
@@ -152,7 +153,7 @@ class Layout {
 
     let allBFS = function(samplingMethod){
       if(!sampling){
-        for(let i = 0; i < nodes.length; i++){
+        for(let i = 0; i < nodeSize; i++){
           BFS(i);
         }
       }
@@ -168,11 +169,11 @@ class Layout {
           }          
         }
         else{
-          sample = Math.floor(Math.random() * nodes.length);
+          sample = Math.floor(Math.random() * nodeSize);
 //          sample = 1;
           firstSample = sample;
           
-          for(let i = 0; i < nodes.length; i++){
+          for(let i = 0; i < nodeSize; i++){
             minDistancesColumn[i] = infinity;
           } 
           
@@ -184,7 +185,7 @@ class Layout {
         }
 
         // form the squared distances for C
-        for(let i = 0; i < nodes.length; i++){
+        for(let i = 0; i < nodeSize; i++){
           for(let j = 0; j < sampleSize; j++){
             C[i][j] *= C[i][j];  
           }
@@ -273,13 +274,13 @@ class Layout {
       let result = [];
       let sum = 0;
       
-      for(let i = 0; i < nodes.length; i++){
+      for(let i = 0; i < nodeSize; i++){
         sum += array[i];
       }
       
-      sum *= (-1)/nodes.length;
+      sum *= (-1)/nodeSize;
       
-      for(let i = 0; i < nodes.length; i++){
+      for(let i = 0; i < nodeSize; i++){
         result[i] = sum + array[i];
       }     
       return result;
@@ -291,9 +292,9 @@ class Layout {
       let temp2 = [];
      
       if(!sampling){
-        for(let i = 0; i < nodes.length; i++){
+        for(let i = 0; i < nodeSize; i++){
           let sum = 0;
-          for(let j = 0; j < nodes.length; j++){
+          for(let j = 0; j < nodeSize; j++){
             sum += -0.5 * allDistances[i][j] * array[j]; 
           }
           result[i] = sum;
@@ -303,7 +304,7 @@ class Layout {
         // multiply by C^T
         for(let i = 0; i < sampleSize; i++){
           let sum = 0;
-          for(let j = 0; j < nodes.length; j++){
+          for(let j = 0; j < nodeSize; j++){
             sum += -0.5 * C[j][i] * array[j]; 
           }
           temp1[i] = sum;
@@ -317,7 +318,7 @@ class Layout {
           temp2[i] = sum;
         }  
         // multiply the result by C
-        for(let i = 0; i < nodes.length; i++){
+        for(let i = 0; i < nodeSize; i++){
           let sum = 0;
           for(let j = 0; j < sampleSize; j++){
             sum += C[i][j] * temp2[j]; 
@@ -332,7 +333,7 @@ class Layout {
     let multCons = function(array, constant){
       let result = [];
       
-      for(let i = 0; i < nodes.length; i++){
+      for(let i = 0; i < nodeSize; i++){
         result[i] = array[i] * constant;
       }
       
@@ -342,7 +343,7 @@ class Layout {
     let minusOp = function(array1, array2){
       let result = [];
       
-      for(let i = 0; i < nodes.length; i++){
+      for(let i = 0; i < nodeSize; i++){
         result[i] = array1[i] - array2[i];
       }
       
@@ -352,7 +353,7 @@ class Layout {
     let dotProduct = function(array1, array2){
       let product = 0;
       
-      for(let i = 0; i < nodes.length; i++){
+      for(let i = 0; i < nodeSize; i++){
         product += array1[i] * array2[i]; 
       }
       
@@ -367,7 +368,7 @@ class Layout {
       let result = [];
       let magnitude = mag(array);
       
-      for(let i = 0; i < nodes.length; i++){
+      for(let i = 0; i < nodeSize; i++){
         result[i] = array[i] / magnitude;
       }
       
@@ -386,7 +387,7 @@ class Layout {
       let V1 = [];
       let V2 = [];      
       
-      for(let i = 0; i < nodes.length; i++){
+      for(let i = 0; i < nodeSize; i++){
         Y1[i] = Math.random();
         Y2[i] = Math.random();
       }
@@ -404,7 +405,7 @@ class Layout {
       while(true){
         count++;
         
-        for(let i = 0; i < nodes.length; i++){
+        for(let i = 0; i < nodeSize; i++){
           V1[i] = Y1[i];
         }
 
@@ -423,7 +424,7 @@ class Layout {
         previous = current;        
       }
       
-      for(let i = 0; i < nodes.length; i++){
+      for(let i = 0; i < nodeSize; i++){
         V1[i] = Y1[i];
       }
 
@@ -432,7 +433,7 @@ class Layout {
       while(true){
         count++;
         
-        for(let i = 0; i < nodes.length; i++){
+        for(let i = 0; i < nodeSize; i++){
           V2[i] = Y2[i];
         }
         
@@ -452,7 +453,7 @@ class Layout {
         previous = current;        
       }
       
-      for(let i = 0; i < nodes.length; i++){
+      for(let i = 0; i < nodeSize; i++){
         V2[i] = Y2[i];
       }
 
@@ -486,20 +487,20 @@ class Layout {
     };
     
     // assign indexes to nodes
-    for(let i = 0; i < nodes.length; i++){
+    for(let i = 0; i < nodeSize; i++){
       nodeIndexes.set(nodes[i].id(), i);
     }
     
     // instantiate the matrix keeping all-pairs-shortest path
     if(!sampling){
       // instantiates the whole matrix
-      for(let i = 0; i < nodes.length; i++){
+      for(let i = 0; i < nodeSize; i++){
         allDistances[i] = [];
       }
     }
     else{
       // instantiates the partial matrices
-      for(let i = 0; i < nodes.length; i++){
+      for(let i = 0; i < nodeSize; i++){
         C[i] = [];
       }
       for(let i = 0; i < sampleSize; i++){
@@ -510,7 +511,7 @@ class Layout {
     
     var spectral = performance.now();
     // instantiate the array keeping neighborhood of all nodes
-    for(let i = 0; i < nodes.length; i++){
+    for(let i = 0; i < nodeSize; i++){
       allNodesNeighborhood[i] = nodes[i].neighborhood().nodes();
     }
     
@@ -522,8 +523,8 @@ class Layout {
     
     // get the distance squared matrix
     if(!sampling){
-      for(let i = 0; i < nodes.length; i++){
-        for(let j = 0; j < nodes.length; j++){
+      for(let i = 0; i < nodeSize; i++){
+        for(let j = 0; j < nodeSize; j++){
           allDistances[i][j] *= allDistances[i][j];
         }
       }

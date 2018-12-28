@@ -199,6 +199,7 @@ var Layout = function () {
       var cy = options.cy;
       var eles = options.eles;
       var nodes = eles.nodes();
+      var nodeSize = nodes.length;
 
       var nodeIndexes = new Map(); // map to keep indexes to nodes    
       var allDistances = []; // array to keep all distances between nodes
@@ -228,7 +229,7 @@ var Layout = function () {
         var flag = false;
 
         while (count < sampleSize) {
-          sample = Math.floor(Math.random() * nodes.length);
+          sample = Math.floor(Math.random() * nodeSize);
 
           flag = false;
           for (var i = 0; i < count; i++) {
@@ -259,7 +260,7 @@ var Layout = function () {
         var max_dist = 0; // the furthest node to be returned
         var max_ind = 1;
 
-        for (var i = 0; i < nodes.length; i++) {
+        for (var i = 0; i < nodeSize; i++) {
           distance[i] = infinity;
         }
 
@@ -285,11 +286,11 @@ var Layout = function () {
 
         if (sampling) {
           if (samplingMethod == 1) {
-            for (var _i2 = 0; _i2 < nodes.length; _i2++) {
+            for (var _i2 = 0; _i2 < nodeSize; _i2++) {
               if (C[_i2][index] < minDistancesColumn[_i2]) minDistancesColumn[_i2] = C[_i2][index];
             }
 
-            for (var _i3 = 0; _i3 < nodes.length; _i3++) {
+            for (var _i3 = 0; _i3 < nodeSize; _i3++) {
               if (minDistancesColumn[_i3] > max_dist) {
                 max_dist = minDistancesColumn[_i3];
                 max_ind = _i3;
@@ -302,7 +303,7 @@ var Layout = function () {
 
       var allBFS = function allBFS(samplingMethod) {
         if (!sampling) {
-          for (var i = 0; i < nodes.length; i++) {
+          for (var i = 0; i < nodeSize; i++) {
             BFS(i);
           }
         } else {
@@ -316,11 +317,11 @@ var Layout = function () {
               BFS(samplesColumn[_i4], _i4, samplingMethod, false);
             }
           } else {
-            _sample = Math.floor(Math.random() * nodes.length);
+            _sample = Math.floor(Math.random() * nodeSize);
             //          sample = 1;
             firstSample = _sample;
 
-            for (var _i5 = 0; _i5 < nodes.length; _i5++) {
+            for (var _i5 = 0; _i5 < nodeSize; _i5++) {
               minDistancesColumn[_i5] = infinity;
             }
 
@@ -331,7 +332,7 @@ var Layout = function () {
           }
 
           // form the squared distances for C
-          for (var _i7 = 0; _i7 < nodes.length; _i7++) {
+          for (var _i7 = 0; _i7 < nodeSize; _i7++) {
             for (var j = 0; j < sampleSize; j++) {
               C[_i7][j] *= C[_i7][j];
             }
@@ -420,13 +421,13 @@ var Layout = function () {
         var result = [];
         var sum = 0;
 
-        for (var i = 0; i < nodes.length; i++) {
+        for (var i = 0; i < nodeSize; i++) {
           sum += array[i];
         }
 
-        sum *= -1 / nodes.length;
+        sum *= -1 / nodeSize;
 
-        for (var _i10 = 0; _i10 < nodes.length; _i10++) {
+        for (var _i10 = 0; _i10 < nodeSize; _i10++) {
           result[_i10] = sum + array[_i10];
         }
         return result;
@@ -438,9 +439,9 @@ var Layout = function () {
         var temp2 = [];
 
         if (!sampling) {
-          for (var i = 0; i < nodes.length; i++) {
+          for (var i = 0; i < nodeSize; i++) {
             var sum = 0;
-            for (var j = 0; j < nodes.length; j++) {
+            for (var j = 0; j < nodeSize; j++) {
               sum += -0.5 * allDistances[i][j] * array[j];
             }
             result[i] = sum;
@@ -449,7 +450,7 @@ var Layout = function () {
           // multiply by C^T
           for (var _i11 = 0; _i11 < sampleSize; _i11++) {
             var _sum = 0;
-            for (var _j2 = 0; _j2 < nodes.length; _j2++) {
+            for (var _j2 = 0; _j2 < nodeSize; _j2++) {
               _sum += -0.5 * C[_j2][_i11] * array[_j2];
             }
             temp1[_i11] = _sum;
@@ -463,7 +464,7 @@ var Layout = function () {
             temp2[_i12] = _sum2;
           }
           // multiply the result by C
-          for (var _i13 = 0; _i13 < nodes.length; _i13++) {
+          for (var _i13 = 0; _i13 < nodeSize; _i13++) {
             var _sum3 = 0;
             for (var _j4 = 0; _j4 < sampleSize; _j4++) {
               _sum3 += C[_i13][_j4] * temp2[_j4];
@@ -478,7 +479,7 @@ var Layout = function () {
       var multCons = function multCons(array, constant) {
         var result = [];
 
-        for (var i = 0; i < nodes.length; i++) {
+        for (var i = 0; i < nodeSize; i++) {
           result[i] = array[i] * constant;
         }
 
@@ -488,7 +489,7 @@ var Layout = function () {
       var minusOp = function minusOp(array1, array2) {
         var result = [];
 
-        for (var i = 0; i < nodes.length; i++) {
+        for (var i = 0; i < nodeSize; i++) {
           result[i] = array1[i] - array2[i];
         }
 
@@ -498,7 +499,7 @@ var Layout = function () {
       var dotProduct = function dotProduct(array1, array2) {
         var product = 0;
 
-        for (var i = 0; i < nodes.length; i++) {
+        for (var i = 0; i < nodeSize; i++) {
           product += array1[i] * array2[i];
         }
 
@@ -513,7 +514,7 @@ var Layout = function () {
         var result = [];
         var magnitude = mag(array);
 
-        for (var i = 0; i < nodes.length; i++) {
+        for (var i = 0; i < nodeSize; i++) {
           result[i] = array[i] / magnitude;
         }
 
@@ -532,7 +533,7 @@ var Layout = function () {
         var V1 = [];
         var V2 = [];
 
-        for (var i = 0; i < nodes.length; i++) {
+        for (var i = 0; i < nodeSize; i++) {
           Y1[i] = Math.random();
           Y2[i] = Math.random();
         }
@@ -550,7 +551,7 @@ var Layout = function () {
         while (true) {
           count++;
 
-          for (var _i14 = 0; _i14 < nodes.length; _i14++) {
+          for (var _i14 = 0; _i14 < nodeSize; _i14++) {
             V1[_i14] = Y1[_i14];
           }
 
@@ -569,7 +570,7 @@ var Layout = function () {
           previous = current;
         }
 
-        for (var _i15 = 0; _i15 < nodes.length; _i15++) {
+        for (var _i15 = 0; _i15 < nodeSize; _i15++) {
           V1[_i15] = Y1[_i15];
         }
 
@@ -578,7 +579,7 @@ var Layout = function () {
         while (true) {
           count++;
 
-          for (var _i16 = 0; _i16 < nodes.length; _i16++) {
+          for (var _i16 = 0; _i16 < nodeSize; _i16++) {
             V2[_i16] = Y2[_i16];
           }
 
@@ -598,7 +599,7 @@ var Layout = function () {
           previous = current;
         }
 
-        for (var _i17 = 0; _i17 < nodes.length; _i17++) {
+        for (var _i17 = 0; _i17 < nodeSize; _i17++) {
           V2[_i17] = Y2[_i17];
         }
 
@@ -630,19 +631,19 @@ var Layout = function () {
       };
 
       // assign indexes to nodes
-      for (var i = 0; i < nodes.length; i++) {
+      for (var i = 0; i < nodeSize; i++) {
         nodeIndexes.set(nodes[i].id(), i);
       }
 
       // instantiate the matrix keeping all-pairs-shortest path
       if (!sampling) {
         // instantiates the whole matrix
-        for (var _i18 = 0; _i18 < nodes.length; _i18++) {
+        for (var _i18 = 0; _i18 < nodeSize; _i18++) {
           allDistances[_i18] = [];
         }
       } else {
         // instantiates the partial matrices
-        for (var _i19 = 0; _i19 < nodes.length; _i19++) {
+        for (var _i19 = 0; _i19 < nodeSize; _i19++) {
           C[_i19] = [];
         }
         for (var _i20 = 0; _i20 < sampleSize; _i20++) {
@@ -653,7 +654,7 @@ var Layout = function () {
 
       var spectral = performance.now();
       // instantiate the array keeping neighborhood of all nodes
-      for (var _i21 = 0; _i21 < nodes.length; _i21++) {
+      for (var _i21 = 0; _i21 < nodeSize; _i21++) {
         allNodesNeighborhood[_i21] = nodes[_i21].neighborhood().nodes();
       }
 
@@ -665,8 +666,8 @@ var Layout = function () {
 
       // get the distance squared matrix
       if (!sampling) {
-        for (var _i22 = 0; _i22 < nodes.length; _i22++) {
-          for (var j = 0; j < nodes.length; j++) {
+        for (var _i22 = 0; _i22 < nodeSize; _i22++) {
+          for (var j = 0; j < nodeSize; j++) {
             allDistances[_i22][j] *= allDistances[_i22][j];
           }
         }
