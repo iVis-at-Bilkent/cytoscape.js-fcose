@@ -47,7 +47,8 @@ class Layout {
     let nodes = eles.nodes();
     let nodeSize = nodes.length;
     
-    let nodeIndexes = new Map();  // map to keep indexes to nodes    
+    let nodeIndexes = new Map();  // map to keep indexes to nodes 
+    let parentChildMap = new Map(); // mapping btw. compound and its representative node 
     let allDistances = [];  // array to keep all distances between nodes
     let allNodesNeighborhood = []; // array to keep neighborhood of all nodes
     let xCoords = [];
@@ -125,10 +126,10 @@ class Layout {
           }
         }
         if(!sampling){
-          allDistances[pivot][current] = distance[current] * 75;
+          allDistances[pivot][current] = distance[current] * 100;
         }
         else{
-          C[current][index] = distance[current] * 75;
+          C[current][index] = distance[current] * 100;
         }
       }
       
@@ -471,7 +472,7 @@ class Layout {
     // example positioning algorithm
     let getPositions = function(ele, i ){
       if(options.postProcessing) {
-        cy.nodes().positions(function( node, i ){
+        cy.nodes().not(":parent").positions(function( node, i ){
           return {
             x: xCoords[i],
             y: yCoords[i]
@@ -486,11 +487,39 @@ class Layout {
       }
     };
     
-    // assign indexes to nodes
-    for(let i = 0; i < nodeSize; i++){
-      nodeIndexes.set(nodes[i].id(), i);
-    }
+    cy.nodes(":parent").forEach(function( ele ){
+      let children = ele.children();
+      
+      while(children.nodes(":childless").length == 0){
+        children = children.nodes()[0].children();
+      }
+      parentChildMap.set(ele.id(), children.nodes(":childless").nodes()[0]);
+    });
     
+//    console.log(parentChildMap);
+    
+    let index = 0;
+    // assign indexes to nodes
+    for(let i = 0; i < nodes.length; i++){
+      if(!nodes[i].isParent()){
+        nodeIndexes.set(nodes[i].id(), index);
+        allNodesNeighborhood[index++] = nodes[i].neighborhood().nodes().not(":parent");
+      }
+    }
+//    console.log(nodeIndexes);
+//    console.log(allNodesNeighborhood);
+
+    // instantiate the array keeping neighborhood of all nodes
+    cy.nodes(":parent").forEach(function( ele ){
+//        console.log(allNodesNeighborhood[nodeIndexes.get(nodes[i].neighborhood().nodes()[1].id())].union(nodes[i].children()[0]));
+      allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())] = allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())].union(ele.neighborhood().nodes());
+      for(let j = 0; j < ele.neighborhood().nodes().length; j++){
+        allNodesNeighborhood[nodeIndexes.get(ele.neighborhood().nodes()[j].id())] = allNodesNeighborhood[nodeIndexes.get(ele.neighborhood().nodes()[j].id())].union(parentChildMap.get(ele.id()));
+      }
+    });
+//    console.log(allNodesNeighborhood);
+    
+    nodeSize = nodeIndexes.size;
     // instantiate the matrix keeping all-pairs-shortest path
     if(!sampling){
       // instantiates the whole matrix
@@ -510,11 +539,7 @@ class Layout {
     }
     
     var spectral = performance.now();
-    // instantiate the array keeping neighborhood of all nodes
-    for(let i = 0; i < nodeSize; i++){
-      allNodesNeighborhood[i] = nodes[i].neighborhood().nodes();
-    }
-    
+
     allBFS(samplingType);
     
     if(sampling){
@@ -548,7 +573,7 @@ class Layout {
     }
     else{
       // .layoutPositions() automatically handles the layout busywork for you
-      nodes.layoutPositions( layout, options, getPositions );
+      nodes.not(":parent").layoutPositions( layout, options, getPositions );
     }
     
     document.getElementById("spectral").innerHTML = Math.floor(spectral) + " ms";
