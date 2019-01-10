@@ -279,9 +279,9 @@ var Layout = function () {
             }
           }
           if (!sampling) {
-            allDistances[pivot][current] = distance[current] * 100;
+            allDistances[pivot][current] = distance[current] * 75;
           } else {
-            C[current][index] = distance[current] * 100;
+            C[current][index] = distance[current] * 75;
           }
         }
 
@@ -302,6 +302,7 @@ var Layout = function () {
         return max_ind;
       };
 
+      //  apply BFS to all nodes or selected samples
       var allBFS = function allBFS(samplingMethod) {
         if (!sampling) {
           for (var i = 0; i < nodeSize; i++) {
@@ -319,7 +320,6 @@ var Layout = function () {
             }
           } else {
             _sample = Math.floor(Math.random() * nodeSize);
-            //          sample = 1;
             firstSample = _sample;
 
             for (var _i5 = 0; _i5 < nodeSize; _i5++) {
@@ -349,39 +349,23 @@ var Layout = function () {
               PHI[_i9][_j] = C[samplesColumn[_j]][_i9];
             }
           }
-          //        console.log(PHI);
         }
       };
 
-      // calculates all the necessary matrices involved in sampling (also performs the SVD algorithm)
+      // perform the SVD algorithm and apply a regularization step)
       var sample = function sample() {
-        //      console.log("Performing SVD");      
-
-        //      let a_A = [];
-        //      
-        //      for(let i = 0; i < sampleSize; i++){
-        //        a_A[i] = [];
-        //        for(let j = 0; j < sampleSize; j++){
-        //          a_A[i][j] = PHI[i+1][j+1];
-        //        }
-        //      }      
-
-        //      console.log(PHI);
 
         var SVDResult = numeric.svd(PHI);
-        //      console.log(SVDResult);
+
         var a_w = SVDResult.S;
         var a_u = SVDResult.U;
         var a_v = SVDResult.V;
-
-        //      console.log(a_w);  
-        //      console.log(a_u);        
-        //      console.log(a_v);        
 
         var max_s = a_w[0] * a_w[0] * a_w[0];
 
         var a_Sig = [];
 
+        //  regularization
         for (var i = 0; i < sampleSize; i++) {
           a_Sig[i] = [];
           for (var j = 0; j < sampleSize; j++) {
@@ -393,14 +377,6 @@ var Layout = function () {
         }
 
         INV = multMat(multMat(a_v, a_Sig), numeric.transpose(a_u));
-
-        ////      console.log(a_INV);
-
-        //      for(let i = 0; i < sampleSize; i++){
-        //        for(let j = 0; j < sampleSize; j++){
-        //          INV[i+1][j+1] = a_INV[i][j];
-        //        }
-        //      }
       };
 
       var multMat = function multMat(array1, array2) {
@@ -614,7 +590,7 @@ var Layout = function () {
         yCoords = multCons(V2, Math.sqrt(Math.abs(theta2)));
       };
 
-      // example positioning algorithm
+      //  transfer calculated positions to nodes (positions of only simple nodes are calculated)
       var getPositions = function getPositions(ele, i) {
         if (options.postProcessing) {
           cy.nodes().not(":parent").positions(function (node, i) {
@@ -631,39 +607,56 @@ var Layout = function () {
         }
       };
 
+      //  form a parent-child map to keep representative node of each compound node  
       cy.nodes(":parent").forEach(function (ele) {
         var children = ele.children();
 
+        var random = 0;
         while (children.nodes(":childless").length == 0) {
+          random = Math.floor(Math.random() * children.nodes().length); // if all children are compound then proceed randomly
           children = children.nodes()[0].children();
         }
-        parentChildMap.set(ele.id(), children.nodes(":childless").nodes()[0]);
+        //  select the representative node - we can apply different methods here
+        //      random = Math.floor(Math.random() * children.nodes(":childless").length);
+        var index = 0;
+        var min = 1000;
+        children.nodes(":childless").forEach(function (ele2, i) {
+          if (ele2.connectedEdges().length < min) {
+            min = ele2.connectedEdges().length;
+            index = i;
+          }
+        });
+        parentChildMap.set(ele.id(), children.nodes(":childless")[index]);
       });
 
-      //    console.log(parentChildMap);
-
-      var index = 0;
       // assign indexes to nodes
+      var index = 0;
       for (var i = 0; i < nodes.length; i++) {
         if (!nodes[i].isParent()) {
           nodeIndexes.set(nodes[i].id(), index);
-          allNodesNeighborhood[index++] = nodes[i].neighborhood().nodes().not(":parent");
+          allNodesNeighborhood[index++] = nodes[i].neighborhood().nodes().not(":parent"); //  form neighborhood for simple nodes
         }
       }
-      //    console.log(nodeIndexes);
-      //    console.log(allNodesNeighborhood);
 
-      // instantiate the array keeping neighborhood of all nodes
+      // add neighborhood relations of compound nodes
       cy.nodes(":parent").forEach(function (ele) {
-        //        console.log(allNodesNeighborhood[nodeIndexes.get(nodes[i].neighborhood().nodes()[1].id())].union(nodes[i].children()[0]));
-        allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())] = allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())].union(ele.neighborhood().nodes());
-        for (var j = 0; j < ele.neighborhood().nodes().length; j++) {
-          allNodesNeighborhood[nodeIndexes.get(ele.neighborhood().nodes()[j].id())] = allNodesNeighborhood[nodeIndexes.get(ele.neighborhood().nodes()[j].id())].union(parentChildMap.get(ele.id()));
-        }
+        //  first add neighbors to representative node
+        allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())] = allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())].union(ele.neighborhood().nodes().not(":parent"));
+        ele.neighborhood().nodes(":parent").forEach(function (ele2, i) {
+          allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())] = allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())].union(parentChildMap.get(ele2.id()));
+        });
+        //  then add representative node to neighbors
+        ele.neighborhood().nodes().not(":parent").forEach(function (ele3, i) {
+          allNodesNeighborhood[nodeIndexes.get(ele3.id())] = allNodesNeighborhood[nodeIndexes.get(ele3.id())].union(parentChildMap.get(ele.id()));
+        });
+        ele.neighborhood().nodes(":parent").forEach(function (ele3, i) {
+          allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele3.id()).id())] = allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele3.id()).id())].union(parentChildMap.get(ele.id()));
+        });
       });
-      //    console.log(allNodesNeighborhood);
 
+      //  nodeSize now only considers the size of transformed graph
       nodeSize = nodeIndexes.size;
+
       // instantiate the matrix keeping all-pairs-shortest path
       if (!sampling) {
         // instantiates the whole matrix
@@ -678,7 +671,6 @@ var Layout = function () {
         for (var _i20 = 0; _i20 < sampleSize; _i20++) {
           INV[_i20] = [];
         }
-        //      console.log(INV);
       }
 
       var spectral = performance.now();
