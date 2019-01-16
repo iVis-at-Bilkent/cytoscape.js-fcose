@@ -465,11 +465,45 @@ class Layout {
     let chooseNextPivot = function(i, d){
       let maxDistance = -infinity;
       let nextPivot = i;
+      let pivotCands = []; // pivot candidate nodes' indices
+      let count = 0;
+      let largestCandSize = -infinity, candSize;
 
       for(let j = 0; j < nodes.length; j++){
-        if (d[j] > maxDistance){
-          nextPivot = j;
-          maxDistance = d[j];
+
+        if (!options.weightedEdges){
+          // This previous version chooses simply the node with largest distance
+          if (d[j] > maxDistance){
+            nextPivot = j;
+            maxDistance = d[j];
+          }
+
+        } else {
+          if (d[j] > maxDistance){
+            count = 0;
+            maxDistance = d[j];
+            pivotCands = [];
+            pivotCands[count] = j;
+          }
+          else if (d[j] == maxDistance){ // there was a node which has the same largest distance
+            count++;
+            pivotCands[count] = j;
+          }
+        }
+
+
+        // Choose the largest sized node among the nodes with the same largest distance
+
+      }
+
+      if(options.weightedEdges) {
+        // Choose the pivot candidate with the largest size
+        for (let k = 0; k < pivotCands.length; k++){
+          candSize = nodes[pivotCands[k]].width() > nodes[pivotCands[k]].height() ?  nodes[pivotCands[k]].width() : nodes[pivotCands[k]].height();
+          if ( candSize > largestCandSize ) {
+            nextPivot = pivotCands[k];
+            largestCandSize = candSize;
+          }
         }
       }
 
@@ -499,6 +533,8 @@ class Layout {
         if (i != m-1)
           pivots[i+1] = chooseNextPivot(i, d);
       }
+
+      console.log("pivots: " + pivots);
     };
 
     let powerIterationHDE = function(numEigenVectors) {
@@ -507,6 +543,8 @@ class Layout {
       let Y = [], V = [], pivotDistances = [];
       let pivotDistancesTranspose, iteration;
       let notConverged = true;
+      let oldDotP, dotP; // dot products
+      let dotProductUnchangedIters; // # of iterations the dot product did not change for more than epsilon
 
       // Prepare for PCA
       // console.log("pivots " + pivots);
@@ -541,6 +579,8 @@ class Layout {
         Y[i] = normalize(Y[i]); // unit vector of m x 1
 
         iteration = 0;
+        dotProductUnchangedIters = 0;
+        oldDotP = dotProduct(Y[i], Y[i]);
         do {
           iteration++;
           V[i] = Y[i];
@@ -554,9 +594,23 @@ class Layout {
 
           if(iteration % 5 == 1){
             // epsilon += 0.001/maxIterations;
-            notConverged = dotProduct(Y[i], V[i]) < 1 - epsilon;
+            dotP = dotProduct(Y[i], V[i]);
+            notConverged =  dotP < 1 - epsilon;
+
+            if (Math.abs(dotP-oldDotP) < epsilon/100) { // if dotProduct did not change much for the prev 20 iters,
+              dotProductUnchangedIters++;
+            }
+            if (dotProductUnchangedIters >= 20){       // then converge.
+              notConverged = false;
+            }
+
+            oldDotP = dotP;
+
             // console.log(dotProduct(Y[i], V[i]));
+
           }
+
+
 
         } while (notConverged && iteration < maxIterations);
         console.log("iter: "+iteration);

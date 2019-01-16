@@ -618,11 +618,43 @@ var Layout = function () {
       var chooseNextPivot = function chooseNextPivot(i, d) {
         var maxDistance = -infinity;
         var nextPivot = i;
+        var pivotCands = []; // pivot candidate nodes' indices
+        var count = 0;
+        var largestCandSize = -infinity,
+            candSize = void 0;
 
         for (var j = 0; j < nodes.length; j++) {
-          if (d[j] > maxDistance) {
-            nextPivot = j;
-            maxDistance = d[j];
+
+          if (!options.weightedEdges) {
+            // This previous version chooses simply the node with largest distance
+            if (d[j] > maxDistance) {
+              nextPivot = j;
+              maxDistance = d[j];
+            }
+          } else {
+            if (d[j] > maxDistance) {
+              count = 0;
+              maxDistance = d[j];
+              pivotCands = [];
+              pivotCands[count] = j;
+            } else if (d[j] == maxDistance) {
+              // there was a node which has the same largest distance
+              count++;
+              pivotCands[count] = j;
+            }
+          }
+
+          // Choose the largest sized node among the nodes with the same largest distance
+        }
+
+        if (options.weightedEdges) {
+          // Choose the pivot candidate with the largest size
+          for (var k = 0; k < pivotCands.length; k++) {
+            candSize = nodes[pivotCands[k]].width() > nodes[pivotCands[k]].height() ? nodes[pivotCands[k]].width() : nodes[pivotCands[k]].height();
+            if (candSize > largestCandSize) {
+              nextPivot = pivotCands[k];
+              largestCandSize = candSize;
+            }
           }
         }
 
@@ -648,6 +680,8 @@ var Layout = function () {
 
           if (_i16 != m - 1) pivots[_i16 + 1] = chooseNextPivot(_i16, d);
         }
+
+        console.log("pivots: " + pivots);
       };
 
       var powerIterationHDE = function powerIterationHDE(numEigenVectors) {
@@ -659,6 +693,9 @@ var Layout = function () {
         var pivotDistancesTranspose = void 0,
             iteration = void 0;
         var notConverged = true;
+        var oldDotP = void 0,
+            dotP = void 0; // dot products
+        var dotProductUnchangedIters = void 0; // # of iterations the dot product did not change for more than epsilon
 
         // Prepare for PCA
         // console.log("pivots " + pivots);
@@ -693,6 +730,8 @@ var Layout = function () {
           Y[_i17] = normalize(Y[_i17]); // unit vector of m x 1
 
           iteration = 0;
+          dotProductUnchangedIters = 0;
+          oldDotP = dotProduct(Y[_i17], Y[_i17]);
           do {
             iteration++;
             V[_i17] = Y[_i17];
@@ -706,7 +745,20 @@ var Layout = function () {
 
             if (iteration % 5 == 1) {
               // epsilon += 0.001/maxIterations;
-              notConverged = dotProduct(Y[_i17], V[_i17]) < 1 - epsilon;
+              dotP = dotProduct(Y[_i17], V[_i17]);
+              notConverged = dotP < 1 - epsilon;
+
+              if (Math.abs(dotP - oldDotP) < epsilon / 100) {
+                // if dotProduct did not change much for the prev 20 iters,
+                dotProductUnchangedIters++;
+              }
+              if (dotProductUnchangedIters >= 20) {
+                // then converge.
+                notConverged = false;
+              }
+
+              oldDotP = dotP;
+
               // console.log(dotProduct(Y[i], V[i]));
             }
           } while (notConverged && iteration < maxIterations);
