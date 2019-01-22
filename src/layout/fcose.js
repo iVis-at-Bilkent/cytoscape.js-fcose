@@ -7,7 +7,6 @@ const cose = require('cytoscape-cose-bilkent');
 const defaults = Object.freeze({
   
   // CMDS options
-  sampling: true,
   postProcessing: true,
   initialEnergyOnIncremental: 0.2,
   
@@ -49,7 +48,6 @@ class Layout {
     
     let nodeIndexes = new Map();  // map to keep indexes to nodes 
     let parentChildMap = new Map(); // mapping btw. compound and its representative node 
-    let allDistances = [];  // array to keep all distances between nodes
     let allNodesNeighborhood = []; // array to keep neighborhood of all nodes
     let xCoords = [];
     let yCoords = [];
@@ -124,86 +122,72 @@ class Layout {
             distance[temp] = distance[current] + 1;
             path[++back] = temp;
           }
-        }
-        if(!sampling){
-          allDistances[pivot][current] = distance[current] * 75;
-        }
-        else{
-          C[current][index] = distance[current] * 75;
-        }
+        }        
+        C[current][index] = distance[current] * 75;       
       }
       
-      if(sampling){
-        if(samplingMethod == 1){
-          for(let i = 0; i < nodeSize; i++){
-            if(C[i][index] < minDistancesColumn[i])
-              minDistancesColumn[i] = C[i][index];
-          }
-
-          for(let i = 0; i < nodeSize; i++){
-            if(minDistancesColumn[i] > max_dist ){
-              max_dist = minDistancesColumn[i];
-              max_ind = i;
-
-            }
-          }            
+      if(samplingMethod == 1){
+        for(let i = 0; i < nodeSize; i++){
+          if(C[i][index] < minDistancesColumn[i])
+            minDistancesColumn[i] = C[i][index];
         }
+
+        for(let i = 0; i < nodeSize; i++){
+          if(minDistancesColumn[i] > max_dist ){
+            max_dist = minDistancesColumn[i];
+            max_ind = i;
+
+          }
+        }            
       }
       return max_ind;
     };
 
     //  apply BFS to all nodes or selected samples
     let allBFS = function(samplingMethod){
-      if(!sampling){
-        for(let i = 0; i < nodeSize; i++){
-          BFS(i);
-        }
+      
+      let sample;
+
+      if(samplingMethod == 0){
+        randomSampleCR();
+
+        // call BFS
+        for(let i = 0; i < sampleSize; i++){
+          BFS(samplesColumn[i], i, samplingMethod, false);
+        }          
       }
       else{
-        let sample;
-        
-        if(samplingMethod == 0){
-          randomSampleCR();
+        sample = Math.floor(Math.random() * nodeSize);
+        firstSample = sample;
 
-          // call BFS
-          for(let i = 0; i < sampleSize; i++){
-            BFS(samplesColumn[i], i, samplingMethod, false);
-          }          
-        }
-        else{
-          sample = Math.floor(Math.random() * nodeSize);
-          firstSample = sample;
-          
-          for(let i = 0; i < nodeSize; i++){
-            minDistancesColumn[i] = infinity;
-          } 
-          
-          for(let i = 0; i < sampleSize; i++){
-            samplesColumn[i] = sample;
-            sample = BFS(sample, i, samplingMethod);
-          } 
-                    
-        }
-
-        // form the squared distances for C
         for(let i = 0; i < nodeSize; i++){
-          for(let j = 0; j < sampleSize; j++){
-            C[i][j] *= C[i][j];  
-          }
-        }
-        
-        // form PHI
-        for(let i = 0; i < sampleSize; i++){
-          PHI[i] = [];  
-        }
+          minDistancesColumn[i] = infinity;
+        } 
 
         for(let i = 0; i < sampleSize; i++){
-          for(let j = 0; j < sampleSize; j++){
-            PHI[i][j] = C[samplesColumn[j]][i];  
-          }
-        }        
+          samplesColumn[i] = sample;
+          sample = BFS(sample, i, samplingMethod);
+        } 
 
       }
+
+      // form the squared distances for C
+      for(let i = 0; i < nodeSize; i++){
+        for(let j = 0; j < sampleSize; j++){
+          C[i][j] *= C[i][j];  
+        }
+      }
+
+      // form PHI
+      for(let i = 0; i < sampleSize; i++){
+        PHI[i] = [];  
+      }
+
+      for(let i = 0; i < sampleSize; i++){
+        for(let j = 0; j < sampleSize; j++){
+          PHI[i][j] = C[samplesColumn[j]][i];  
+        }
+      }        
     };
     
     // perform the SVD algorithm and apply a regularization step)
@@ -270,41 +254,30 @@ class Layout {
       let temp1 = [];
       let temp2 = [];
      
-      if(!sampling){
-        for(let i = 0; i < nodeSize; i++){
-          let sum = 0;
-          for(let j = 0; j < nodeSize; j++){
-            sum += -0.5 * allDistances[i][j] * array[j]; 
-          }
-          result[i] = sum;
+      // multiply by C^T
+      for(let i = 0; i < sampleSize; i++){
+        let sum = 0;
+        for(let j = 0; j < nodeSize; j++){
+          sum += -0.5 * C[j][i] * array[j]; 
         }
+        temp1[i] = sum;
       }
-      else{
-        // multiply by C^T
-        for(let i = 0; i < sampleSize; i++){
-          let sum = 0;
-          for(let j = 0; j < nodeSize; j++){
-            sum += -0.5 * C[j][i] * array[j]; 
-          }
-          temp1[i] = sum;
+      // multiply the result by INV
+      for(let i = 0; i < sampleSize; i++){
+        let sum = 0;
+        for(let j = 0; j < sampleSize; j++){
+          sum += INV[i][j] * temp1[j]; 
         }
-        // multiply the result by INV
-        for(let i = 0; i < sampleSize; i++){
-          let sum = 0;
-          for(let j = 0; j < sampleSize; j++){
-            sum += INV[i][j] * temp1[j]; 
-          }
-          temp2[i] = sum;
-        }  
-        // multiply the result by C
-        for(let i = 0; i < nodeSize; i++){
-          let sum = 0;
-          for(let j = 0; j < sampleSize; j++){
-            sum += C[i][j] * temp2[j]; 
-          }
-          result[i] = sum;
-        } 
-      }
+        temp2[i] = sum;
+      }  
+      // multiply the result by C
+      for(let i = 0; i < nodeSize; i++){
+        let sum = 0;
+        for(let j = 0; j < sampleSize; j++){
+          sum += C[i][j] * temp2[j]; 
+        }
+        result[i] = sum;
+      } 
 
       return result;
     };
@@ -446,7 +419,7 @@ class Layout {
       yCoords = multCons(V2, Math.sqrt(Math.abs(theta2)));
 
     };
-
+    
     //  transfer calculated positions to nodes (positions of only simple nodes are calculated)
     let getPositions = function(ele, i ){
       if(options.postProcessing) {
@@ -515,39 +488,19 @@ class Layout {
     //  nodeSize now only considers the size of transformed graph
     nodeSize = nodeIndexes.size;
     
-    // instantiate the matrix keeping all-pairs-shortest path
-    if(!sampling){
-      // instantiates the whole matrix
-      for(let i = 0; i < nodeSize; i++){
-        allDistances[i] = [];
-      }
+    // instantiates the partial matrices
+    for(let i = 0; i < nodeSize; i++){
+      C[i] = [];
     }
-    else{
-      // instantiates the partial matrices
-      for(let i = 0; i < nodeSize; i++){
-        C[i] = [];
-      }
-      for(let i = 0; i < sampleSize; i++){
-        INV[i] = [];
-      }    
-    }
+    for(let i = 0; i < sampleSize; i++){
+      INV[i] = [];
+    }    
     
     var spectral = performance.now();
 
     allBFS(samplingType);
     
-    if(sampling){
-      sample();
-    }
-    
-    // get the distance squared matrix
-    if(!sampling){
-      for(let i = 0; i < nodeSize; i++){
-        for(let j = 0; j < nodeSize; j++){
-          allDistances[i][j] *= allDistances[i][j];
-        }
-      }
-    }
+    sample();
     
     powerIteration();
     

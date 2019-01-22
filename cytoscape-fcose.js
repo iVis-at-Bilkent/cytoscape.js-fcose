@@ -153,7 +153,6 @@ var cose = __webpack_require__(4);
 var defaults = Object.freeze({
 
   // CMDS options
-  sampling: true,
   postProcessing: true,
   initialEnergyOnIncremental: 0.2,
 
@@ -203,7 +202,6 @@ var Layout = function () {
 
       var nodeIndexes = new Map(); // map to keep indexes to nodes 
       var parentChildMap = new Map(); // mapping btw. compound and its representative node 
-      var allDistances = []; // array to keep all distances between nodes
       var allNodesNeighborhood = []; // array to keep neighborhood of all nodes
       var xCoords = [];
       var yCoords = [];
@@ -278,24 +276,18 @@ var Layout = function () {
               path[++back] = temp;
             }
           }
-          if (!sampling) {
-            allDistances[pivot][current] = distance[current] * 75;
-          } else {
-            C[current][index] = distance[current] * 75;
-          }
+          C[current][index] = distance[current] * 75;
         }
 
-        if (sampling) {
-          if (samplingMethod == 1) {
-            for (var _i2 = 0; _i2 < nodeSize; _i2++) {
-              if (C[_i2][index] < minDistancesColumn[_i2]) minDistancesColumn[_i2] = C[_i2][index];
-            }
+        if (samplingMethod == 1) {
+          for (var _i2 = 0; _i2 < nodeSize; _i2++) {
+            if (C[_i2][index] < minDistancesColumn[_i2]) minDistancesColumn[_i2] = C[_i2][index];
+          }
 
-            for (var _i3 = 0; _i3 < nodeSize; _i3++) {
-              if (minDistancesColumn[_i3] > max_dist) {
-                max_dist = minDistancesColumn[_i3];
-                max_ind = _i3;
-              }
+          for (var _i3 = 0; _i3 < nodeSize; _i3++) {
+            if (minDistancesColumn[_i3] > max_dist) {
+              max_dist = minDistancesColumn[_i3];
+              max_ind = _i3;
             }
           }
         }
@@ -304,50 +296,45 @@ var Layout = function () {
 
       //  apply BFS to all nodes or selected samples
       var allBFS = function allBFS(samplingMethod) {
-        if (!sampling) {
-          for (var i = 0; i < nodeSize; i++) {
-            BFS(i);
+
+        var sample = void 0;
+
+        if (samplingMethod == 0) {
+          randomSampleCR();
+
+          // call BFS
+          for (var i = 0; i < sampleSize; i++) {
+            BFS(samplesColumn[i], i, samplingMethod, false);
           }
         } else {
-          var _sample = void 0;
+          sample = Math.floor(Math.random() * nodeSize);
+          firstSample = sample;
 
-          if (samplingMethod == 0) {
-            randomSampleCR();
-
-            // call BFS
-            for (var _i4 = 0; _i4 < sampleSize; _i4++) {
-              BFS(samplesColumn[_i4], _i4, samplingMethod, false);
-            }
-          } else {
-            _sample = Math.floor(Math.random() * nodeSize);
-            firstSample = _sample;
-
-            for (var _i5 = 0; _i5 < nodeSize; _i5++) {
-              minDistancesColumn[_i5] = infinity;
-            }
-
-            for (var _i6 = 0; _i6 < sampleSize; _i6++) {
-              samplesColumn[_i6] = _sample;
-              _sample = BFS(_sample, _i6, samplingMethod);
-            }
+          for (var _i4 = 0; _i4 < nodeSize; _i4++) {
+            minDistancesColumn[_i4] = infinity;
           }
 
-          // form the squared distances for C
-          for (var _i7 = 0; _i7 < nodeSize; _i7++) {
-            for (var j = 0; j < sampleSize; j++) {
-              C[_i7][j] *= C[_i7][j];
-            }
+          for (var _i5 = 0; _i5 < sampleSize; _i5++) {
+            samplesColumn[_i5] = sample;
+            sample = BFS(sample, _i5, samplingMethod);
           }
+        }
 
-          // form PHI
-          for (var _i8 = 0; _i8 < sampleSize; _i8++) {
-            PHI[_i8] = [];
+        // form the squared distances for C
+        for (var _i6 = 0; _i6 < nodeSize; _i6++) {
+          for (var j = 0; j < sampleSize; j++) {
+            C[_i6][j] *= C[_i6][j];
           }
+        }
 
-          for (var _i9 = 0; _i9 < sampleSize; _i9++) {
-            for (var _j = 0; _j < sampleSize; _j++) {
-              PHI[_i9][_j] = C[samplesColumn[_j]][_i9];
-            }
+        // form PHI
+        for (var _i7 = 0; _i7 < sampleSize; _i7++) {
+          PHI[_i7] = [];
+        }
+
+        for (var _i8 = 0; _i8 < sampleSize; _i8++) {
+          for (var _j = 0; _j < sampleSize; _j++) {
+            PHI[_i8][_j] = C[samplesColumn[_j]][_i8];
           }
         }
       };
@@ -404,8 +391,8 @@ var Layout = function () {
 
         sum *= -1 / nodeSize;
 
-        for (var _i10 = 0; _i10 < nodeSize; _i10++) {
-          result[_i10] = sum + array[_i10];
+        for (var _i9 = 0; _i9 < nodeSize; _i9++) {
+          result[_i9] = sum + array[_i9];
         }
         return result;
       };
@@ -415,39 +402,29 @@ var Layout = function () {
         var temp1 = [];
         var temp2 = [];
 
-        if (!sampling) {
-          for (var i = 0; i < nodeSize; i++) {
-            var sum = 0;
-            for (var j = 0; j < nodeSize; j++) {
-              sum += -0.5 * allDistances[i][j] * array[j];
-            }
-            result[i] = sum;
+        // multiply by C^T
+        for (var i = 0; i < sampleSize; i++) {
+          var sum = 0;
+          for (var j = 0; j < nodeSize; j++) {
+            sum += -0.5 * C[j][i] * array[j];
           }
-        } else {
-          // multiply by C^T
-          for (var _i11 = 0; _i11 < sampleSize; _i11++) {
-            var _sum = 0;
-            for (var _j2 = 0; _j2 < nodeSize; _j2++) {
-              _sum += -0.5 * C[_j2][_i11] * array[_j2];
-            }
-            temp1[_i11] = _sum;
+          temp1[i] = sum;
+        }
+        // multiply the result by INV
+        for (var _i10 = 0; _i10 < sampleSize; _i10++) {
+          var _sum = 0;
+          for (var _j2 = 0; _j2 < sampleSize; _j2++) {
+            _sum += INV[_i10][_j2] * temp1[_j2];
           }
-          // multiply the result by INV
-          for (var _i12 = 0; _i12 < sampleSize; _i12++) {
-            var _sum2 = 0;
-            for (var _j3 = 0; _j3 < sampleSize; _j3++) {
-              _sum2 += INV[_i12][_j3] * temp1[_j3];
-            }
-            temp2[_i12] = _sum2;
+          temp2[_i10] = _sum;
+        }
+        // multiply the result by C
+        for (var _i11 = 0; _i11 < nodeSize; _i11++) {
+          var _sum2 = 0;
+          for (var _j3 = 0; _j3 < sampleSize; _j3++) {
+            _sum2 += C[_i11][_j3] * temp2[_j3];
           }
-          // multiply the result by C
-          for (var _i13 = 0; _i13 < nodeSize; _i13++) {
-            var _sum3 = 0;
-            for (var _j4 = 0; _j4 < sampleSize; _j4++) {
-              _sum3 += C[_i13][_j4] * temp2[_j4];
-            }
-            result[_i13] = _sum3;
-          }
+          result[_i11] = _sum2;
         }
 
         return result;
@@ -528,8 +505,8 @@ var Layout = function () {
         while (true) {
           count++;
 
-          for (var _i14 = 0; _i14 < nodeSize; _i14++) {
-            V1[_i14] = Y1[_i14];
+          for (var _i12 = 0; _i12 < nodeSize; _i12++) {
+            V1[_i12] = Y1[_i12];
           }
 
           Y1 = multGamma(multL(multGamma(V1)));
@@ -547,8 +524,8 @@ var Layout = function () {
           previous = current;
         }
 
-        for (var _i15 = 0; _i15 < nodeSize; _i15++) {
-          V1[_i15] = Y1[_i15];
+        for (var _i13 = 0; _i13 < nodeSize; _i13++) {
+          V1[_i13] = Y1[_i13];
         }
 
         count = 0;
@@ -556,8 +533,8 @@ var Layout = function () {
         while (true) {
           count++;
 
-          for (var _i16 = 0; _i16 < nodeSize; _i16++) {
-            V2[_i16] = Y2[_i16];
+          for (var _i14 = 0; _i14 < nodeSize; _i14++) {
+            V2[_i14] = Y2[_i14];
           }
 
           V2 = minusOp(V2, multCons(V1, dotProduct(V1, V2)));
@@ -576,8 +553,8 @@ var Layout = function () {
           previous = current;
         }
 
-        for (var _i17 = 0; _i17 < nodeSize; _i17++) {
-          V2[_i17] = Y2[_i17];
+        for (var _i15 = 0; _i15 < nodeSize; _i15++) {
+          V2[_i15] = Y2[_i15];
         }
 
         // theta1 now contains dominant eigenvalue
@@ -657,38 +634,19 @@ var Layout = function () {
       //  nodeSize now only considers the size of transformed graph
       nodeSize = nodeIndexes.size;
 
-      // instantiate the matrix keeping all-pairs-shortest path
-      if (!sampling) {
-        // instantiates the whole matrix
-        for (var _i18 = 0; _i18 < nodeSize; _i18++) {
-          allDistances[_i18] = [];
-        }
-      } else {
-        // instantiates the partial matrices
-        for (var _i19 = 0; _i19 < nodeSize; _i19++) {
-          C[_i19] = [];
-        }
-        for (var _i20 = 0; _i20 < sampleSize; _i20++) {
-          INV[_i20] = [];
-        }
+      // instantiates the partial matrices
+      for (var _i16 = 0; _i16 < nodeSize; _i16++) {
+        C[_i16] = [];
+      }
+      for (var _i17 = 0; _i17 < sampleSize; _i17++) {
+        INV[_i17] = [];
       }
 
       var spectral = performance.now();
 
       allBFS(samplingType);
 
-      if (sampling) {
-        sample();
-      }
-
-      // get the distance squared matrix
-      if (!sampling) {
-        for (var _i21 = 0; _i21 < nodeSize; _i21++) {
-          for (var j = 0; j < nodeSize; j++) {
-            allDistances[_i21][j] *= allDistances[_i21][j];
-          }
-        }
-      }
+      sample();
 
       powerIteration();
 
