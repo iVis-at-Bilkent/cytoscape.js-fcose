@@ -1,6 +1,7 @@
 // n.b. .layoutPositions() handles all these options for you
 
 const assign = require('../assign');
+const aux = require('./auxiliary');
 const numeric = require('numeric');
 const cose = require('cytoscape-cose-bilkent');
 
@@ -214,117 +215,8 @@ class Layout {
         }
       }
       
-      INV = multMat(multMat(a_v, a_Sig), numeric.transpose(a_u));
+      INV = aux.multMat(aux.multMat(a_v, a_Sig), numeric.transpose(a_u));
         
-    };
- 
-    let multMat = function(array1, array2){
-      let result = [];
-      
-      for(let i = 0; i < array1.length; i++){
-          result[i] = [];
-          for(let j = 0; j < array2[0].length; j++){
-            result[i][j] = 0;
-            for(let k = 0; k < array1[0].length; k++){
-              result[i][j] += array1[i][k] * array2[k][j]; 
-            }
-          }
-        } 
-      return result;
-    }; 
- 
-    let multGamma = function(array){
-      let result = [];
-      let sum = 0;
-      
-      for(let i = 0; i < nodeSize; i++){
-        sum += array[i];
-      }
-      
-      sum *= (-1)/nodeSize;
-      
-      for(let i = 0; i < nodeSize; i++){
-        result[i] = sum + array[i];
-      }     
-      return result;
-    };
-
-    let multL = function(array){
-      let result = [];
-      let temp1 = [];
-      let temp2 = [];
-     
-      // multiply by C^T
-      for(let i = 0; i < sampleSize; i++){
-        let sum = 0;
-        for(let j = 0; j < nodeSize; j++){
-          sum += -0.5 * C[j][i] * array[j]; 
-        }
-        temp1[i] = sum;
-      }
-      // multiply the result by INV
-      for(let i = 0; i < sampleSize; i++){
-        let sum = 0;
-        for(let j = 0; j < sampleSize; j++){
-          sum += INV[i][j] * temp1[j]; 
-        }
-        temp2[i] = sum;
-      }  
-      // multiply the result by C
-      for(let i = 0; i < nodeSize; i++){
-        let sum = 0;
-        for(let j = 0; j < sampleSize; j++){
-          sum += C[i][j] * temp2[j]; 
-        }
-        result[i] = sum;
-      } 
-
-      return result;
-    };
-
-    let multCons = function(array, constant){
-      let result = [];
-      
-      for(let i = 0; i < nodeSize; i++){
-        result[i] = array[i] * constant;
-      }
-      
-      return result;
-    };
-
-    let minusOp = function(array1, array2){
-      let result = [];
-      
-      for(let i = 0; i < nodeSize; i++){
-        result[i] = array1[i] - array2[i];
-      }
-      
-      return result;
-    };
-
-    let dotProduct = function(array1, array2){
-      let product = 0;
-      
-      for(let i = 0; i < nodeSize; i++){
-        product += array1[i] * array2[i]; 
-      }
-      
-      return product;
-    };
-
-    let mag = function(array){
-      return Math.sqrt(dotProduct(array, array));
-    };
-    
-    let normalize = function(array){
-      let result = [];
-      let magnitude = mag(array);
-      
-      for(let i = 0; i < nodeSize; i++){
-        result[i] = array[i] / magnitude;
-      }
-      
-      return result;
     };
     
     let powerIteration = function(){
@@ -344,8 +236,8 @@ class Layout {
         Y2[i] = Math.random();
       }
       
-      Y1 = normalize(Y1);
-      Y2 = normalize(Y2);
+      Y1 = aux.normalize(Y1);
+      Y2 = aux.normalize(Y2);
       
       let count = 0;
       // to keep track of the improvement ratio in power iteration
@@ -361,11 +253,11 @@ class Layout {
           V1[i] = Y1[i];
         }
 
-        Y1 = multGamma(multL(multGamma(V1)));
-        theta1 = dotProduct(V1, Y1);
-        Y1 = normalize(Y1);
+        Y1 = aux.multGamma(aux.multL(aux.multGamma(V1), C, INV));
+        theta1 = aux.dotProduct(V1, Y1);
+        Y1 = aux.normalize(Y1);
         
-        current = dotProduct(V1, Y1);
+        current = aux.dotProduct(V1, Y1);
         
         temp = Math.abs(current/previous);
         
@@ -389,12 +281,12 @@ class Layout {
           V2[i] = Y2[i];
         }
         
-        V2 = minusOp(V2, multCons(V1, (dotProduct(V1, V2))));
-        Y2 = multGamma(multL(multGamma(V2)));
-        theta2 = dotProduct(V2, Y2);
-        Y2 = normalize(Y2);
+        V2 = aux.minusOp(V2, aux.multCons(V1, (aux.dotProduct(V1, V2))));
+        Y2 = aux.multGamma(aux.multL(aux.multGamma(V2), C, INV));
+        theta2 = aux.dotProduct(V2, Y2);
+        Y2 = aux.normalize(Y2);
         
-        current = dotProduct(V2, Y2);
+        current = aux.dotProduct(V2, Y2);
         
         temp = Math.abs(current/previous);
         
@@ -415,8 +307,8 @@ class Layout {
       // V2 now contains theta2's eigenvector
       
       //populate the two vectors
-      xCoords = multCons(V1, Math.sqrt(Math.abs(theta1)));
-      yCoords = multCons(V2, Math.sqrt(Math.abs(theta2)));
+      xCoords = aux.multCons(V1, Math.sqrt(Math.abs(theta1)));
+      yCoords = aux.multCons(V2, Math.sqrt(Math.abs(theta2)));
 
     };
     

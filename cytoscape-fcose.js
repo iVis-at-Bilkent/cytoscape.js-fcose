@@ -7,7 +7,7 @@
 		exports["cytoscapeFcose"] = factory(require("cytoscape-cose-bilkent"), require("numeric"));
 	else
 		root["cytoscapeFcose"] = factory(root["cytoscape-cose-bilkent"], root["numeric"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_4__, __WEBPACK_EXTERNAL_MODULE_5__) {
+})(this, function(__WEBPACK_EXTERNAL_MODULE_5__, __WEBPACK_EXTERNAL_MODULE_6__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -83,7 +83,7 @@ return /******/ (function(modules) { // webpackBootstrap
 "use strict";
 
 
-module.exports = __webpack_require__(3);
+module.exports = __webpack_require__(4);
 
 /***/ }),
 /* 1 */
@@ -140,6 +140,134 @@ module.exports = register;
 "use strict";
 
 
+/* 
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+var auxiliary = {};
+
+auxiliary.multMat = function (array1, array2) {
+  var result = [];
+
+  for (var i = 0; i < array1.length; i++) {
+    result[i] = [];
+    for (var j = 0; j < array2[0].length; j++) {
+      result[i][j] = 0;
+      for (var k = 0; k < array1[0].length; k++) {
+        result[i][j] += array1[i][k] * array2[k][j];
+      }
+    }
+  }
+  return result;
+};
+
+auxiliary.multGamma = function (array) {
+  var result = [];
+  var sum = 0;
+
+  for (var i = 0; i < array.length; i++) {
+    sum += array[i];
+  }
+
+  sum *= -1 / array.length;
+
+  for (var _i = 0; _i < array.length; _i++) {
+    result[_i] = sum + array[_i];
+  }
+  return result;
+};
+
+auxiliary.multL = function (array, C, INV) {
+  var result = [];
+  var temp1 = [];
+  var temp2 = [];
+
+  // multiply by C^T
+  for (var i = 0; i < C[0].length; i++) {
+    var sum = 0;
+    for (var j = 0; j < C.length; j++) {
+      sum += -0.5 * C[j][i] * array[j];
+    }
+    temp1[i] = sum;
+  }
+  // multiply the result by INV
+  for (var _i2 = 0; _i2 < INV.length; _i2++) {
+    var _sum = 0;
+    for (var _j = 0; _j < INV.length; _j++) {
+      _sum += INV[_i2][_j] * temp1[_j];
+    }
+    temp2[_i2] = _sum;
+  }
+  // multiply the result by C
+  for (var _i3 = 0; _i3 < C.length; _i3++) {
+    var _sum2 = 0;
+    for (var _j2 = 0; _j2 < C[0].length; _j2++) {
+      _sum2 += C[_i3][_j2] * temp2[_j2];
+    }
+    result[_i3] = _sum2;
+  }
+
+  return result;
+};
+
+auxiliary.multCons = function (array, constant) {
+  var result = [];
+
+  for (var i = 0; i < array.length; i++) {
+    result[i] = array[i] * constant;
+  }
+
+  return result;
+};
+
+// assumes arrays have same size
+auxiliary.minusOp = function (array1, array2) {
+  var result = [];
+
+  for (var i = 0; i < array1.length; i++) {
+    result[i] = array1[i] - array2[i];
+  }
+
+  return result;
+};
+
+// assumes arrays have same size
+auxiliary.dotProduct = function (array1, array2) {
+  var product = 0;
+
+  for (var i = 0; i < array1.length; i++) {
+    product += array1[i] * array2[i];
+  }
+
+  return product;
+};
+
+auxiliary.mag = function (array) {
+  return Math.sqrt(this.dotProduct(array, array));
+};
+
+auxiliary.normalize = function (array) {
+  var result = [];
+  var magnitude = this.mag(array);
+
+  for (var i = 0; i < array.length; i++) {
+    result[i] = array[i] / magnitude;
+  }
+
+  return result;
+};
+
+module.exports = auxiliary;
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -147,8 +275,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 // n.b. .layoutPositions() handles all these options for you
 
 var assign = __webpack_require__(1);
-var numeric = __webpack_require__(5);
-var cose = __webpack_require__(4);
+var aux = __webpack_require__(3);
+var numeric = __webpack_require__(6);
+var cose = __webpack_require__(5);
 
 var defaults = Object.freeze({
 
@@ -363,116 +492,7 @@ var Layout = function () {
           }
         }
 
-        INV = multMat(multMat(a_v, a_Sig), numeric.transpose(a_u));
-      };
-
-      var multMat = function multMat(array1, array2) {
-        var result = [];
-
-        for (var i = 0; i < array1.length; i++) {
-          result[i] = [];
-          for (var j = 0; j < array2[0].length; j++) {
-            result[i][j] = 0;
-            for (var k = 0; k < array1[0].length; k++) {
-              result[i][j] += array1[i][k] * array2[k][j];
-            }
-          }
-        }
-        return result;
-      };
-
-      var multGamma = function multGamma(array) {
-        var result = [];
-        var sum = 0;
-
-        for (var i = 0; i < nodeSize; i++) {
-          sum += array[i];
-        }
-
-        sum *= -1 / nodeSize;
-
-        for (var _i9 = 0; _i9 < nodeSize; _i9++) {
-          result[_i9] = sum + array[_i9];
-        }
-        return result;
-      };
-
-      var multL = function multL(array) {
-        var result = [];
-        var temp1 = [];
-        var temp2 = [];
-
-        // multiply by C^T
-        for (var i = 0; i < sampleSize; i++) {
-          var sum = 0;
-          for (var j = 0; j < nodeSize; j++) {
-            sum += -0.5 * C[j][i] * array[j];
-          }
-          temp1[i] = sum;
-        }
-        // multiply the result by INV
-        for (var _i10 = 0; _i10 < sampleSize; _i10++) {
-          var _sum = 0;
-          for (var _j2 = 0; _j2 < sampleSize; _j2++) {
-            _sum += INV[_i10][_j2] * temp1[_j2];
-          }
-          temp2[_i10] = _sum;
-        }
-        // multiply the result by C
-        for (var _i11 = 0; _i11 < nodeSize; _i11++) {
-          var _sum2 = 0;
-          for (var _j3 = 0; _j3 < sampleSize; _j3++) {
-            _sum2 += C[_i11][_j3] * temp2[_j3];
-          }
-          result[_i11] = _sum2;
-        }
-
-        return result;
-      };
-
-      var multCons = function multCons(array, constant) {
-        var result = [];
-
-        for (var i = 0; i < nodeSize; i++) {
-          result[i] = array[i] * constant;
-        }
-
-        return result;
-      };
-
-      var minusOp = function minusOp(array1, array2) {
-        var result = [];
-
-        for (var i = 0; i < nodeSize; i++) {
-          result[i] = array1[i] - array2[i];
-        }
-
-        return result;
-      };
-
-      var dotProduct = function dotProduct(array1, array2) {
-        var product = 0;
-
-        for (var i = 0; i < nodeSize; i++) {
-          product += array1[i] * array2[i];
-        }
-
-        return product;
-      };
-
-      var mag = function mag(array) {
-        return Math.sqrt(dotProduct(array, array));
-      };
-
-      var normalize = function normalize(array) {
-        var result = [];
-        var magnitude = mag(array);
-
-        for (var i = 0; i < nodeSize; i++) {
-          result[i] = array[i] / magnitude;
-        }
-
-        return result;
+        INV = aux.multMat(aux.multMat(a_v, a_Sig), numeric.transpose(a_u));
       };
 
       var powerIteration = function powerIteration() {
@@ -492,8 +512,8 @@ var Layout = function () {
           Y2[i] = Math.random();
         }
 
-        Y1 = normalize(Y1);
-        Y2 = normalize(Y2);
+        Y1 = aux.normalize(Y1);
+        Y2 = aux.normalize(Y2);
 
         var count = 0;
         // to keep track of the improvement ratio in power iteration
@@ -505,15 +525,15 @@ var Layout = function () {
         while (true) {
           count++;
 
-          for (var _i12 = 0; _i12 < nodeSize; _i12++) {
-            V1[_i12] = Y1[_i12];
+          for (var _i9 = 0; _i9 < nodeSize; _i9++) {
+            V1[_i9] = Y1[_i9];
           }
 
-          Y1 = multGamma(multL(multGamma(V1)));
-          theta1 = dotProduct(V1, Y1);
-          Y1 = normalize(Y1);
+          Y1 = aux.multGamma(aux.multL(aux.multGamma(V1), C, INV));
+          theta1 = aux.dotProduct(V1, Y1);
+          Y1 = aux.normalize(Y1);
 
-          current = dotProduct(V1, Y1);
+          current = aux.dotProduct(V1, Y1);
 
           temp = Math.abs(current / previous);
 
@@ -524,8 +544,8 @@ var Layout = function () {
           previous = current;
         }
 
-        for (var _i13 = 0; _i13 < nodeSize; _i13++) {
-          V1[_i13] = Y1[_i13];
+        for (var _i10 = 0; _i10 < nodeSize; _i10++) {
+          V1[_i10] = Y1[_i10];
         }
 
         count = 0;
@@ -533,16 +553,16 @@ var Layout = function () {
         while (true) {
           count++;
 
-          for (var _i14 = 0; _i14 < nodeSize; _i14++) {
-            V2[_i14] = Y2[_i14];
+          for (var _i11 = 0; _i11 < nodeSize; _i11++) {
+            V2[_i11] = Y2[_i11];
           }
 
-          V2 = minusOp(V2, multCons(V1, dotProduct(V1, V2)));
-          Y2 = multGamma(multL(multGamma(V2)));
-          theta2 = dotProduct(V2, Y2);
-          Y2 = normalize(Y2);
+          V2 = aux.minusOp(V2, aux.multCons(V1, aux.dotProduct(V1, V2)));
+          Y2 = aux.multGamma(aux.multL(aux.multGamma(V2), C, INV));
+          theta2 = aux.dotProduct(V2, Y2);
+          Y2 = aux.normalize(Y2);
 
-          current = dotProduct(V2, Y2);
+          current = aux.dotProduct(V2, Y2);
 
           temp = Math.abs(current / previous);
 
@@ -553,8 +573,8 @@ var Layout = function () {
           previous = current;
         }
 
-        for (var _i15 = 0; _i15 < nodeSize; _i15++) {
-          V2[_i15] = Y2[_i15];
+        for (var _i12 = 0; _i12 < nodeSize; _i12++) {
+          V2[_i12] = Y2[_i12];
         }
 
         // theta1 now contains dominant eigenvalue
@@ -563,8 +583,8 @@ var Layout = function () {
         // V2 now contains theta2's eigenvector
 
         //populate the two vectors
-        xCoords = multCons(V1, Math.sqrt(Math.abs(theta1)));
-        yCoords = multCons(V2, Math.sqrt(Math.abs(theta2)));
+        xCoords = aux.multCons(V1, Math.sqrt(Math.abs(theta1)));
+        yCoords = aux.multCons(V2, Math.sqrt(Math.abs(theta2)));
       };
 
       //  transfer calculated positions to nodes (positions of only simple nodes are calculated)
@@ -635,11 +655,11 @@ var Layout = function () {
       nodeSize = nodeIndexes.size;
 
       // instantiates the partial matrices
-      for (var _i16 = 0; _i16 < nodeSize; _i16++) {
-        C[_i16] = [];
+      for (var _i13 = 0; _i13 < nodeSize; _i13++) {
+        C[_i13] = [];
       }
-      for (var _i17 = 0; _i17 < sampleSize; _i17++) {
-        INV[_i17] = [];
+      for (var _i14 = 0; _i14 < sampleSize; _i14++) {
+        INV[_i14] = [];
       }
 
       var spectral = performance.now();
@@ -685,16 +705,16 @@ var Layout = function () {
 module.exports = Layout;
 
 /***/ }),
-/* 4 */
-/***/ (function(module, exports) {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE_4__;
-
-/***/ }),
 /* 5 */
 /***/ (function(module, exports) {
 
 module.exports = __WEBPACK_EXTERNAL_MODULE_5__;
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports) {
+
+module.exports = __WEBPACK_EXTERNAL_MODULE_6__;
 
 /***/ })
 /******/ ]);
