@@ -1,13 +1,13 @@
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory(require("cytoscape-cose-bilkent"), require("numeric"));
+		module.exports = factory(require("cose-base"), require("numeric"));
 	else if(typeof define === 'function' && define.amd)
-		define(["cytoscape-cose-bilkent", "numeric"], factory);
+		define(["cose-base", "numeric"], factory);
 	else if(typeof exports === 'object')
-		exports["cytoscapeFcose"] = factory(require("cytoscape-cose-bilkent"), require("numeric"));
+		exports["cytoscapeFcose"] = factory(require("cose-base"), require("numeric"));
 	else
-		root["cytoscapeFcose"] = factory(root["cytoscape-cose-bilkent"], root["numeric"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_5__, __WEBPACK_EXTERNAL_MODULE_6__) {
+		root["cytoscapeFcose"] = factory(root["coseBase"], root["numeric"]);
+})(this, function(__WEBPACK_EXTERNAL_MODULE_0__, __WEBPACK_EXTERNAL_MODULE_6__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -73,20 +73,26 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 2);
+/******/ 	return __webpack_require__(__webpack_require__.s = 3);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
+/***/ (function(module, exports) {
+
+module.exports = __WEBPACK_EXTERNAL_MODULE_0__;
+
+/***/ }),
+/* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-module.exports = __webpack_require__(4);
+module.exports = __webpack_require__(5);
 
 /***/ }),
-/* 1 */
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -109,13 +115,13 @@ module.exports = Object.assign != null ? Object.assign.bind(Object) : function (
 };
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var impl = __webpack_require__(0);
+var impl = __webpack_require__(1);
 
 // registers the extension on a cytoscape lib ref
 var register = function register(cytoscape) {
@@ -134,7 +140,7 @@ if (typeof cytoscape !== 'undefined') {
 module.exports = register;
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -262,7 +268,7 @@ auxiliary.normalize = function (array) {
 module.exports = auxiliary;
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -274,10 +280,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 // n.b. .layoutPositions() handles all these options for you
 
-var assign = __webpack_require__(1);
-var aux = __webpack_require__(3);
+var assign = __webpack_require__(2);
+var aux = __webpack_require__(4);
 var numeric = __webpack_require__(6);
-var cose = __webpack_require__(5);
+var CoSELayout = __webpack_require__(0).CoSELayout;
+var CoSENode = __webpack_require__(0).CoSENode;
+var PointD = __webpack_require__(0).layoutBase.PointD;
+var DimensionD = __webpack_require__(0).layoutBase.DimensionD;
+var LayoutConstants = __webpack_require__(0).layoutBase.LayoutConstants;
+var FDLayoutConstants = __webpack_require__(0).layoutBase.FDLayoutConstants;
+var CoSEConstants = __webpack_require__(0).CoSEConstants;
 
 var defaults = Object.freeze({
 
@@ -327,6 +339,7 @@ var Layout = function () {
       var cy = options.cy;
       var eles = options.eles;
       var nodes = eles.nodes();
+      var edges = eles.edges();
       var nodeSize = nodes.length;
 
       var nodeIndexes = new Map(); // map to keep indexes to nodes 
@@ -360,8 +373,8 @@ var Layout = function () {
           sample = Math.floor(Math.random() * nodeSize);
 
           flag = false;
-          for (var i = 0; i < count; i++) {
-            if (samplesColumn[i] == sample) {
+          for (var _i = 0; _i < count; _i++) {
+            if (samplesColumn[_i] == sample) {
               flag = true;
               break;
             }
@@ -388,8 +401,8 @@ var Layout = function () {
         var max_dist = 0; // the furthest node to be returned
         var max_ind = 1;
 
-        for (var i = 0; i < nodeSize; i++) {
-          distance[i] = infinity;
+        for (var _i2 = 0; _i2 < nodeSize; _i2++) {
+          distance[_i2] = infinity;
         }
 
         path[back] = pivot;
@@ -398,8 +411,8 @@ var Layout = function () {
         while (back >= front) {
           current = path[front++];
           var neighbors = allNodesNeighborhood[current];
-          for (var _i = 0; _i < neighbors.length; _i++) {
-            temp = nodeIndexes.get(neighbors[_i].id());
+          for (var _i3 = 0; _i3 < neighbors.length; _i3++) {
+            temp = nodeIndexes.get(neighbors[_i3].id());
             if (distance[temp] == infinity) {
               distance[temp] = distance[current] + 1;
               path[++back] = temp;
@@ -409,14 +422,14 @@ var Layout = function () {
         }
 
         if (samplingMethod == 1) {
-          for (var _i2 = 0; _i2 < nodeSize; _i2++) {
-            if (C[_i2][index] < minDistancesColumn[_i2]) minDistancesColumn[_i2] = C[_i2][index];
+          for (var _i4 = 0; _i4 < nodeSize; _i4++) {
+            if (C[_i4][index] < minDistancesColumn[_i4]) minDistancesColumn[_i4] = C[_i4][index];
           }
 
-          for (var _i3 = 0; _i3 < nodeSize; _i3++) {
-            if (minDistancesColumn[_i3] > max_dist) {
-              max_dist = minDistancesColumn[_i3];
-              max_ind = _i3;
+          for (var _i5 = 0; _i5 < nodeSize; _i5++) {
+            if (minDistancesColumn[_i5] > max_dist) {
+              max_dist = minDistancesColumn[_i5];
+              max_ind = _i5;
             }
           }
         }
@@ -432,38 +445,38 @@ var Layout = function () {
           randomSampleCR();
 
           // call BFS
-          for (var i = 0; i < sampleSize; i++) {
-            BFS(samplesColumn[i], i, samplingMethod, false);
+          for (var _i6 = 0; _i6 < sampleSize; _i6++) {
+            BFS(samplesColumn[_i6], _i6, samplingMethod, false);
           }
         } else {
           sample = Math.floor(Math.random() * nodeSize);
           firstSample = sample;
 
-          for (var _i4 = 0; _i4 < nodeSize; _i4++) {
-            minDistancesColumn[_i4] = infinity;
+          for (var _i7 = 0; _i7 < nodeSize; _i7++) {
+            minDistancesColumn[_i7] = infinity;
           }
 
-          for (var _i5 = 0; _i5 < sampleSize; _i5++) {
-            samplesColumn[_i5] = sample;
-            sample = BFS(sample, _i5, samplingMethod);
+          for (var _i8 = 0; _i8 < sampleSize; _i8++) {
+            samplesColumn[_i8] = sample;
+            sample = BFS(sample, _i8, samplingMethod);
           }
         }
 
         // form the squared distances for C
-        for (var _i6 = 0; _i6 < nodeSize; _i6++) {
+        for (var _i9 = 0; _i9 < nodeSize; _i9++) {
           for (var j = 0; j < sampleSize; j++) {
-            C[_i6][j] *= C[_i6][j];
+            C[_i9][j] *= C[_i9][j];
           }
         }
 
         // form PHI
-        for (var _i7 = 0; _i7 < sampleSize; _i7++) {
-          PHI[_i7] = [];
+        for (var _i10 = 0; _i10 < sampleSize; _i10++) {
+          PHI[_i10] = [];
         }
 
-        for (var _i8 = 0; _i8 < sampleSize; _i8++) {
+        for (var _i11 = 0; _i11 < sampleSize; _i11++) {
           for (var _j = 0; _j < sampleSize; _j++) {
-            PHI[_i8][_j] = C[samplesColumn[_j]][_i8];
+            PHI[_i11][_j] = C[samplesColumn[_j]][_i11];
           }
         }
       };
@@ -482,12 +495,12 @@ var Layout = function () {
         var a_Sig = [];
 
         //  regularization
-        for (var i = 0; i < sampleSize; i++) {
-          a_Sig[i] = [];
+        for (var _i12 = 0; _i12 < sampleSize; _i12++) {
+          a_Sig[_i12] = [];
           for (var j = 0; j < sampleSize; j++) {
-            a_Sig[i][j] = 0;
-            if (i == j) {
-              a_Sig[i][j] = a_w[i] / (a_w[i] * a_w[i] + max_s / (a_w[i] * a_w[i]));
+            a_Sig[_i12][j] = 0;
+            if (_i12 == j) {
+              a_Sig[_i12][j] = a_w[_i12] / (a_w[_i12] * a_w[_i12] + max_s / (a_w[_i12] * a_w[_i12]));
             }
           }
         }
@@ -507,9 +520,9 @@ var Layout = function () {
         var V1 = [];
         var V2 = [];
 
-        for (var i = 0; i < nodeSize; i++) {
-          Y1[i] = Math.random();
-          Y2[i] = Math.random();
+        for (var _i13 = 0; _i13 < nodeSize; _i13++) {
+          Y1[_i13] = Math.random();
+          Y2[_i13] = Math.random();
         }
 
         Y1 = aux.normalize(Y1);
@@ -525,8 +538,8 @@ var Layout = function () {
         while (true) {
           count++;
 
-          for (var _i9 = 0; _i9 < nodeSize; _i9++) {
-            V1[_i9] = Y1[_i9];
+          for (var _i14 = 0; _i14 < nodeSize; _i14++) {
+            V1[_i14] = Y1[_i14];
           }
 
           Y1 = aux.multGamma(aux.multL(aux.multGamma(V1), C, INV));
@@ -544,8 +557,8 @@ var Layout = function () {
           previous = current;
         }
 
-        for (var _i10 = 0; _i10 < nodeSize; _i10++) {
-          V1[_i10] = Y1[_i10];
+        for (var _i15 = 0; _i15 < nodeSize; _i15++) {
+          V1[_i15] = Y1[_i15];
         }
 
         count = 0;
@@ -553,8 +566,8 @@ var Layout = function () {
         while (true) {
           count++;
 
-          for (var _i11 = 0; _i11 < nodeSize; _i11++) {
-            V2[_i11] = Y2[_i11];
+          for (var _i16 = 0; _i16 < nodeSize; _i16++) {
+            V2[_i16] = Y2[_i16];
           }
 
           V2 = aux.minusOp(V2, aux.multCons(V1, aux.dotProduct(V1, V2)));
@@ -573,8 +586,8 @@ var Layout = function () {
           previous = current;
         }
 
-        for (var _i12 = 0; _i12 < nodeSize; _i12++) {
-          V2[_i12] = Y2[_i12];
+        for (var _i17 = 0; _i17 < nodeSize; _i17++) {
+          V2[_i17] = Y2[_i17];
         }
 
         // theta1 now contains dominant eigenvalue
@@ -585,23 +598,6 @@ var Layout = function () {
         //populate the two vectors
         xCoords = aux.multCons(V1, Math.sqrt(Math.abs(theta1)));
         yCoords = aux.multCons(V2, Math.sqrt(Math.abs(theta2)));
-      };
-
-      //  transfer calculated positions to nodes (positions of only simple nodes are calculated)
-      var getPositions = function getPositions(ele, i) {
-        if (options.postProcessing) {
-          cy.nodes().not(":parent").positions(function (node, i) {
-            return {
-              x: xCoords[i],
-              y: yCoords[i]
-            };
-          });
-        } else {
-          return {
-            x: xCoords[i],
-            y: yCoords[i]
-          };
-        }
       };
 
       //  form a parent-child map to keep representative node of each compound node  
@@ -628,10 +624,10 @@ var Layout = function () {
 
       // assign indexes to nodes
       var index = 0;
-      for (var i = 0; i < nodes.length; i++) {
-        if (!nodes[i].isParent()) {
-          nodeIndexes.set(nodes[i].id(), index);
-          allNodesNeighborhood[index++] = nodes[i].neighborhood().nodes().not(":parent"); //  form neighborhood for simple nodes
+      for (var _i18 = 0; _i18 < nodes.length; _i18++) {
+        if (!nodes[_i18].isParent()) {
+          nodeIndexes.set(nodes[_i18].id(), index);
+          allNodesNeighborhood[index++] = nodes[_i18].neighborhood().nodes().not(":parent"); //  form neighborhood for simple nodes
         }
       }
 
@@ -655,11 +651,11 @@ var Layout = function () {
       nodeSize = nodeIndexes.size;
 
       // instantiates the partial matrices
-      for (var _i13 = 0; _i13 < nodeSize; _i13++) {
-        C[_i13] = [];
+      for (var _i19 = 0; _i19 < nodeSize; _i19++) {
+        C[_i19] = [];
       }
-      for (var _i14 = 0; _i14 < sampleSize; _i14++) {
-        INV[_i14] = [];
+      for (var _i20 = 0; _i20 < sampleSize; _i20++) {
+        INV[_i20] = [];
       }
 
       var spectral = performance.now();
@@ -672,21 +668,172 @@ var Layout = function () {
 
       spectral = performance.now() - spectral;
 
-      if (options.postProcessing) {
-        getPositions();
-        var cose = performance.now();
-        var coseLayout = cy.layout({
-          name: "cose-bilkent",
-          randomize: false,
-          initialEnergyOnIncremental: options.initialEnergyOnIncremental
+      var getTopMostNodes = function getTopMostNodes(nodes) {
+        var nodesMap = {};
+        for (var i = 0; i < nodes.length; i++) {
+          nodesMap[nodes[i].id()] = true;
+        }
+        var roots = nodes.filter(function (ele, i) {
+          if (typeof ele === "number") {
+            ele = i;
+          }
+          var parent = ele.parent()[0];
+          while (parent != null) {
+            if (nodesMap[parent.id()]) {
+              return false;
+            }
+            parent = parent.parent()[0];
+          }
+          return true;
         });
 
-        coseLayout.run();
-        cose = performance.now() - cose;
-      } else {
-        // .layoutPositions() automatically handles the layout busywork for you
-        nodes.not(":parent").layoutPositions(layout, options, getPositions);
+        return roots;
+      };
+
+      var processChildrenList = function processChildrenList(parent, children, layout) {
+        var size = children.length;
+        for (var i = 0; i < size; i++) {
+          var theChild = children[i];
+          var children_of_children = theChild.children();
+          var theNode;
+
+          var dimensions = theChild.layoutDimensions({
+            nodeDimensionsIncludeLabels: options.nodeDimensionsIncludeLabels
+          });
+
+          if (theChild.outerWidth() != null && theChild.outerHeight() != null) {
+            if (!theChild.isParent()) {
+              theNode = parent.add(new CoSENode(layout.graphManager, new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
+            } else {
+              theNode = parent.add(new CoSENode(layout.graphManager, new PointD(theChild.boundingBox().x1, theChild.boundingBox().y1), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
+            }
+          } else {
+            theNode = parent.add(new CoSENode(this.graphManager));
+          }
+          // Attach id to the layout node
+          theNode.id = theChild.data("id");
+          // Attach the paddings of cy node to layout node
+          theNode.paddingLeft = parseInt(theChild.css('padding'));
+          theNode.paddingTop = parseInt(theChild.css('padding'));
+          theNode.paddingRight = parseInt(theChild.css('padding'));
+          theNode.paddingBottom = parseInt(theChild.css('padding'));
+
+          //Attach the label properties to compound if labels will be included in node dimensions  
+          if (options.nodeDimensionsIncludeLabels) {
+            if (theChild.isParent()) {
+              var labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false }).w;
+              var labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false }).h;
+              var labelPos = theChild.css("text-halign");
+              theNode.labelWidth = labelWidth;
+              theNode.labelHeight = labelHeight;
+              theNode.labelPos = labelPos;
+            }
+          }
+
+          // Map the layout node
+          idToLNode[theChild.data("id")] = theNode;
+
+          if (isNaN(theNode.rect.x)) {
+            theNode.rect.x = 0;
+          }
+
+          if (isNaN(theNode.rect.y)) {
+            theNode.rect.y = 0;
+          }
+
+          if (children_of_children != null && children_of_children.length > 0) {
+            var theNewGraph;
+            theNewGraph = layout.getGraphManager().add(layout.newGraph(), theNode);
+            processChildrenList(theNewGraph, children_of_children, layout);
+          }
+        }
+      };
+
+      //  transfer calculated positions to nodes (positions of only simple nodes are calculated)
+      var getPositions = function getPositions(ele, i) {
+        if (options.postProcessing) {
+          if (typeof ele === "number") {
+            ele = i;
+          }
+          var theId = ele.data('id');
+          var lNode = idToLNode[theId];
+
+          return {
+            x: lNode.getRect().getCenterX(),
+            y: lNode.getRect().getCenterY()
+          };
+        } else {
+          return {
+            x: xCoords[i],
+            y: yCoords[i]
+          };
+        }
+      };
+
+      var cose = performance.now();
+
+      var idToLNode = {};
+      var coseLayout = new CoSELayout();
+      var gm = coseLayout.newGraphManager();
+
+      CoSEConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = FDLayoutConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = options.initialEnergyOnIncremental;
+      CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
+
+      if (options.postProcessing) {
+
+        processChildrenList(gm.addRoot(), getTopMostNodes(nodes), coseLayout);
+
+        for (var i = 0; i < edges.length; i++) {
+          var edge = edges[i];
+          var sourceNode = idToLNode[edge.data("source")];
+          var targetNode = idToLNode[edge.data("target")];
+          if (sourceNode !== targetNode && sourceNode.getEdgesBetween(targetNode).length == 0) {
+            var e1 = gm.add(coseLayout.newEdge(), sourceNode, targetNode);
+            e1.id = edge.id();
+          }
+        }
+
+        coseLayout.runLayout();
       }
+
+      cose = performance.now() - cose;
+
+      nodes.not(":parent").layoutPositions(layout, options, getPositions);
+
+      //  transfer calculated positions to nodes (positions of only simple nodes are calculated)
+      //    let getPositions = function(ele, i ){
+      //      if(options.postProcessing) {
+      //        cy.nodes().not(":parent").positions(function( node, i ){
+      //          return {
+      //            x: xCoords[i],
+      //            y: yCoords[i]
+      //          };
+      //        });
+      //      }
+      //      else{
+      //        return {
+      //          x: xCoords[i],
+      //          y: yCoords[i]
+      //        };
+      //      }
+      //    };
+
+      //    if(options.postProcessing){
+      //      getPositions();
+      //      var cose = performance.now();
+      //      var coseLayout = cy.layout({
+      //        name: "cose-bilkent",
+      //        randomize: false,
+      //        initialEnergyOnIncremental: options.initialEnergyOnIncremental
+      //      });
+      //
+      //      coseLayout.run();
+      //      cose = performance.now() - cose;
+      //    }
+      //    else{
+      //      // .layoutPositions() automatically handles the layout busywork for you
+      //      nodes.not(":parent").layoutPositions( layout, options, getPositions );
+      //    }
 
       document.getElementById("spectral").innerHTML = Math.floor(spectral) + " ms";
       if (options.postProcessing) {
@@ -703,12 +850,6 @@ var Layout = function () {
 }();
 
 module.exports = Layout;
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports) {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE_5__;
 
 /***/ }),
 /* 6 */

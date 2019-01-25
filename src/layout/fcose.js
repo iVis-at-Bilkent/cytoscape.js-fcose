@@ -3,7 +3,13 @@
 const assign = require('../assign');
 const aux = require('./auxiliary');
 const numeric = require('numeric');
-const cose = require('cytoscape-cose-bilkent');
+const CoSELayout = require('cose-base').CoSELayout;
+const CoSENode = require('cose-base').CoSENode;
+const PointD = require('cose-base').layoutBase.PointD;
+const DimensionD = require('cose-base').layoutBase.DimensionD;
+const LayoutConstants = require('cose-base').layoutBase.LayoutConstants;
+const FDLayoutConstants = require('cose-base').layoutBase.FDLayoutConstants;
+const CoSEConstants = require('cose-base').CoSEConstants;
 
 const defaults = Object.freeze({
   
@@ -45,6 +51,7 @@ class Layout {
     let cy = options.cy;
     let eles = options.eles;
     let nodes = eles.nodes();
+    let edges = eles.edges();
     let nodeSize = nodes.length;
     
     let nodeIndexes = new Map();  // map to keep indexes to nodes 
@@ -312,24 +319,6 @@ class Layout {
 
     };
     
-    //  transfer calculated positions to nodes (positions of only simple nodes are calculated)
-    let getPositions = function(ele, i ){
-      if(options.postProcessing) {
-        cy.nodes().not(":parent").positions(function( node, i ){
-          return {
-            x: xCoords[i],
-            y: yCoords[i]
-          };
-        });
-      }
-      else{
-        return {
-          x: xCoords[i],
-          y: yCoords[i]
-        };
-      }
-    };
-    
     //  form a parent-child map to keep representative node of each compound node  
     cy.nodes(":parent").forEach(function( ele ){
       let children = ele.children();
@@ -396,24 +385,182 @@ class Layout {
     
     powerIteration();
     
-    spectral = performance.now() - spectral;
-
-    if(options.postProcessing){
-      getPositions();
-      var cose = performance.now();
-      var coseLayout = cy.layout({
-        name: "cose-bilkent",
-        randomize: false,
-        initialEnergyOnIncremental: options.initialEnergyOnIncremental
+    spectral = performance.now() - spectral;  
+    
+    let getTopMostNodes = function(nodes) {
+      var nodesMap = {};
+      for (var i = 0; i < nodes.length; i++) {
+          nodesMap[nodes[i].id()] = true;
+      }
+      var roots = nodes.filter(function (ele, i) {
+          if(typeof ele === "number") {
+            ele = i;
+          }
+          var parent = ele.parent()[0];
+          while(parent != null){
+            if(nodesMap[parent.id()]){
+              return false;
+            }
+            parent = parent.parent()[0];
+          }
+          return true;
       });
 
-      coseLayout.run();
-      cose = performance.now() - cose;
+      return roots;
+    };  
+    
+    let processChildrenList = function (parent, children, layout) {
+      var size = children.length;
+      for (var i = 0; i < size; i++) {
+        var theChild = children[i];
+        var children_of_children = theChild.children();
+        var theNode;    
+
+        var dimensions = theChild.layoutDimensions({
+          nodeDimensionsIncludeLabels: options.nodeDimensionsIncludeLabels
+        });
+
+        if (theChild.outerWidth() != null
+                && theChild.outerHeight() != null) {
+          if(!theChild.isParent()){
+            theNode = parent.add(new CoSENode(layout.graphManager,
+                    new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2),
+                    new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
+          }
+          else{
+            theNode = parent.add(new CoSENode(layout.graphManager,
+                    new PointD(theChild.boundingBox().x1, theChild.boundingBox().y1),
+                    new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
+          }
+        }
+        else {
+          theNode = parent.add(new CoSENode(this.graphManager));
+        }
+        // Attach id to the layout node
+        theNode.id = theChild.data("id");
+        // Attach the paddings of cy node to layout node
+        theNode.paddingLeft = parseInt( theChild.css('padding') );
+        theNode.paddingTop = parseInt( theChild.css('padding') );
+        theNode.paddingRight = parseInt( theChild.css('padding') );
+        theNode.paddingBottom = parseInt( theChild.css('padding') );
+
+        //Attach the label properties to compound if labels will be included in node dimensions  
+        if(options.nodeDimensionsIncludeLabels){
+          if(theChild.isParent()){
+              var labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false }).w;          
+              var labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false }).h;
+              var labelPos = theChild.css("text-halign");
+              theNode.labelWidth = labelWidth;
+              theNode.labelHeight = labelHeight;
+              theNode.labelPos = labelPos;
+          }
+        }
+
+        // Map the layout node
+        idToLNode[theChild.data("id")] = theNode;
+
+        if (isNaN(theNode.rect.x)) {
+          theNode.rect.x = 0;
+        }
+
+        if (isNaN(theNode.rect.y)) {
+          theNode.rect.y = 0;
+        }
+
+        if (children_of_children != null && children_of_children.length > 0) {
+          var theNewGraph;
+          theNewGraph = layout.getGraphManager().add(layout.newGraph(), theNode);
+          processChildrenList(theNewGraph, children_of_children, layout);
+        }
+      }
+    };   
+
+    //  transfer calculated positions to nodes (positions of only simple nodes are calculated)
+    let getPositions = function(ele, i ){
+      if(options.postProcessing) {
+        if(typeof ele === "number") {
+          ele = i;
+        }
+        var theId = ele.data('id');
+        var lNode = idToLNode[theId];
+
+        return {
+          x: lNode.getRect().getCenterX(),
+          y: lNode.getRect().getCenterY()
+        };
+      }
+      else{
+        return {
+          x: xCoords[i],
+          y: yCoords[i]
+        };
+      }
+    };  
+    
+    var cose = performance.now();
+    
+    let idToLNode =  {};
+    let coseLayout = new CoSELayout();
+    let gm = coseLayout.newGraphManager(); 
+    
+    CoSEConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = FDLayoutConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = options.initialEnergyOnIncremental;
+    CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
+    
+    if(options.postProcessing){
+
+      processChildrenList(gm.addRoot(), getTopMostNodes(nodes), coseLayout);
+
+      for (var i = 0; i < edges.length; i++) {
+        var edge = edges[i];
+        var sourceNode = idToLNode[edge.data("source")];
+        var targetNode = idToLNode[edge.data("target")];
+        if(sourceNode !== targetNode && sourceNode.getEdgesBetween(targetNode).length == 0){
+          var e1 = gm.add(coseLayout.newEdge(), sourceNode, targetNode);
+          e1.id = edge.id();
+        }
+      }
+
+      coseLayout.runLayout();
     }
-    else{
-      // .layoutPositions() automatically handles the layout busywork for you
-      nodes.not(":parent").layoutPositions( layout, options, getPositions );
-    }
+    
+    cose = performance.now() - cose;
+    
+    nodes.not(":parent").layoutPositions(layout, options, getPositions);
+
+    //  transfer calculated positions to nodes (positions of only simple nodes are calculated)
+//    let getPositions = function(ele, i ){
+//      if(options.postProcessing) {
+//        cy.nodes().not(":parent").positions(function( node, i ){
+//          return {
+//            x: xCoords[i],
+//            y: yCoords[i]
+//          };
+//        });
+//      }
+//      else{
+//        return {
+//          x: xCoords[i],
+//          y: yCoords[i]
+//        };
+//      }
+//    };
+    
+//    if(options.postProcessing){
+//      getPositions();
+//      var cose = performance.now();
+//      var coseLayout = cy.layout({
+//        name: "cose-bilkent",
+//        randomize: false,
+//        initialEnergyOnIncremental: options.initialEnergyOnIncremental
+//      });
+//
+//      coseLayout.run();
+//      cose = performance.now() - cose;
+//    }
+//    else{
+//      // .layoutPositions() automatically handles the layout busywork for you
+//      nodes.not(":parent").layoutPositions( layout, options, getPositions );
+//    }
     
     document.getElementById("spectral").innerHTML = Math.floor(spectral) + " ms";
     if(options.postProcessing){

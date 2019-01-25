@@ -29,12 +29,12 @@ let config = {
       amd: 'numeric',
       root: 'numeric'
     },
-    'cytoscape-cose-bilkent': {
-      commonjs2: 'cytoscape-cose-bilkent',
-      commonjs: 'cytoscape-cose-bilkent',
-      amd: 'cytoscape-cose-bilkent',
-      root: 'cytoscape-cose-bilkent'
-    }    
+    'cose-base': {
+      commonjs2: 'cose-base',
+      commonjs: 'cose-base',
+      amd: 'cose-base',
+      root: 'coseBase'
+    }   
   } : {},
   plugins: MIN ? [
     new webpack.optimize.UglifyJsPlugin({
