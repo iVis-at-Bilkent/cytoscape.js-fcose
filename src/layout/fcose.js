@@ -10,6 +10,7 @@ const DimensionD = require('cose-base').layoutBase.DimensionD;
 const LayoutConstants = require('cose-base').layoutBase.LayoutConstants;
 const FDLayoutConstants = require('cose-base').layoutBase.FDLayoutConstants;
 const CoSEConstants = require('cose-base').CoSEConstants;
+const LinkedList = require('cose-base').layoutBase.LinkedList;
 
 const defaults = Object.freeze({
   
@@ -54,7 +55,8 @@ class Layout {
     let edges = eles.edges();
     let nodeSize = nodes.length;
     
-    let nodeIndexes = new Map();  // map to keep indexes to nodes 
+    let dummyNodes = new Map();  // map to keep dummy nodes and their neighbors
+    let nodeIndexes = new Map();  // map to keep indexes to nodes
     let parentChildMap = new Map(); // mapping btw. compound and its representative node 
     let allNodesNeighborhood = []; // array to keep neighborhood of all nodes
     let xCoords = [];
@@ -71,11 +73,98 @@ class Layout {
     const infinity = 100000000;
     const small = 0.000000001;
     let piTol = 0.0000001;
-    let sampling = options.sampling;
     let sampleSize = 25;
     let samplingType = 1;   // 0 for random, 1 for greedy
     
-    // determine which columns(or rows) to be sampled
+    /**** Preprocessing functions ****/
+    
+    // get the top most nodes - this function is used in both pre- and post-processing
+    let getTopMostNodes = function(nodes) {
+      let nodesMap = {};
+      for (let i = 0; i < nodes.length; i++) {
+          nodesMap[nodes[i].id()] = true;
+      }
+      let roots = nodes.filter(function (ele, i) {
+          if(typeof ele === "number") {
+            ele = i;
+          }
+          let parent = ele.parent()[0];
+          while(parent != null){
+            if(nodesMap[parent.id()]){
+              return false;
+            }
+            parent = parent.parent()[0];
+          }
+          return true;
+      });
+
+      return roots;
+    };  
+    
+    // find disconnected components and create dummy nodes that connect them
+    let connectComponents = function(topMostNodes){      
+      let queue = new LinkedList();
+      let visited = new Set();
+      let visitedTopMostNodes;
+      let currentNeighbor;
+      
+      let isConnected = false;
+      let count = 1;
+      let nodesConnectedToDummy = [];
+      
+      do{
+        let currentNode = topMostNodes[0];
+        let childrenOfCurrentNode = currentNode.union(currentNode.descendants());
+        visitedTopMostNodes = currentNode;
+
+        childrenOfCurrentNode.forEach(function(node) {
+          queue.push(node);
+          visited.add(node);
+        });
+
+        while(queue.length != 0){
+          currentNode = queue.shift();
+
+          // Traverse all neighbors of this node
+          let neighborNodes = currentNode.neighborhood().nodes();
+          for(let i = 0; i < neighborNodes.length; i++){
+            let neighborNode = neighborNodes[i];
+            currentNeighbor = topMostNodes.intersection(neighborNode.union(neighborNode.ancestors()));
+            if(currentNeighbor != null && !visited.has(currentNeighbor[0])){
+              let childrenOfNeighbor = currentNeighbor.union(currentNeighbor.descendants());
+
+              childrenOfNeighbor.forEach(function(node){
+                queue.push(node);
+                visited.add(node);
+                if(topMostNodes.has(node)){
+                  visitedTopMostNodes = visitedTopMostNodes.union(node);
+                }
+              });
+            }
+          }
+        }
+
+        if(visitedTopMostNodes.length == topMostNodes.length){
+          isConnected = true;
+        }
+        
+        if(!isConnected || (isConnected && count > 1)){
+          nodesConnectedToDummy.push(topMostNodes[0].id());
+          topMostNodes = topMostNodes.difference(visitedTopMostNodes);
+          count++;
+        }
+        
+      }
+      while(!isConnected);
+      
+      if(nodesConnectedToDummy.length > 0 ){
+          dummyNodes.set('dummy'+(dummyNodes.size+1), nodesConnectedToDummy);
+      }
+    };
+
+    /**** Spectral layout functions ****/
+    
+    // determine which columns to be sampled
     let randomSampleCR = function() {
       let sample = 0;
       let count = 0;
@@ -125,7 +214,7 @@ class Layout {
         current = path[front++];
         let neighbors = allNodesNeighborhood[current];
         for(let i = 0; i < neighbors.length; i++){
-          temp = nodeIndexes.get(neighbors[i].id());
+          temp = nodeIndexes.get(neighbors[i]);
           if(distance[temp] == infinity){
             distance[temp] = distance[current] + 1;
             path[++back] = temp;
@@ -319,104 +408,16 @@ class Layout {
 
     };
     
-    //  form a parent-child map to keep representative node of each compound node  
-    cy.nodes(":parent").forEach(function( ele ){
-      let children = ele.children();
-      
-      let random = 0;
-      while(children.nodes(":childless").length == 0){
-        random = Math.floor(Math.random() * children.nodes().length); // if all children are compound then proceed randomly
-        children = children.nodes()[0].children();
-      }
-      //  select the representative node - we can apply different methods here
-//      random = Math.floor(Math.random() * children.nodes(":childless").length);
-      let index = 0;
-      let min = 1000;
-      children.nodes(":childless").forEach(function(ele2, i){
-        if(ele2.connectedEdges().length < min){
-          min = ele2.connectedEdges().length;
-          index = i;
-        }
-      });
-      parentChildMap.set(ele.id(), children.nodes(":childless")[index]);
-    });
-    
-    // assign indexes to nodes
-    let index = 0;
-    for(let i = 0; i < nodes.length; i++){
-      if(!nodes[i].isParent()){
-        nodeIndexes.set(nodes[i].id(), index);
-        allNodesNeighborhood[index++] = nodes[i].neighborhood().nodes().not(":parent"); //  form neighborhood for simple nodes
-      }
-    }
-
-    // add neighborhood relations of compound nodes
-    cy.nodes(":parent").forEach(function( ele ){
-      //  first add neighbors to representative node
-      allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())] = allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())].union(ele.neighborhood().nodes().not(":parent"));
-      ele.neighborhood().nodes(":parent").forEach(function(ele2, i){
-        allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())] = allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())].union(parentChildMap.get(ele2.id()));
-      });
-      //  then add representative node to neighbors
-      ele.neighborhood().nodes().not(":parent").forEach(function(ele3, i){
-        allNodesNeighborhood[nodeIndexes.get(ele3.id())] = allNodesNeighborhood[nodeIndexes.get(ele3.id())].union(parentChildMap.get(ele.id()));
-      });
-      ele.neighborhood().nodes(":parent").forEach(function(ele3, i){
-        allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele3.id()).id())] = allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele3.id()).id())].union(parentChildMap.get(ele.id()));
-      });
-    });
-    
-    //  nodeSize now only considers the size of transformed graph
-    nodeSize = nodeIndexes.size;
-    
-    // instantiates the partial matrices
-    for(let i = 0; i < nodeSize; i++){
-      C[i] = [];
-    }
-    for(let i = 0; i < sampleSize; i++){
-      INV[i] = [];
-    }    
-    
-    var spectral = performance.now();
-
-    allBFS(samplingType);
-    
-    sample();
-    
-    powerIteration();
-    
-    spectral = performance.now() - spectral;  
-    
-    let getTopMostNodes = function(nodes) {
-      var nodesMap = {};
-      for (var i = 0; i < nodes.length; i++) {
-          nodesMap[nodes[i].id()] = true;
-      }
-      var roots = nodes.filter(function (ele, i) {
-          if(typeof ele === "number") {
-            ele = i;
-          }
-          var parent = ele.parent()[0];
-          while(parent != null){
-            if(nodesMap[parent.id()]){
-              return false;
-            }
-            parent = parent.parent()[0];
-          }
-          return true;
-      });
-
-      return roots;
-    };  
+    /**** Postprocessing functions ****/
     
     let processChildrenList = function (parent, children, layout) {
-      var size = children.length;
-      for (var i = 0; i < size; i++) {
-        var theChild = children[i];
-        var children_of_children = theChild.children();
-        var theNode;    
+      let size = children.length;
+      for (let i = 0; i < size; i++) {
+        let theChild = children[i];
+        let children_of_children = theChild.children();
+        let theNode;    
 
-        var dimensions = theChild.layoutDimensions({
+        let dimensions = theChild.layoutDimensions({
           nodeDimensionsIncludeLabels: options.nodeDimensionsIncludeLabels
         });
 
@@ -447,9 +448,9 @@ class Layout {
         //Attach the label properties to compound if labels will be included in node dimensions  
         if(options.nodeDimensionsIncludeLabels){
           if(theChild.isParent()){
-              var labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false }).w;          
-              var labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false }).h;
-              var labelPos = theChild.css("text-halign");
+              let labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false }).w;          
+              let labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false }).h;
+              let labelPos = theChild.css("text-halign");
               theNode.labelWidth = labelWidth;
               theNode.labelHeight = labelHeight;
               theNode.labelPos = labelPos;
@@ -468,36 +469,153 @@ class Layout {
         }
 
         if (children_of_children != null && children_of_children.length > 0) {
-          var theNewGraph;
+          let theNewGraph;
           theNewGraph = layout.getGraphManager().add(layout.newGraph(), theNode);
           processChildrenList(theNewGraph, children_of_children, layout);
         }
       }
     };   
 
-    //  transfer calculated positions to nodes (positions of only simple nodes are calculated)
-    let getPositions = function(ele, i ){
-      if(options.postProcessing) {
-        if(typeof ele === "number") {
-          ele = i;
+    let processEdges = function(layout){
+      for (let i = 0; i < edges.length; i++) {
+        let edge = edges[i];
+        let sourceNode = idToLNode[edge.data("source")];
+        let targetNode = idToLNode[edge.data("target")];
+        if(sourceNode !== targetNode && sourceNode.getEdgesBetween(targetNode).length == 0){
+          let e1 = gm.add(layout.newEdge(), sourceNode, targetNode);
+          e1.id = edge.id();
         }
-        var theId = ele.data('id');
-        var lNode = idToLNode[theId];
-
-        return {
-          x: lNode.getRect().getCenterX(),
-          y: lNode.getRect().getCenterY()
-        };
       }
-      else{
-        return {
-          x: xCoords[i],
-          y: yCoords[i]
-        };
-      }
-    };  
+    };
     
-    var cose = performance.now();
+    /**** Preparation for spectral layout (Preprocessing) ****/
+    
+    // connect disconnected components (first top level, then inside of each compound node)
+    connectComponents(getTopMostNodes(nodes));
+    
+    cy.nodes(":parent").forEach(function( ele ){
+      connectComponents(getTopMostNodes(ele.descendants()));
+    });
+    
+    // assign indexes to nodes (first real, then dummy nodes)
+    let index = 0;
+    for(let i = 0; i < nodes.length; i++){
+      if(!nodes[i].isParent()){
+        nodeIndexes.set(nodes[i].id(), index++);
+      }
+    }    
+    
+    for (let key of dummyNodes.keys()) {
+      nodeIndexes.set(key, index++);
+    }
+    
+    // instantiate the neighborhood matrix
+    for(let i = 0; i < nodeIndexes.size; i++){
+      allNodesNeighborhood[i] = [];
+    } 
+            
+    // form a parent-child map to keep representative node of each compound node  
+    cy.nodes(":parent").forEach(function( ele ){
+      let children = ele.children();
+      
+      let random = 0;
+      while(children.nodes(":childless").length == 0){
+        random = Math.floor(Math.random() * children.nodes().length); // if all children are compound then proceed randomly
+        children = children.nodes()[0].children();
+      }
+      //  select the representative node - we can apply different methods here
+//      random = Math.floor(Math.random() * children.nodes(":childless").length);
+      let index = 0;
+      let min = 1000;
+      children.nodes(":childless").forEach(function(ele2, i){
+        if(ele2.connectedEdges().length < min){
+          min = ele2.connectedEdges().length;
+          index = i;
+        }
+      });
+      parentChildMap.set(ele.id(), children.nodes(":childless")[index].id());
+    }); 
+    
+    // add neighborhood relations (first real, then dummy nodes)
+    cy.nodes().forEach(function( ele ){
+      let eleIndex;
+      
+      if(ele.isParent())
+        eleIndex = nodeIndexes.get(parentChildMap.get(ele.id()));
+      else
+        eleIndex = nodeIndexes.get(ele.id());
+
+      ele.neighborhood().nodes().forEach(function(node){
+        if(node.isParent())
+          allNodesNeighborhood[eleIndex].push(parentChildMap.get(node.id()));       
+        else
+          allNodesNeighborhood[eleIndex].push(node.id());          
+      });
+    });
+    
+    for (let key of dummyNodes.keys()) {
+      let eleIndex = nodeIndexes.get(key);
+      let disconnectedId;
+      dummyNodes.get(key).forEach(function(id){
+        if(cy.getElementById(id).isParent())
+          disconnectedId = parentChildMap.get(id);
+        else
+          disconnectedId = id;
+          
+        allNodesNeighborhood[eleIndex].push(disconnectedId);
+        allNodesNeighborhood[nodeIndexes.get(disconnectedId)].push(key);
+      });
+    }
+    
+//    // assign indexes to nodes
+//    let index = 0;
+//    for(let i = 0; i < nodes.length; i++){
+//      if(!nodes[i].isParent()){
+//        nodeIndexes.set(nodes[i].id(), index);
+//        allNodesNeighborhood[index++] = nodes[i].neighborhood().nodes().not(":parent"); //  form neighborhood for simple nodes
+//      }
+//    }
+
+//    // add neighborhood relations of compound nodes
+//    cy.nodes(":parent").forEach(function( ele ){
+//      //  first add neighbors to representative node
+//      allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())] = allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())].union(ele.neighborhood().nodes().not(":parent"));
+//      ele.neighborhood().nodes(":parent").forEach(function(ele2, i){
+//        allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())] = allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele.id()).id())].union(parentChildMap.get(ele2.id()));
+//      });
+//      //  then add representative node to neighbors
+//      ele.neighborhood().nodes().not(":parent").forEach(function(ele3, i){
+//        allNodesNeighborhood[nodeIndexes.get(ele3.id())] = allNodesNeighborhood[nodeIndexes.get(ele3.id())].union(parentChildMap.get(ele.id()));
+//      });
+//      ele.neighborhood().nodes(":parent").forEach(function(ele3, i){
+//        allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele3.id()).id())] = allNodesNeighborhood[nodeIndexes.get(parentChildMap.get(ele3.id()).id())].union(parentChildMap.get(ele.id()));
+//      });
+//    });
+    
+    //  nodeSize now only considers the size of transformed graph
+    nodeSize = nodeIndexes.size; 
+    
+    // instantiates the partial matrices that will be used in spectral layout
+    for(let i = 0; i < nodeSize; i++){
+      C[i] = [];
+    }
+    for(let i = 0; i < sampleSize; i++){
+      INV[i] = [];
+    } 
+    
+    /**** Apply spectral layout ****/
+    
+    let spectral = performance.now();
+
+    allBFS(samplingType);  
+    sample();
+    powerIteration();
+    
+    spectral = performance.now() - spectral; 
+    
+    /**** Apply postprocessing ****/
+    
+    let cose = performance.now();
     
     let idToLNode =  {};
     let coseLayout = new CoSELayout();
@@ -510,57 +628,39 @@ class Layout {
 
       processChildrenList(gm.addRoot(), getTopMostNodes(nodes), coseLayout);
 
-      for (var i = 0; i < edges.length; i++) {
-        var edge = edges[i];
-        var sourceNode = idToLNode[edge.data("source")];
-        var targetNode = idToLNode[edge.data("target")];
-        if(sourceNode !== targetNode && sourceNode.getEdgesBetween(targetNode).length == 0){
-          var e1 = gm.add(coseLayout.newEdge(), sourceNode, targetNode);
-          e1.id = edge.id();
-        }
-      }
+      processEdges(coseLayout);
 
       coseLayout.runLayout();
     }
     
     cose = performance.now() - cose;
     
-    nodes.not(":parent").layoutPositions(layout, options, getPositions);
-
-    //  transfer calculated positions to nodes (positions of only simple nodes are calculated)
-//    let getPositions = function(ele, i ){
-//      if(options.postProcessing) {
-//        cy.nodes().not(":parent").positions(function( node, i ){
-//          return {
-//            x: xCoords[i],
-//            y: yCoords[i]
-//          };
-//        });
-//      }
-//      else{
-//        return {
-//          x: xCoords[i],
-//          y: yCoords[i]
-//        };
-//      }
-//    };
+    /**** Transfer final positions to cytoscape ****/
     
-//    if(options.postProcessing){
-//      getPositions();
-//      var cose = performance.now();
-//      var coseLayout = cy.layout({
-//        name: "cose-bilkent",
-//        randomize: false,
-//        initialEnergyOnIncremental: options.initialEnergyOnIncremental
-//      });
-//
-//      coseLayout.run();
-//      cose = performance.now() - cose;
-//    }
-//    else{
-//      // .layoutPositions() automatically handles the layout busywork for you
-//      nodes.not(":parent").layoutPositions( layout, options, getPositions );
-//    }
+    // get each element's calculated position
+    let getPositions = function(ele, i ){
+      if(options.postProcessing) {
+        if(typeof ele === "number") {
+          ele = i;
+        }
+        let theId = ele.data('id');
+        let lNode = idToLNode[theId];
+
+        return {
+          x: lNode.getRect().getCenterX(),
+          y: lNode.getRect().getCenterY()
+        };
+      }
+      else{
+        return {
+          x: xCoords[i],
+          y: yCoords[i]
+        };
+      }
+    }; 
+    
+    // transfer calculated positions to nodes (positions of only simple nodes are evaluated, compounds are positioned automatically)
+    nodes.not(":parent").layoutPositions(layout, options, getPositions);    
     
     document.getElementById("spectral").innerHTML = Math.floor(spectral) + " ms";
     if(options.postProcessing){

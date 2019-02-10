@@ -34,7 +34,7 @@ let config = {
       commonjs: 'cose-base',
       amd: 'cose-base',
       root: 'coseBase'
-    }   
+    } 
   } : {},
   plugins: MIN ? [
     new webpack.optimize.UglifyJsPlugin({
