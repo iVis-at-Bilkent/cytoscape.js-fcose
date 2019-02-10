@@ -147,7 +147,7 @@ module.exports = register;
 
 
 /* 
- * Auxiliary functions used in spectral layout
+ * Auxiliary functions used in spectral layout (especially in power iteration)
  */
 
 var auxiliary = {};
@@ -503,7 +503,7 @@ var Layout = function () {
               path[++back] = temp;
             }
           }
-          C[current][index] = distance[current] * 5;
+          C[current][index] = distance[current] * 75;
         }
 
         if (samplingMethod == 1) {
@@ -760,6 +760,8 @@ var Layout = function () {
 
       /**** Preparation for spectral layout (Preprocessing) ****/
 
+      var spectral = performance.now();
+
       // connect disconnected components (first top level, then inside of each compound node)
       connectComponents(getTopMostNodes(nodes));
 
@@ -913,8 +915,6 @@ var Layout = function () {
       }
 
       /**** Apply spectral layout ****/
-
-      var spectral = performance.now();
 
       allBFS(samplingType);
       sample();

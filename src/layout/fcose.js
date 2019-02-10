@@ -490,6 +490,8 @@ class Layout {
     
     /**** Preparation for spectral layout (Preprocessing) ****/
     
+    let spectral = performance.now();
+    
     // connect disconnected components (first top level, then inside of each compound node)
     connectComponents(getTopMostNodes(nodes));
     
@@ -604,8 +606,6 @@ class Layout {
     } 
     
     /**** Apply spectral layout ****/
-    
-    let spectral = performance.now();
 
     allBFS(samplingType);  
     sample();

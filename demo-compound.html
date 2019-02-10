@@ -72,24 +72,37 @@
               nodes: [
                 { data: { id: 'n0'} },
                 { data: { id: 'n1'} },
-                { data: { id: 'n2'} },
-                { data: { id: 'n3'} },
-                { data: { id: 'n4'} },
-                { data: { id: 'n5', parent: 'n0'} },
-                { data: { id: 'n6', parent: 'n0'} },
-                { data: { id: 'n7', parent: 'n0'} }                                               
+                { data: { id: 'n2', parent: 'n0'} },
+                { data: { id: 'n3', parent: 'n1'} }                                              
               ],
               edges: [
-                { data: { source: 'n0', target: 'n2' } },
-                { data: { source: 'n0', target: 'n4' } },
-                { data: { source: 'n1', target: 'n5' } },
-                { data: { source: 'n3', target: 'n7' } },
+                { data: { source: 'n2', target: 'n3' } }
+              ]
+            }
+            */
+            /*
+            elements: {
+              nodes: [
+                { data: { id: 'n8'} },
+                { data: { id: 'n1'} },
+                { data: { id: 'n2', parent: 'n8'} },
+                { data: { id: 'n3', parent: 'n8'} },
+                { data: { id: 'n4', parent: 'n8'} },
+                { data: { id: 'n5', parent: 'n8'} },
+                { data: { id: 'n6'} },
+                { data: { id: 'n7'} },
+                { data: { id: 'n0'} }                                               
+              ],
+              edges: [
+                { data: { source: 'n0', target: 'n1' } },
+                { data: { source: 'n2', target: 'n3' } },
+                { data: { source: 'n4', target: 'n5' } },
                 { data: { source: 'n5', target: 'n6' } },
-                { data: { source: 'n5', target: 'n7' } },
-                { data: { source: 'n6', target: 'n7' } }
+                { data: { source: 'n7', target: 'n8' } }
               ]
             }            
             */
+            
             elements: [{ group:'nodes', data:{ id: 'n0'}},
                     { group:'nodes', data:{ id: 'n1'}},
                     { group:'nodes', data:{ id: 'n2'}},
@@ -156,17 +169,13 @@
                     { group:'edges', data:{ id: 'e21', source: 'n19', target: 'n20'} },
                     { group:'edges', data:{ id: 'e22', source: 'n16', target: 'n20'} },
                     { group:'edges', data:{ id: 'e23', source: 'n20', target: 'n21'} },
-                    { group:'edges', data:{ id: 'e24', source: 'n22', target: 'n24'} },
                     { group:'edges', data:{ id: 'e25', source: 'n23', target: 'n24'} },
                     { group:'edges', data:{ id: 'e26', source: 'n24', target: 'n25'} },
                     { group:'edges', data:{ id: 'e27', source: 'n26', target: 'n38'} },
-                    { group:'edges', data:{ id: 'e28', source: 'n26', target: 'n37'} },
                     { group:'edges', data:{ id: 'e29', source: 'n26', target: 'n39'} },
                     { group:'edges', data:{ id: 'e30', source: 'n26', target: 'n27'} },
                     { group:'edges', data:{ id: 'e31', source: 'n26', target: 'n28'} },
-                    { group:'edges', data:{ id: 'e32', source: 'n26', target: 'n40'} },
                     { group:'edges', data:{ id: 'e33', source: 'n21', target: 'n31'} },
-                    { group:'edges', data:{ id: 'e34', source: 'n21', target: 'n32'} },
                     { group:'edges', data:{ id: 'e35', source: 'n31', target: 'n33'} },
                     { group:'edges', data:{ id: 'e36', source: 'n31', target: 'n34'} },
                     { group:'edges', data:{ id: 'e37', source: 'n33', target: 'n34'} },
@@ -174,6 +183,7 @@
                     { group:'edges', data:{ id: 'e39', source: 'n32', target: 'n36'} },
                     { group:'edges', data:{ id: 'e40', source: 'n16', target: 'n40'} }
                    ]
+            
           });
 
           document.getElementById("nodes").innerHTML = cy.nodes().length;
@@ -182,16 +192,40 @@
           document.getElementById("CMDSlayoutButton").addEventListener("click", function(){
             var layout = cy.layout({
               name: 'fcose',
-              postProcessing: document.getElementById("post").checked ? true : false,
+              postProcessing: true,
               initialEnergyOnIncremental: document.getElementById("energy").value
             });
             
             layout.run();        
           });
           
-          document.getElementById("CoSEButton").addEventListener("click", function(){
+          document.getElementById("onlyCMDS").addEventListener("click", function(){
+            var layout = cy.layout({
+              name: 'fcose',
+              postProcessing: false
+            });
+            
+            layout.run();        
+          });
+          
+          document.getElementById("onlyIncremental").addEventListener("click", function(){
             var layout = cy.layout({
               name: 'cose-bilkent',
+              randomize: false,
+              initialEnergyOnIncremental: document.getElementById("energy").value
+            });            
+            var runtime = performance.now();
+            layout.run();
+            runtime = performance.now() - runtime; 
+            
+            document.getElementById("cose").innerHTML = Math.floor(runtime) + " ms";
+            var spectral = document.getElementById("spectral").innerHTML;
+            document.getElementById("total").innerHTML = (parseInt(spectral.substr(0, spectral.length-3)) + Math.floor(runtime)) + " ms";
+          });
+          
+          document.getElementById("CoSEButton").addEventListener("click", function(){
+            var layout = cy.layout({
+              name: 'cose-bilkent'
             });
             var runtime = performance.now();
             layout.run();
@@ -239,8 +273,10 @@
           Edges: <span id="edges"></span><br>
           
           <button id="CMDSlayoutButton" type="button" style="margin-bottom: 5px">fcose</button>
-          <label for="layout" style="vertical-align:middle;">Post-processing</label>
-          <input type="checkbox" id="post" name="layout" style="vertical-align:middle;" checked>
+          <span> OR </span>
+          <button id="onlyCMDS" type="button" style="margin-bottom: 5px">Spectral</button>
+          <span> + </span>
+          <button id="onlyIncremental" type="button" style="margin-bottom: 5px">Incremental</button>
           Initial Energy: <input type="text" id="energy" value="0.2" size="2">
           <b>Spectral: </b><span id="spectral"></span>
           <b>Post-processing: </b><span id="cose"></span>
