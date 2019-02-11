@@ -393,6 +393,8 @@ var Layout = function () {
         var visited = new Set();
         var visitedTopMostNodes = void 0;
         var currentNeighbor = void 0;
+        var minDegreeNode = void 0;
+        var minDegree = void 0;
 
         var isConnected = false;
         var count = 1;
@@ -435,7 +437,15 @@ var Layout = function () {
           }
 
           if (!isConnected || isConnected && count > 1) {
-            nodesConnectedToDummy.push(topMostNodes[0].id());
+            minDegreeNode = visitedTopMostNodes[0];
+            minDegree = minDegreeNode.connectedEdges().length;
+            visitedTopMostNodes.forEach(function (node) {
+              if (node.connectedEdges().length < minDegree) {
+                minDegree = node.connectedEdges().length;
+                minDegreeNode = node;
+              }
+            });
+            nodesConnectedToDummy.push(minDegreeNode.id());
             topMostNodes = topMostNodes.difference(visitedTopMostNodes);
             count++;
           }
@@ -820,7 +830,7 @@ var Layout = function () {
         //  select the representative node - we can apply different methods here
         //      random = Math.floor(Math.random() * children.nodes(":childless").length);
         var index = 0;
-        var min = 1000;
+        var min = children.nodes(":childless")[0].connectedEdges().length;
         children.nodes(":childless").forEach(function (ele2, i) {
           if (ele2.connectedEdges().length < min) {
             min = ele2.connectedEdges().length;

@@ -107,6 +107,8 @@ class Layout {
       let visited = new Set();
       let visitedTopMostNodes;
       let currentNeighbor;
+      let minDegreeNode;
+      let minDegree;
       
       let isConnected = false;
       let count = 1;
@@ -149,7 +151,15 @@ class Layout {
         }
         
         if(!isConnected || (isConnected && count > 1)){
-          nodesConnectedToDummy.push(topMostNodes[0].id());
+          minDegreeNode = visitedTopMostNodes[0];
+          minDegree = minDegreeNode.connectedEdges().length;
+          visitedTopMostNodes.forEach(function(node){
+            if(node.connectedEdges().length < minDegree){
+              minDegree = node.connectedEdges().length;
+              minDegreeNode = node;
+            }
+          });
+          nodesConnectedToDummy.push(minDegreeNode.id());
           topMostNodes = topMostNodes.difference(visitedTopMostNodes);
           count++;
         }
@@ -528,7 +538,7 @@ class Layout {
       //  select the representative node - we can apply different methods here
 //      random = Math.floor(Math.random() * children.nodes(":childless").length);
       let index = 0;
-      let min = 1000;
+      let min = children.nodes(":childless")[0].connectedEdges().length;
       children.nodes(":childless").forEach(function(ele2, i){
         if(ele2.connectedEdges().length < min){
           min = ele2.connectedEdges().length;
