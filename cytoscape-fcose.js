@@ -391,7 +391,7 @@ var Layout = function () {
       var connectComponents = function connectComponents(topMostNodes) {
         var queue = new LinkedList();
         var visited = new Set();
-        var visitedTopMostNodes = void 0;
+        var visitedTopMostNodes = [];
         var currentNeighbor = void 0;
         var minDegreeNode = void 0;
         var minDegree = void 0;
@@ -403,7 +403,7 @@ var Layout = function () {
         do {
           var currentNode = topMostNodes[0];
           var childrenOfCurrentNode = currentNode.union(currentNode.descendants());
-          visitedTopMostNodes = currentNode;
+          visitedTopMostNodes.push(currentNode);
 
           childrenOfCurrentNode.forEach(function (node) {
             queue.push(node);
@@ -425,7 +425,7 @@ var Layout = function () {
                   queue.push(node);
                   visited.add(node);
                   if (topMostNodes.has(node)) {
-                    visitedTopMostNodes = visitedTopMostNodes.union(node);
+                    visitedTopMostNodes.push(node);
                   }
                 });
               }
@@ -437,17 +437,25 @@ var Layout = function () {
           }
 
           if (!isConnected || isConnected && count > 1) {
-            minDegreeNode = visitedTopMostNodes[0];
-            minDegree = minDegreeNode.connectedEdges().length;
-            visitedTopMostNodes.forEach(function (node) {
-              if (node.connectedEdges().length < minDegree) {
-                minDegree = node.connectedEdges().length;
-                minDegreeNode = node;
-              }
-            });
-            nodesConnectedToDummy.push(minDegreeNode.id());
-            topMostNodes = topMostNodes.difference(visitedTopMostNodes);
-            count++;
+            (function () {
+              minDegreeNode = visitedTopMostNodes[0];
+              minDegree = minDegreeNode.connectedEdges().length;
+              visitedTopMostNodes.forEach(function (node) {
+                if (node.connectedEdges().length < minDegree) {
+                  minDegree = node.connectedEdges().length;
+                  minDegreeNode = node;
+                }
+              });
+              nodesConnectedToDummy.push(minDegreeNode.id());
+              // TO DO: Check efficiency of this part
+              var temp = visitedTopMostNodes[0];
+              visitedTopMostNodes.forEach(function (node) {
+                temp = temp.union(node);
+              });
+              visitedTopMostNodes = [];
+              topMostNodes = topMostNodes.difference(temp);
+              count++;
+            })();
           }
         } while (!isConnected);
 

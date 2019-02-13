@@ -100,12 +100,12 @@ class Layout {
 
       return roots;
     };  
-    
+   
     // find disconnected components and create dummy nodes that connect them
     let connectComponents = function(topMostNodes){      
       let queue = new LinkedList();
       let visited = new Set();
-      let visitedTopMostNodes;
+      let visitedTopMostNodes = [];
       let currentNeighbor;
       let minDegreeNode;
       let minDegree;
@@ -113,11 +113,11 @@ class Layout {
       let isConnected = false;
       let count = 1;
       let nodesConnectedToDummy = [];
-      
+
       do{
         let currentNode = topMostNodes[0];
         let childrenOfCurrentNode = currentNode.union(currentNode.descendants());
-        visitedTopMostNodes = currentNode;
+        visitedTopMostNodes.push(currentNode);
 
         childrenOfCurrentNode.forEach(function(node) {
           queue.push(node);
@@ -139,9 +139,10 @@ class Layout {
                 queue.push(node);
                 visited.add(node);
                 if(topMostNodes.has(node)){
-                  visitedTopMostNodes = visitedTopMostNodes.union(node);
+                  visitedTopMostNodes.push(node);
                 }
               });
+
             }
           }
         }
@@ -160,7 +161,13 @@ class Layout {
             }
           });
           nodesConnectedToDummy.push(minDegreeNode.id());
-          topMostNodes = topMostNodes.difference(visitedTopMostNodes);
+          // TO DO: Check efficiency of this part
+          let temp = visitedTopMostNodes[0];
+          visitedTopMostNodes.forEach(function(node){
+            temp = temp.union(node);
+          });
+          visitedTopMostNodes = [];
+          topMostNodes = topMostNodes.difference(temp);
           count++;
         }
         
@@ -508,7 +515,7 @@ class Layout {
     cy.nodes(":parent").forEach(function( ele ){
       connectComponents(getTopMostNodes(ele.descendants()));
     });
-    
+
     // assign indexes to nodes (first real, then dummy nodes)
     let index = 0;
     for(let i = 0; i < nodes.length; i++){
