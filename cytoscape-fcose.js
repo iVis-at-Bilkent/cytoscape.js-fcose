@@ -720,7 +720,8 @@ var Layout = function () {
             if (!theChild.isParent()) {
               theNode = parent.add(new CoSENode(layout.graphManager, new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
             } else {
-              theNode = parent.add(new CoSENode(layout.graphManager, new PointD(theChild.boundingBox().x1, theChild.boundingBox().y1), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
+              var parentInfo = calcBoundingBox(theChild);
+              theNode = parent.add(new CoSENode(layout.graphManager, new PointD(parentInfo.topLeftX, parentInfo.topLeftY), new DimensionD(parentInfo.width, parentInfo.height)));
             }
           } else {
             theNode = parent.add(new CoSENode(this.graphManager));
@@ -761,6 +762,51 @@ var Layout = function () {
             theNewGraph = layout.getGraphManager().add(layout.newGraph(), theNode);
             processChildrenList(theNewGraph, children_of_children, layout);
           }
+        }
+        function calcBoundingBox(parentNode) {
+          // calculate bounds
+          var left = Number.MAX_VALUE;
+          var right = Number.MIN_VALUE;
+          var top = Number.MAX_VALUE;
+          var bottom = Number.MIN_VALUE;
+          var nodeLeft = void 0;
+          var nodeRight = void 0;
+          var nodeTop = void 0;
+          var nodeBottom = void 0;
+
+          var nodes = parentNode.descendants().not(":parent");
+          var s = nodes.length;
+          for (var _i13 = 0; _i13 < s; _i13++) {
+            var node = nodes[_i13];
+
+            nodeLeft = xCoords[nodeIndexes.get(node.id())] - node.width() / 2;
+            nodeRight = xCoords[nodeIndexes.get(node.id())] + node.width() / 2;
+            nodeTop = yCoords[nodeIndexes.get(node.id())] - node.height() / 2;
+            nodeBottom = yCoords[nodeIndexes.get(node.id())] + node.height() / 2;
+
+            if (left > nodeLeft) {
+              left = nodeLeft;
+            }
+
+            if (right < nodeRight) {
+              right = nodeRight;
+            }
+
+            if (top > nodeTop) {
+              top = nodeTop;
+            }
+
+            if (bottom < nodeBottom) {
+              bottom = nodeBottom;
+            }
+          }
+
+          var boundingBox = {};
+          boundingBox.topLeftX = left;
+          boundingBox.topLeftY = top;
+          boundingBox.width = right - left;
+          boundingBox.height = top - bottom;
+          return boundingBox;
         }
       };
 
@@ -822,8 +868,8 @@ var Layout = function () {
         }
       }
 
-      for (var _i13 = 0; _i13 < nodeIndexes.size; _i13++) {
-        allNodesNeighborhood[_i13] = [];
+      for (var _i14 = 0; _i14 < nodeIndexes.size; _i14++) {
+        allNodesNeighborhood[_i14] = [];
       }
 
       // form a parent-child map to keep representative node of each compound node  
@@ -925,11 +971,11 @@ var Layout = function () {
       nodeSize = nodeIndexes.size;
 
       // instantiates the partial matrices that will be used in spectral layout
-      for (var _i14 = 0; _i14 < nodeSize; _i14++) {
-        C[_i14] = [];
+      for (var _i15 = 0; _i15 < nodeSize; _i15++) {
+        C[_i15] = [];
       }
-      for (var _i15 = 0; _i15 < sampleSize; _i15++) {
-        INV[_i15] = [];
+      for (var _i16 = 0; _i16 < sampleSize; _i16++) {
+        INV[_i16] = [];
       }
 
       /**** Apply spectral layout ****/

@@ -2,7 +2,7 @@
  * Auxiliary functions used in spectral layout (especially in power iteration)
  */
 
-var auxiliary = {};
+let auxiliary = {};
 
 auxiliary.multMat = function(array1, array2){
   let result = [];

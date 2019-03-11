@@ -446,9 +446,10 @@ class Layout {
                     new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
           }
           else{
+            let parentInfo = calcBoundingBox(theChild);
             theNode = parent.add(new CoSENode(layout.graphManager,
-                    new PointD(theChild.boundingBox().x1, theChild.boundingBox().y1),
-                    new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
+                    new PointD(parentInfo.topLeftX, parentInfo.topLeftY),
+                    new DimensionD(parentInfo.width, parentInfo.height)));
           }
         }
         else {
@@ -490,6 +491,56 @@ class Layout {
           theNewGraph = layout.getGraphManager().add(layout.newGraph(), theNode);
           processChildrenList(theNewGraph, children_of_children, layout);
         }
+      }
+      function calcBoundingBox(parentNode){
+          // calculate bounds
+          let left = Number.MAX_VALUE;
+          let right = Number.MIN_VALUE;
+          let top = Number.MAX_VALUE;
+          let bottom = Number.MIN_VALUE;
+          let nodeLeft;
+          let nodeRight;
+          let nodeTop;
+          let nodeBottom;
+
+          let nodes = parentNode.descendants().not(":parent");
+          let s = nodes.length;
+          for (let i = 0; i < s; i++)
+          {
+            let node = nodes[i];
+
+            nodeLeft = xCoords[nodeIndexes.get(node.id())] - node.width()/2;
+            nodeRight = xCoords[nodeIndexes.get(node.id())] + node.width()/2;
+            nodeTop = yCoords[nodeIndexes.get(node.id())] - node.height()/2;
+            nodeBottom = yCoords[nodeIndexes.get(node.id())] + node.height()/2;
+
+            if (left > nodeLeft)
+            {
+              left = nodeLeft;
+            }
+
+            if (right < nodeRight)
+            {
+              right = nodeRight;
+            }
+
+            if (top > nodeTop)
+            {
+              top = nodeTop;
+            }
+
+            if (bottom < nodeBottom)
+            {
+              bottom = nodeBottom;
+            }
+          }
+          
+          let boundingBox = {};
+          boundingBox.topLeftX = left;
+          boundingBox.topLeftY = top;
+          boundingBox.width = right - left;
+          boundingBox.height = top - bottom;
+          return boundingBox;
       }
     };   
 
