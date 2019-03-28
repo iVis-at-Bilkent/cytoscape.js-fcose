@@ -7,7 +7,7 @@
 		exports["cytoscapeFcose"] = factory(require("cose-base"), require("numeric"));
 	else
 		root["cytoscapeFcose"] = factory(root["coseBase"], root["numeric"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_0__, __WEBPACK_EXTERNAL_MODULE_8__) {
+})(this, function(__WEBPACK_EXTERNAL_MODULE_0__, __WEBPACK_EXTERNAL_MODULE_7__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 3);
+/******/ 	return __webpack_require__(__webpack_require__.s = 6);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -89,7 +89,110 @@ module.exports = __WEBPACK_EXTERNAL_MODULE_0__;
 "use strict";
 
 
-module.exports = __webpack_require__(6);
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+/**
+  The implementation of the fcose layout algorithm
+*/
+
+var assign = __webpack_require__(2);
+
+var _require = __webpack_require__(5),
+    spectralLayout = _require.spectralLayout;
+
+var _require2 = __webpack_require__(4),
+    coseLayout = _require2.coseLayout;
+
+var defaults = Object.freeze({
+
+  // Postprocessing options
+  postProcessing: true,
+  initialEnergyOnIncremental: 0.3,
+
+  // animation
+  animate: true, // whether or not to animate the layout
+  animationDuration: 1000, // duration of animation in ms, if enabled
+  animationEasing: undefined, // easing of animation, if enabled
+
+  // viewport
+  fit: true, // fit the viewport to the repositioned nodes, overrides pan and zoom
+
+  // modifications
+  padding: 10, // padding around layout
+  nodeDimensionsIncludeLabels: false, // whether labels should be included in determining the space used by a node (default true)
+
+  // positioning options
+  randomize: true, // use random node positions at beginning of layout
+
+  // layout event callbacks
+  ready: function ready() {}, // on layoutready
+  stop: function stop() {} // on layoutstop
+});
+
+var Layout = function () {
+  function Layout(options) {
+    _classCallCheck(this, Layout);
+
+    this.options = assign({}, defaults, options);
+  }
+
+  _createClass(Layout, [{
+    key: 'run',
+    value: function run() {
+      var layout = this;
+      var options = this.options;
+      var cy = options.cy;
+      var eles = options.eles;
+
+      // Apply spectral layout
+      var spectralResult = spectralLayout(options);
+      var xCoords = spectralResult["xCoords"];
+      var yCoords = spectralResult["yCoords"];
+
+      // Apply cose layout as postprocessing
+      var coseResult = coseLayout(options, spectralResult);
+
+      // get each element's calculated position
+      var getPositions = function getPositions(ele, i) {
+        if (options.postProcessing) {
+          if (typeof ele === "number") {
+            ele = i;
+          }
+          var theId = ele.data('id');
+          var lNode = coseResult[theId];
+
+          return {
+            x: lNode.getRect().getCenterX(),
+            y: lNode.getRect().getCenterY()
+          };
+        } else {
+          return {
+            x: xCoords[i],
+            y: yCoords[i]
+          };
+        }
+      };
+
+      // transfer calculated positions to nodes (positions of only simple nodes are evaluated, compounds are positioned automatically)
+      eles.nodes().not(":parent").layoutPositions(layout, options, getPositions);
+
+      document.getElementById("spectral").innerHTML = Math.floor(spectral) + " ms";
+      if (options.postProcessing) {
+        document.getElementById("cose").innerHTML = Math.floor(cose) + " ms";
+        document.getElementById("total").innerHTML = Math.floor(spectral + cose) + " ms";
+      } else {
+        document.getElementById("cose").innerHTML = "N/A";
+        document.getElementById("total").innerHTML = Math.floor(spectral) + " ms";
+      }
+    }
+  }]);
+
+  return Layout;
+}();
+
+module.exports = Layout;
 
 /***/ }),
 /* 2 */
@@ -116,31 +219,6 @@ module.exports = Object.assign != null ? Object.assign.bind(Object) : function (
 
 /***/ }),
 /* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var impl = __webpack_require__(1);
-
-// registers the extension on a cytoscape lib ref
-var register = function register(cytoscape) {
-  if (!cytoscape) {
-    return;
-  } // can't register if cytoscape unspecified
-
-  cytoscape('layout', 'fcose', impl); // register with cytoscape.js
-};
-
-if (typeof cytoscape !== 'undefined') {
-  // expose to global cytoscape (i.e. window.cytoscape)
-  register(cytoscape);
-}
-
-module.exports = register;
-
-/***/ }),
-/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -266,7 +344,7 @@ auxiliary.normalize = function (array) {
 module.exports = auxiliary;
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -466,119 +544,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
 module.exports = { coseLayout: coseLayout };
 
 /***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-/**
-  The implementation of the fcose layout algorithm
-*/
-
-var assign = __webpack_require__(2);
-
-var _require = __webpack_require__(7),
-    spectralLayout = _require.spectralLayout;
-
-var _require2 = __webpack_require__(5),
-    coseLayout = _require2.coseLayout;
-
-var defaults = Object.freeze({
-
-  // Postprocessing options
-  postProcessing: true,
-  initialEnergyOnIncremental: 0.3,
-
-  // animation
-  animate: true, // whether or not to animate the layout
-  animationDuration: 1000, // duration of animation in ms, if enabled
-  animationEasing: undefined, // easing of animation, if enabled
-
-  // viewport
-  fit: true, // fit the viewport to the repositioned nodes, overrides pan and zoom
-
-  // modifications
-  padding: 10, // padding around layout
-  nodeDimensionsIncludeLabels: false, // whether labels should be included in determining the space used by a node (default true)
-
-  // positioning options
-  randomize: true, // use random node positions at beginning of layout
-
-  // layout event callbacks
-  ready: function ready() {}, // on layoutready
-  stop: function stop() {} // on layoutstop
-});
-
-var Layout = function () {
-  function Layout(options) {
-    _classCallCheck(this, Layout);
-
-    this.options = assign({}, defaults, options);
-  }
-
-  _createClass(Layout, [{
-    key: 'run',
-    value: function run() {
-      var layout = this;
-      var options = this.options;
-      var cy = options.cy;
-      var eles = options.eles;
-
-      // Apply spectral layout
-      var spectralResult = spectralLayout(options);
-      var xCoords = spectralResult["xCoords"];
-      var yCoords = spectralResult["yCoords"];
-
-      // Apply cose layout as postprocessing
-      var coseResult = coseLayout(options, spectralResult);
-
-      // get each element's calculated position
-      var getPositions = function getPositions(ele, i) {
-        if (options.postProcessing) {
-          if (typeof ele === "number") {
-            ele = i;
-          }
-          var theId = ele.data('id');
-          var lNode = coseResult[theId];
-
-          return {
-            x: lNode.getRect().getCenterX(),
-            y: lNode.getRect().getCenterY()
-          };
-        } else {
-          return {
-            x: xCoords[i],
-            y: yCoords[i]
-          };
-        }
-      };
-
-      // transfer calculated positions to nodes (positions of only simple nodes are evaluated, compounds are positioned automatically)
-      eles.nodes().not(":parent").layoutPositions(layout, options, getPositions);
-
-      document.getElementById("spectral").innerHTML = Math.floor(spectral) + " ms";
-      if (options.postProcessing) {
-        document.getElementById("cose").innerHTML = Math.floor(cose) + " ms";
-        document.getElementById("total").innerHTML = Math.floor(spectral + cose) + " ms";
-      } else {
-        document.getElementById("cose").innerHTML = "N/A";
-        document.getElementById("total").innerHTML = Math.floor(spectral) + " ms";
-      }
-    }
-  }]);
-
-  return Layout;
-}();
-
-module.exports = Layout;
-
-/***/ }),
-/* 7 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -588,8 +554,8 @@ module.exports = Layout;
   The implementation of the spectral layout that is the first part of the fcose layout algorithm
 */
 
-var aux = __webpack_require__(4);
-var numeric = __webpack_require__(8);
+var aux = __webpack_require__(3);
+var numeric = __webpack_require__(7);
 var LinkedList = __webpack_require__(0).layoutBase.LinkedList;
 
 var dummyNodes = new Map(); // map to keep dummy nodes and their neighbors
@@ -1108,10 +1074,35 @@ var spectralLayout = function spectralLayout(options) {
 module.exports = { spectralLayout: spectralLayout };
 
 /***/ }),
-/* 8 */
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var impl = __webpack_require__(1);
+
+// registers the extension on a cytoscape lib ref
+var register = function register(cytoscape) {
+  if (!cytoscape) {
+    return;
+  } // can't register if cytoscape unspecified
+
+  cytoscape('layout', 'fcose', impl); // register with cytoscape.js
+};
+
+if (typeof cytoscape !== 'undefined') {
+  // expose to global cytoscape (i.e. window.cytoscape)
+  register(cytoscape);
+}
+
+module.exports = register;
+
+/***/ }),
+/* 7 */
 /***/ (function(module, exports) {
 
-module.exports = __WEBPACK_EXTERNAL_MODULE_8__;
+module.exports = __WEBPACK_EXTERNAL_MODULE_7__;
 
 /***/ })
 /******/ ]);

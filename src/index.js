@@ -1,4 +1,4 @@
-const impl = require('./layout');
+const impl = require('./fcose');
 
 // registers the extension on a cytoscape lib ref
 let register = function( cytoscape ){
