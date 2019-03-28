@@ -24,9 +24,10 @@ let nodeSize;
 
 const infinity = 100000000;
 const small = 0.000000001;
-const piTol = 0.0000001;
-const sampleSize = 25;
-const samplingType = 1;   // 0 for random, 1 for greedy
+
+let piTol;
+let samplingType;   // false for random, true for greedy
+let sampleSize;
 
 /**** Spectral-preprocessing functions ****/
 
@@ -192,7 +193,7 @@ let BFS = function(pivot, index, samplingMethod){
     C[current][index] = distance[current] * 75;       
   }
 
-  if(samplingMethod == 1){
+  if(samplingMethod){
     for(let i = 0; i < nodeSize; i++){
       if(C[i][index] < minDistancesColumn[i])
         minDistancesColumn[i] = C[i][index];
@@ -214,7 +215,7 @@ let allBFS = function(samplingMethod){
 
   let sample;
 
-  if(samplingMethod == 0){
+  if(!samplingMethod){
     randomSampleCR();
 
     // call BFS
@@ -384,6 +385,10 @@ let spectralLayout = function(options){
   let cy = options.cy;
   let eles = options.eles;
   let nodes = eles.nodes();
+  
+  piTol = options.piTol;
+  samplingType = options.samplingType;   // false for random, true for greedy
+  sampleSize = options.sampleSize;  
   
   if(options.randomize){
 

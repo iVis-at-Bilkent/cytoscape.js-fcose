@@ -107,26 +107,67 @@ var _require2 = __webpack_require__(4),
 
 var defaults = Object.freeze({
 
-  // Postprocessing options
-  postProcessing: true,
+  // "draft" or "proof" 
+  // - "draft" only applies spectral layout 
+  // - "proof" improves the quality with subsequent CoSE layout  
+  quality: "proof",
+
+  // use random node positions at beginning of layout
+  // if this is set to false, then quality option must be "proof"
+  randomize: true,
+
+  // whether or not to animate the layout
+  animate: true,
+  // duration of animation in ms, if enabled
+  animationDuration: 1000,
+  // easing of animation, if enabled
+  animationEasing: undefined, // easing of animation, if enabled
+  // fit the viewport to the repositioned nodes
+  fit: true,
+  // padding around layout
+  padding: 10, // padding around layout
+  // whether to include labels in node dimensions. Useful for avoiding label overlap
+  nodeDimensionsIncludeLabels: false,
+
+  /* spectral layout options */
+
+  // false for random, true for greedy
+  samplingType: true,
+  // sample size to construct distance matrix
+  sampleSize: 25,
+  // power iteration tolerance
+  piTol: 0.0000001,
+
+  /* CoSE layout options */
+
+  // Node repulsion (non overlapping) multiplier
+  nodeRepulsion: 4500,
+  // Ideal edge (non nested) length
+  idealEdgeLength: 50,
+  // Divisor to compute edge forces
+  edgeElasticity: 0.45,
+  // Nesting factor (multiplier) to compute ideal edge length for nested edges
+  nestingFactor: 0.1,
+  // Gravity force (constant)
+  gravity: 0.25,
+  // Maximum number of iterations to perform
+  numIter: 2500,
+  // For enabling tiling
+  tile: false,
+  // Represents the amount of the vertical space to put between the zero degree members during the tiling operation(can also be a function)
+  tilingPaddingVertical: 10,
+  // Represents the amount of the horizontal space to put between the zero degree members during the tiling operation(can also be a function)
+  tilingPaddingHorizontal: 10,
+  // Gravity range (constant) for compounds
+  gravityRangeCompound: 1.5,
+  // Gravity force (constant) for compounds
+  gravityCompound: 1.0,
+  // Gravity range (constant)
+  gravityRange: 3.8,
+  // Initial cooling factor for incremental layout  
   initialEnergyOnIncremental: 0.3,
 
-  // animation
-  animate: true, // whether or not to animate the layout
-  animationDuration: 1000, // duration of animation in ms, if enabled
-  animationEasing: undefined, // easing of animation, if enabled
-
-  // viewport
-  fit: true, // fit the viewport to the repositioned nodes, overrides pan and zoom
-
-  // modifications
-  padding: 10, // padding around layout
-  nodeDimensionsIncludeLabels: false, // whether labels should be included in determining the space used by a node (default true)
-
-  // positioning options
-  randomize: true, // use random node positions at beginning of layout
-
-  // layout event callbacks
+  /* layout event callbacks */
   ready: function ready() {}, // on layoutready
   stop: function stop() {} // on layoutstop
 });
@@ -156,7 +197,7 @@ var Layout = function () {
 
       // get each element's calculated position
       var getPositions = function getPositions(ele, i) {
-        if (options.postProcessing) {
+        if (options.quality == "proof") {
           if (typeof ele === "number") {
             ele = i;
           }
@@ -524,18 +565,36 @@ var coseLayout = function coseLayout(options, spectralResult) {
 
   /**** Apply postprocessing ****/
 
-  CoSEConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = FDLayoutConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = options.initialEnergyOnIncremental;
-  CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
+  if (options.quality == "proof") {
 
-  var coseLayout = new CoSELayout();
-  var gm = coseLayout.newGraphManager();
+    if (options.nodeRepulsion != null) CoSEConstants.DEFAULT_REPULSION_STRENGTH = FDLayoutConstants.DEFAULT_REPULSION_STRENGTH = options.nodeRepulsion;
+    if (options.idealEdgeLength != null) CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = options.idealEdgeLength;
+    if (options.edgeElasticity != null) CoSEConstants.DEFAULT_SPRING_STRENGTH = FDLayoutConstants.DEFAULT_SPRING_STRENGTH = options.edgeElasticity;
+    if (options.nestingFactor != null) CoSEConstants.PER_LEVEL_IDEAL_EDGE_LENGTH_FACTOR = FDLayoutConstants.PER_LEVEL_IDEAL_EDGE_LENGTH_FACTOR = options.nestingFactor;
+    if (options.gravity != null) CoSEConstants.DEFAULT_GRAVITY_STRENGTH = FDLayoutConstants.DEFAULT_GRAVITY_STRENGTH = options.gravity;
+    if (options.numIter != null) CoSEConstants.MAX_ITERATIONS = FDLayoutConstants.MAX_ITERATIONS = options.numIter;
+    if (options.gravityRange != null) CoSEConstants.DEFAULT_GRAVITY_RANGE_FACTOR = FDLayoutConstants.DEFAULT_GRAVITY_RANGE_FACTOR = options.gravityRange;
+    if (options.gravityCompound != null) CoSEConstants.DEFAULT_COMPOUND_GRAVITY_STRENGTH = FDLayoutConstants.DEFAULT_COMPOUND_GRAVITY_STRENGTH = options.gravityCompound;
+    if (options.gravityRangeCompound != null) CoSEConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = FDLayoutConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = options.gravityRangeCompound;
+    if (options.initialEnergyOnIncremental != null) CoSEConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = FDLayoutConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = options.initialEnergyOnIncremental;
 
-  if (options.postProcessing) {
-    processChildrenList(gm.addRoot(), getTopMostNodes(nodes), coseLayout, options);
+    CoSEConstants.NODE_DIMENSIONS_INCLUDE_LABELS = FDLayoutConstants.NODE_DIMENSIONS_INCLUDE_LABELS = LayoutConstants.NODE_DIMENSIONS_INCLUDE_LABELS = options.nodeDimensionsIncludeLabels;
+    CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = !options.randomize;
+    CoSEConstants.ANIMATE = FDLayoutConstants.ANIMATE = LayoutConstants.ANIMATE = options.animate;
+    CoSEConstants.TILE = options.tile;
+    CoSEConstants.TILING_PADDING_VERTICAL = typeof options.tilingPaddingVertical === 'function' ? options.tilingPaddingVertical.call() : options.tilingPaddingVertical;
+    CoSEConstants.TILING_PADDING_HORIZONTAL = typeof options.tilingPaddingHorizontal === 'function' ? options.tilingPaddingHorizontal.call() : options.tilingPaddingHorizontal;
 
-    processEdges(coseLayout, gm, edges);
+    CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
 
-    coseLayout.runLayout();
+    var _coseLayout = new CoSELayout();
+    var gm = _coseLayout.newGraphManager();
+
+    processChildrenList(gm.addRoot(), getTopMostNodes(nodes), _coseLayout, options);
+
+    processEdges(_coseLayout, gm, edges);
+
+    _coseLayout.runLayout();
   }
 
   return idToLNode;
@@ -576,9 +635,10 @@ var nodeSize = void 0;
 
 var infinity = 100000000;
 var small = 0.000000001;
+
 var piTol = 0.0000001;
+var samplingType = true; // 0 for random, 1 for greedy
 var sampleSize = 25;
-var samplingType = 1; // 0 for random, 1 for greedy
 
 /**** Spectral-preprocessing functions ****/
 
@@ -742,7 +802,7 @@ var BFS = function BFS(pivot, index, samplingMethod) {
     C[current][index] = distance[current] * 75;
   }
 
-  if (samplingMethod == 1) {
+  if (samplingMethod) {
     for (var _i2 = 0; _i2 < nodeSize; _i2++) {
       if (C[_i2][index] < minDistancesColumn[_i2]) minDistancesColumn[_i2] = C[_i2][index];
     }
@@ -762,7 +822,7 @@ var allBFS = function allBFS(samplingMethod) {
 
   var sample = void 0;
 
-  if (samplingMethod == 0) {
+  if (!samplingMethod) {
     randomSampleCR();
 
     // call BFS
@@ -928,6 +988,10 @@ var spectralLayout = function spectralLayout(options) {
   var cy = options.cy;
   var eles = options.eles;
   var nodes = eles.nodes();
+
+  piTol = options.piTol;
+  samplingType = options.samplingType; // false for random, true for greedy
+  sampleSize = options.sampleSize;
 
   if (options.randomize) {
 
