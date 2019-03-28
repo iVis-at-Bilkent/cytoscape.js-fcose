@@ -389,105 +389,102 @@ let spectralLayout = function(options){
   piTol = options.piTol;
   samplingType = options.samplingType;   // false for random, true for greedy
   sampleSize = options.sampleSize;  
-  
-  if(options.randomize){
 
-    /**** Preparation for spectral layout (Preprocessing) ****/
+  /**** Preparation for spectral layout (Preprocessing) ****/
 
-    // connect disconnected components (first top level, then inside of each compound node)
-    connectComponents(getTopMostNodes(nodes));
+  // connect disconnected components (first top level, then inside of each compound node)
+  connectComponents(getTopMostNodes(nodes));
 
-    cy.nodes(":parent").forEach(function( ele ){
-      connectComponents(getTopMostNodes(ele.descendants()));
-    });
+  cy.nodes(":parent").forEach(function( ele ){
+    connectComponents(getTopMostNodes(ele.descendants()));
+  });
 
-    // assign indexes to nodes (first real, then dummy nodes)
-    let index = 0;
-    for(let i = 0; i < nodes.length; i++){
-      if(!nodes[i].isParent()){
-        nodeIndexes.set(nodes[i].id(), index++);
-      }
-    }    
-
-    for (let key of dummyNodes.keys()) {
-      nodeIndexes.set(key, index++);
+  // assign indexes to nodes (first real, then dummy nodes)
+  let index = 0;
+  for(let i = 0; i < nodes.length; i++){
+    if(!nodes[i].isParent()){
+      nodeIndexes.set(nodes[i].id(), index++);
     }
+  }    
 
-    // instantiate the neighborhood matrix
-    for(let i = 0; i < nodeIndexes.size; i++){
-      allNodesNeighborhood[i] = [];
-    } 
+  for (let key of dummyNodes.keys()) {
+    nodeIndexes.set(key, index++);
+  }
 
-    // form a parent-child map to keep representative node of each compound node  
-    cy.nodes(":parent").forEach(function( ele ){
-      let children = ele.children();
+  // instantiate the neighborhood matrix
+  for(let i = 0; i < nodeIndexes.size; i++){
+    allNodesNeighborhood[i] = [];
+  } 
+
+  // form a parent-child map to keep representative node of each compound node  
+  cy.nodes(":parent").forEach(function( ele ){
+    let children = ele.children();
 
 //      let random = 0;
-      while(children.nodes(":childless").length == 0){
+    while(children.nodes(":childless").length == 0){
 //        random = Math.floor(Math.random() * children.nodes().length); // if all children are compound then proceed randomly
-        children = children.nodes()[0].children();
+      children = children.nodes()[0].children();
+    }
+    //  select the representative node - we can apply different methods here
+//      random = Math.floor(Math.random() * children.nodes(":childless").length);
+    let index = 0;
+    let min = children.nodes(":childless")[0].connectedEdges().length;
+    children.nodes(":childless").forEach(function(ele2, i){
+      if(ele2.connectedEdges().length < min){
+        min = ele2.connectedEdges().length;
+        index = i;
       }
-      //  select the representative node - we can apply different methods here
-  //      random = Math.floor(Math.random() * children.nodes(":childless").length);
-      let index = 0;
-      let min = children.nodes(":childless")[0].connectedEdges().length;
-      children.nodes(":childless").forEach(function(ele2, i){
-        if(ele2.connectedEdges().length < min){
-          min = ele2.connectedEdges().length;
-          index = i;
-        }
-      });
-      parentChildMap.set(ele.id(), children.nodes(":childless")[index].id());
-    }); 
-
-    // add neighborhood relations (first real, then dummy nodes)
-    cy.nodes().forEach(function( ele ){
-      let eleIndex;
-
-      if(ele.isParent())
-        eleIndex = nodeIndexes.get(parentChildMap.get(ele.id()));
-      else
-        eleIndex = nodeIndexes.get(ele.id());
-
-      ele.neighborhood().nodes().forEach(function(node){
-        if(node.isParent())
-          allNodesNeighborhood[eleIndex].push(parentChildMap.get(node.id()));       
-        else
-          allNodesNeighborhood[eleIndex].push(node.id());          
-      });
     });
+    parentChildMap.set(ele.id(), children.nodes(":childless")[index].id());
+  }); 
 
-    for (let key of dummyNodes.keys()) {
-      let eleIndex = nodeIndexes.get(key);
-      let disconnectedId;
-      dummyNodes.get(key).forEach(function(id){
-        if(cy.getElementById(id).isParent())
-          disconnectedId = parentChildMap.get(id);
-        else
-          disconnectedId = id;
+  // add neighborhood relations (first real, then dummy nodes)
+  cy.nodes().forEach(function( ele ){
+    let eleIndex;
 
-        allNodesNeighborhood[eleIndex].push(disconnectedId);
-        allNodesNeighborhood[nodeIndexes.get(disconnectedId)].push(key);
-      });
-    }
+    if(ele.isParent())
+      eleIndex = nodeIndexes.get(parentChildMap.get(ele.id()));
+    else
+      eleIndex = nodeIndexes.get(ele.id());
 
-    //  nodeSize now only considers the size of transformed graph
-    nodeSize = nodeIndexes.size; 
+    ele.neighborhood().nodes().forEach(function(node){
+      if(node.isParent())
+        allNodesNeighborhood[eleIndex].push(parentChildMap.get(node.id()));       
+      else
+        allNodesNeighborhood[eleIndex].push(node.id());          
+    });
+  });
 
-    // instantiates the partial matrices that will be used in spectral layout
-    for(let i = 0; i < nodeSize; i++){
-      C[i] = [];
-    }
-    for(let i = 0; i < sampleSize; i++){
-      INV[i] = [];
-    } 
+  for (let key of dummyNodes.keys()) {
+    let eleIndex = nodeIndexes.get(key);
+    let disconnectedId;
+    dummyNodes.get(key).forEach(function(id){
+      if(cy.getElementById(id).isParent())
+        disconnectedId = parentChildMap.get(id);
+      else
+        disconnectedId = id;
 
-    /**** Apply spectral layout ****/
+      allNodesNeighborhood[eleIndex].push(disconnectedId);
+      allNodesNeighborhood[nodeIndexes.get(disconnectedId)].push(key);
+    });
+  }
 
-    allBFS(samplingType);  
-    sample();
-    powerIteration();
-  }   
+  //  nodeSize now only considers the size of transformed graph
+  nodeSize = nodeIndexes.size; 
+
+  // instantiates the partial matrices that will be used in spectral layout
+  for(let i = 0; i < nodeSize; i++){
+    C[i] = [];
+  }
+  for(let i = 0; i < sampleSize; i++){
+    INV[i] = [];
+  } 
+
+  /**** Apply spectral layout ****/
+
+  allBFS(samplingType);  
+  sample();
+  powerIteration();
 
   let spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
   return spectralResult;

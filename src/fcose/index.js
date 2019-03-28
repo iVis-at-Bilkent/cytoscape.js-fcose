@@ -25,7 +25,7 @@ const defaults = Object.freeze({
   fit: true, 
   // padding around layout
   padding: 10,
-  // whether to include labels in node dimensions. Useful for avoiding label overlap
+  // whether to include labels in node dimensions. Valid in "proof" quality
   nodeDimensionsIncludeLabels: false,
   
   /* spectral layout options */
@@ -79,16 +79,24 @@ class Layout {
   run(){
     let layout = this;
     let options = this.options;
-    let cy = options.cy;
     let eles = options.eles;
+   
+    let spectralResult;
+    let xCoords;
+    let yCoords;
+    let coseResult;
     
-    // Apply spectral layout
-    let spectralResult = spectralLayout(options);
-    let xCoords = spectralResult["xCoords"];
-    let yCoords = spectralResult["yCoords"];
+    if(options.randomize){
+      // Apply spectral layout
+      spectralResult = spectralLayout(options);
+      xCoords = spectralResult["xCoords"];
+      yCoords = spectralResult["yCoords"];
+    }
     
-    // Apply cose layout as postprocessing
-    let coseResult = coseLayout(options, spectralResult);
+    if(options.quality == "proof"){  
+      // Apply cose layout as postprocessing
+      coseResult = coseLayout(options, spectralResult);
+    }
     
     // get each element's calculated position
     let getPositions = function(ele, i ){

@@ -54,16 +54,23 @@ let processChildrenList = function (parent, children, layout, options) {
 
     if (theChild.outerWidth() != null
             && theChild.outerHeight() != null) {
-      if(!theChild.isParent()){
-        theNode = parent.add(new CoSENode(layout.graphManager,
-                new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2),
-                new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
+      if(options.randomize){
+        if(!theChild.isParent()){
+          theNode = parent.add(new CoSENode(layout.graphManager,
+                  new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2),
+                  new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
+        }
+        else{
+          let parentInfo = calcBoundingBox(theChild);
+          theNode = parent.add(new CoSENode(layout.graphManager,
+                  new PointD(parentInfo.topLeftX, parentInfo.topLeftY),
+                  new DimensionD(parentInfo.width, parentInfo.height)));
+        }
       }
       else{
-        let parentInfo = calcBoundingBox(theChild);
         theNode = parent.add(new CoSENode(layout.graphManager,
-                new PointD(parentInfo.topLeftX, parentInfo.topLeftY),
-                new DimensionD(parentInfo.width, parentInfo.height)));
+                new PointD(theChild.position('x') - dimensions.w / 2, theChild.position('y') - dimensions.h / 2),
+                new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));        
       }
     }
     else {
@@ -80,12 +87,12 @@ let processChildrenList = function (parent, children, layout, options) {
     //Attach the label properties to compound if labels will be included in node dimensions  
     if(options.nodeDimensionsIncludeLabels){
       if(theChild.isParent()){
-          let labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false }).w;          
-          let labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false }).h;
-          let labelPos = theChild.css("text-halign");
-          theNode.labelWidth = labelWidth;
-          theNode.labelHeight = labelHeight;
-          theNode.labelPos = labelPos;
+        let labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false }).w;          
+        let labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false }).h;
+        let labelPos = theChild.css("text-halign");
+        theNode.labelWidth = labelWidth;
+        theNode.labelHeight = labelHeight;
+        theNode.labelPos = labelPos;          
       }
     }
 
@@ -178,9 +185,11 @@ let coseLayout = function(options, spectralResult){
   let nodes = eles.nodes();
   let edges = eles.edges();
   
-  nodeIndexes = spectralResult["nodeIndexes"];
-  xCoords = spectralResult["xCoords"];
-  yCoords = spectralResult["yCoords"];
+  if(options.randomize){
+    nodeIndexes = spectralResult["nodeIndexes"];
+    xCoords = spectralResult["xCoords"];
+    yCoords = spectralResult["yCoords"];
+  }
   
   /**** Apply postprocessing ****/
   
