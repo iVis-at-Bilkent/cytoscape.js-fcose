@@ -6,6 +6,8 @@ cytoscape-fcose
 
 The fCoSE layout for Cytoscape.js by the [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University ([demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/master/demo.html), [compound demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/master/demo-compound.html))
 
+fCoSE layout algorithm combines the speed of spectral layout with the aesthetics of force-directed layout. fCoSE runs up to 10 times as fast as [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent) while achieving aesthetic layouts.
+
 Please cite the following when you use this layout until a fCoSE publication is available:
 
 U. Dogrusoz, E. Giral, A. Cetintas, A. Civril, and E. Demir, "[A Layout Algorithm For Undirected Compound Graphs](http://www.sciencedirect.com/science/article/pii/S0020025508004799)", Information Sciences, 179, pp. 980-994, 2009.
