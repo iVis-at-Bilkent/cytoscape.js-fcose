@@ -22,7 +22,20 @@ let config = {
       { test: /\.js$/, exclude: /node_modules/, use: 'babel-loader' }
     ]
   },
-  externals: PROD ? Object.keys( pkg.dependencies || {} ) : [],
+  externals: PROD ? { 
+    'numeric': {
+      commonjs2: 'numeric',
+      commonjs: 'numeric',
+      amd: 'numeric',
+      root: 'numeric'
+    },
+    'cose-base': {
+      commonjs2: 'cose-base',
+      commonjs: 'cose-base',
+      amd: 'cose-base',
+      root: 'coseBase'
+    } 
+  } : {},
   plugins: MIN ? [
     new webpack.optimize.UglifyJsPlugin({
       compress: {

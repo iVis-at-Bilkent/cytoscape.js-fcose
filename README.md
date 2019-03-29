@@ -4,14 +4,19 @@ cytoscape-fcose
 
 ## Description
 
- This Cytoscape.js extension provides a fast graph layout using spectral distance embedding.
+The fCoSE layout for Cytoscape.js by the [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University ([demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/master/demo.html), [compound demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/master/demo-compound.html))
 
- ([demo](https://iVis-at-Bilkent.github.io/cytoscape.js-fcose))
+fCoSE layout algorithm combines the speed of spectral layout with the aesthetics of force-directed layout. fCoSE runs up to 10 times as fast as [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent) while achieving aesthetic layouts.
+
+Please cite the following when you use this layout until a fCoSE publication is available:
+
+U. Dogrusoz, E. Giral, A. Cetintas, A. Civril, and E. Demir, "[A Layout Algorithm For Undirected Compound Graphs](http://www.sciencedirect.com/science/article/pii/S0020025508004799)", Information Sciences, 179, pp. 980-994, 2009.
 
 ## Dependencies
 
  * Cytoscape.js ^3.2.0
- * <List your dependencies here please>
+ * numeric.js ^1.2.6
+ * cose-base
 
 
 ## Usage instructions
@@ -54,7 +59,74 @@ Plain HTML/JS has the extension registered for you automatically, because no `re
 
 ## API
 
-TODO describe the API of the extension here.
+When calling the layout, e.g. `cy.layout({ name: 'fcose', ... })`, the following options are supported:
+
+```js
+var defaultOptions = {
+
+  // "draft" or "proof" 
+  // - "draft" only applies spectral layout 
+  // - "proof" improves the quality with incremental layout  
+  quality: "proof",
+  // use random node positions at beginning of layout
+  // if this is set to false, then quality option must be "proof"
+  randomize: true, 
+  // whether or not to animate the layout
+  animate: true, 
+  // duration of animation in ms, if enabled
+  animationDuration: 1000, 
+  // easing of animation, if enabled
+  animationEasing: undefined, 
+  // fit the viewport to the repositioned nodes
+  fit: true, 
+  // padding around layout
+  padding: 10,
+  // whether to include labels in node dimensions. Valid in "proof" quality
+  nodeDimensionsIncludeLabels: false,
+  
+  /* spectral layout options */
+  
+  // false for random, true for greedy sampling
+  samplingType: true,
+  // sample size to construct distance matrix
+  sampleSize: 25,
+  // power iteration tolerance
+  piTol: 0.0000001,
+  
+  /* incremental layout options */
+  
+  // Node repulsion (non overlapping) multiplier
+  nodeRepulsion: 4500,
+  // Ideal edge (non nested) length
+  idealEdgeLength: 50,
+  // Divisor to compute edge forces
+  edgeElasticity: 0.45,
+  // Nesting factor (multiplier) to compute ideal edge length for nested edges
+  nestingFactor: 0.1,
+  // Gravity force (constant)
+  gravity: 0.25,
+  // Maximum number of iterations to perform
+  numIter: 2500,
+  // For enabling tiling
+  tile: false,  
+  // Represents the amount of the vertical space to put between the zero degree members during the tiling operation(can also be a function)
+  tilingPaddingVertical: 10,
+  // Represents the amount of the horizontal space to put between the zero degree members during the tiling operation(can also be a function)
+  tilingPaddingHorizontal: 10,
+  // Gravity range (constant) for compounds
+  gravityRangeCompound: 1.5,
+  // Gravity force (constant) for compounds
+  gravityCompound: 1.0,
+  // Gravity range (constant)
+  gravityRange: 3.8, 
+  // Initial cooling factor for incremental layout  
+  initialEnergyOnIncremental: 0.3,  
+
+  /* layout event callbacks */
+  ready: () => {}, // on layoutready
+  stop: () => {} // on layoutstop
+};
+```
 
 
 ## Build targets
