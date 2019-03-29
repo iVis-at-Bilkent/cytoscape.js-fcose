@@ -1,11 +1,10 @@
 {
   "name": "cytoscape-fcose",
-  "version": "0.0.0",
-  "description": "",
+  "version": "1.0.0",
+  "description": "The fCoSE layout for Cytoscape.js by Bilkent with fast compound node placement",
   "main": "cytoscape-fcose.js",
   "author": {
-    "name": "iVis-at-Bilkent",
-    "email": ""
+    "name": "iVis-at-Bilkent"
   },
   "scripts": {
     "postpublish": "run-s gh-pages:demo gh-pages:deploy gh-pages:clean",
