@@ -6,389 +6,385 @@ const aux = require('./auxiliary');
 const numeric = require('numeric');
 const LinkedList = require('cose-base').layoutBase.LinkedList;
 
-let dummyNodes = new Map();  // map to keep dummy nodes and their neighbors
-let nodeIndexes = new Map();  // map to keep indexes to nodes
-let parentChildMap = new Map(); // mapping btw. compound and its representative node 
-let allNodesNeighborhood = []; // array to keep neighborhood of all nodes
-let xCoords = [];
-let yCoords = [];
-
-let samplesColumn = [];   // sampled vertices
-let minDistancesColumn = [];
-let C = [];   // column sampling matrix
-let PHI = [];   // intersection of column and row sampling matrices 
-let INV = [];   // inverse of PHI 
-
-let firstSample;    // the first sampled node
-let nodeSize;
-
-const infinity = 100000000;
-const small = 0.000000001;
-
-let piTol;
-let samplingType;   // false for random, true for greedy
-let sampleSize;
-
-/**** Spectral-preprocessing functions ****/
-
-// get the top most nodes
-let getTopMostNodes = function(nodes) {
-  let nodesMap = {};
-  for (let i = 0; i < nodes.length; i++) {
-      nodesMap[nodes[i].id()] = true;
-  }
-  let roots = nodes.filter(function (ele, i) {
-      if(typeof ele === "number") {
-        ele = i;
-      }
-      let parent = ele.parent()[0];
-      while(parent != null){
-        if(nodesMap[parent.id()]){
-          return false;
-        }
-        parent = parent.parent()[0];
-      }
-      return true;
-  });
-
-  return roots;
-};  
-
-// find disconnected components and create dummy nodes that connect them
-let connectComponents = function(topMostNodes){      
-  let queue = new LinkedList();
-  let visited = new Set();
-  let visitedTopMostNodes = [];
-  let currentNeighbor;
-  let minDegreeNode;
-  let minDegree;
-
-  let isConnected = false;
-  let count = 1;
-  let nodesConnectedToDummy = [];
-
-  do{
-    let currentNode = topMostNodes[0];
-    let childrenOfCurrentNode = currentNode.union(currentNode.descendants());
-    visitedTopMostNodes.push(currentNode);
-
-    childrenOfCurrentNode.forEach(function(node) {
-      queue.push(node);
-      visited.add(node);
-    });
-
-    while(queue.length != 0){
-      currentNode = queue.shift();
-
-      // Traverse all neighbors of this node
-      let neighborNodes = currentNode.neighborhood().nodes();
-      for(let i = 0; i < neighborNodes.length; i++){
-        let neighborNode = neighborNodes[i];
-        currentNeighbor = topMostNodes.intersection(neighborNode.union(neighborNode.ancestors()));
-        if(currentNeighbor != null && !visited.has(currentNeighbor[0])){
-          let childrenOfNeighbor = currentNeighbor.union(currentNeighbor.descendants());
-
-          childrenOfNeighbor.forEach(function(node){
-            queue.push(node);
-            visited.add(node);
-            if(topMostNodes.has(node)){
-              visitedTopMostNodes.push(node);
-            }
-          });
-
-        }
-      }
-    }
-
-    if(visitedTopMostNodes.length == topMostNodes.length){
-      isConnected = true;
-    }
-
-    if(!isConnected || (isConnected && count > 1)){
-      minDegreeNode = visitedTopMostNodes[0];
-      minDegree = minDegreeNode.connectedEdges().length;
-      visitedTopMostNodes.forEach(function(node){
-        if(node.connectedEdges().length < minDegree){
-          minDegree = node.connectedEdges().length;
-          minDegreeNode = node;
-        }
-      });
-      nodesConnectedToDummy.push(minDegreeNode.id());
-      // TO DO: Check efficiency of this part
-      let temp = visitedTopMostNodes[0];
-      visitedTopMostNodes.forEach(function(node){
-        temp = temp.union(node);
-      });
-      visitedTopMostNodes = [];
-      topMostNodes = topMostNodes.difference(temp);
-      count++;
-    }
-
-  }
-  while(!isConnected);
-
-  if(nodesConnectedToDummy.length > 0 ){
-      dummyNodes.set('dummy'+(dummyNodes.size+1), nodesConnectedToDummy);
-  }
-};
-
-/**** Spectral layout functions ****/
-
-// determine which columns to be sampled
-let randomSampleCR = function() {
-  let sample = 0;
-  let count = 0;
-  let flag = false;
-
-  while(count < sampleSize){
-    sample = Math.floor(Math.random() * nodeSize); 
-
-    flag = false;
-    for(let i = 0; i < count; i++){
-      if(samplesColumn[i] == sample){
-        flag = true;
-        break;
-      }
-    }
-
-    if(!flag){
-      samplesColumn[count] = sample;
-      count++;
-    }
-    else{
-      continue;
-    }
-  }    
-};
-
-// takes the index of the node(pivot) to initiate BFS as a parameter
-let BFS = function(pivot, index, samplingMethod){
-  let path = [];    // the front of the path
-  let front = 0;    // the back of the path
-  let back = 0;
-  let current = 0;
-  let temp;
-  let distance = [];
-
-  let max_dist = 0;    // the furthest node to be returned
-  let max_ind = 1;
-
-  for(let i = 0; i < nodeSize; i++){
-    distance[i] = infinity;
-  }
-
-  path[back] = pivot;
-  distance[pivot] = 0;
-
-  while(back >= front){
-    current = path[front++];
-    let neighbors = allNodesNeighborhood[current];
-    for(let i = 0; i < neighbors.length; i++){
-      temp = nodeIndexes.get(neighbors[i]);
-      if(distance[temp] == infinity){
-        distance[temp] = distance[current] + 1;
-        path[++back] = temp;
-      }
-    }        
-    C[current][index] = distance[current] * 75;       
-  }
-
-  if(samplingMethod){
-    for(let i = 0; i < nodeSize; i++){
-      if(C[i][index] < minDistancesColumn[i])
-        minDistancesColumn[i] = C[i][index];
-    }
-
-    for(let i = 0; i < nodeSize; i++){
-      if(minDistancesColumn[i] > max_dist ){
-        max_dist = minDistancesColumn[i];
-        max_ind = i;
-
-      }
-    }            
-  }
-  return max_ind;
-};
-
-// apply BFS to all nodes or selected samples
-let allBFS = function(samplingMethod){
-
-  let sample;
-
-  if(!samplingMethod){
-    randomSampleCR();
-
-    // call BFS
-    for(let i = 0; i < sampleSize; i++){
-      BFS(samplesColumn[i], i, samplingMethod, false);
-    }          
-  }
-  else{
-    sample = Math.floor(Math.random() * nodeSize);
-    firstSample = sample;
-
-    for(let i = 0; i < nodeSize; i++){
-      minDistancesColumn[i] = infinity;
-    } 
-
-    for(let i = 0; i < sampleSize; i++){
-      samplesColumn[i] = sample;
-      sample = BFS(sample, i, samplingMethod);
-    } 
-
-  }
-
-  // form the squared distances for C
-  for(let i = 0; i < nodeSize; i++){
-    for(let j = 0; j < sampleSize; j++){
-      C[i][j] *= C[i][j];  
-    }
-  }
-
-  // form PHI
-  for(let i = 0; i < sampleSize; i++){
-    PHI[i] = [];  
-  }
-
-  for(let i = 0; i < sampleSize; i++){
-    for(let j = 0; j < sampleSize; j++){
-      PHI[i][j] = C[samplesColumn[j]][i];  
-    }
-  }        
-};
-
-// perform the SVD algorithm and apply a regularization step
-let sample = function(){
-
-  let SVDResult = numeric.svd(PHI);
-
-  let a_w = SVDResult.S;
-  let a_u = SVDResult.U;
-  let a_v = SVDResult.V;        
-
-  let max_s = a_w[0]*a_w[0]*a_w[0];
-
-  let a_Sig = [];
-
-  //  regularization
-  for(let i = 0; i < sampleSize; i++){
-    a_Sig[i] = [];
-    for(let j = 0; j < sampleSize; j++){
-      a_Sig[i][j] = 0;
-      if(i == j){
-        a_Sig[i][j] = a_w[i]/(a_w[i]*a_w[i] + max_s/(a_w[i]*a_w[i]));
-      }
-    }
-  }
-
-  INV = aux.multMat(aux.multMat(a_v, a_Sig), numeric.transpose(a_u));
-
-};
-
-// calculate final coordinates 
-let powerIteration = function(){
-  // two largest eigenvalues
-  let theta1; 
-  let theta2;
-
-  // initial guesses for eigenvectors
-  let Y1 = [];
-  let Y2 = [];
-
-  let V1 = [];
-  let V2 = [];      
-
-  for(let i = 0; i < nodeSize; i++){
-    Y1[i] = Math.random();
-    Y2[i] = Math.random();
-  }
-
-  Y1 = aux.normalize(Y1);
-  Y2 = aux.normalize(Y2);
-
-  let count = 0;
-  // to keep track of the improvement ratio in power iteration
-  let current = small; 
-  let previous = small;
-
-  let temp;
-
-  while(true){
-    count++;
-
-    for(let i = 0; i < nodeSize; i++){
-      V1[i] = Y1[i];
-    }
-
-    Y1 = aux.multGamma(aux.multL(aux.multGamma(V1), C, INV));
-    theta1 = aux.dotProduct(V1, Y1);
-    Y1 = aux.normalize(Y1);
-
-    current = aux.dotProduct(V1, Y1);
-
-    temp = Math.abs(current/previous);
-
-    if(temp < 1 + piTol && temp > 1){
-      break;
-    }
-
-    previous = current;        
-  }
-
-  for(let i = 0; i < nodeSize; i++){
-    V1[i] = Y1[i];
-  }
-
-  count = 0;
-  previous = small;
-  while(true){
-    count++;
-
-    for(let i = 0; i < nodeSize; i++){
-      V2[i] = Y2[i];
-    }
-
-    V2 = aux.minusOp(V2, aux.multCons(V1, (aux.dotProduct(V1, V2))));
-    Y2 = aux.multGamma(aux.multL(aux.multGamma(V2), C, INV));
-    theta2 = aux.dotProduct(V2, Y2);
-    Y2 = aux.normalize(Y2);
-
-    current = aux.dotProduct(V2, Y2);
-
-    temp = Math.abs(current/previous);
-
-    if(temp < 1 + piTol && temp > 1){
-      break;
-    }
-
-    previous = current;        
-  }
-
-  for(let i = 0; i < nodeSize; i++){
-    V2[i] = Y2[i];
-  }
-
-  // theta1 now contains dominant eigenvalue
-  // theta2 now contains the second-largest eigenvalue
-  // V1 now contains theta1's eigenvector
-  // V2 now contains theta2's eigenvector
-
-  //populate the two vectors
-  xCoords = aux.multCons(V1, Math.sqrt(Math.abs(theta1)));
-  yCoords = aux.multCons(V2, Math.sqrt(Math.abs(theta2)));
-
-};
-
 // main function that spectral layout is processed
 let spectralLayout = function(options){
   
   let cy = options.cy;
   let eles = options.eles;
-  let nodes = eles.nodes();
-  
-  piTol = options.piTol;
-  samplingType = options.samplingType;   // false for random, true for greedy
-  sampleSize = options.sampleSize;  
+  let nodes = eles.nodes();  
+
+  let dummyNodes = new Map();  // map to keep dummy nodes and their neighbors
+  let nodeIndexes = new Map();  // map to keep indexes to nodes
+  let parentChildMap = new Map(); // mapping btw. compound and its representative node 
+  let allNodesNeighborhood = []; // array to keep neighborhood of all nodes
+  let xCoords = [];
+  let yCoords = [];
+
+  let samplesColumn = [];   // sampled vertices
+  let minDistancesColumn = [];
+  let C = [];   // column sampling matrix
+  let PHI = [];   // intersection of column and row sampling matrices 
+  let INV = [];   // inverse of PHI 
+
+  let firstSample;    // the first sampled node
+  let nodeSize;
+
+  const infinity = 100000000;
+  const small = 0.000000001;
+
+  let piTol = options.piTol;
+  let samplingType = options.samplingType;   // false for random, true for greedy
+  let sampleSize;  
+
+  /**** Spectral-preprocessing functions ****/
+
+  // get the top most nodes
+  let getTopMostNodes = function(nodes) {
+    let nodesMap = {};
+    for (let i = 0; i < nodes.length; i++) {
+        nodesMap[nodes[i].id()] = true;
+    }
+    let roots = nodes.filter(function (ele, i) {
+        if(typeof ele === "number") {
+          ele = i;
+        }
+        let parent = ele.parent()[0];
+        while(parent != null){
+          if(nodesMap[parent.id()]){
+            return false;
+          }
+          parent = parent.parent()[0];
+        }
+        return true;
+    });
+
+    return roots;
+  };  
+
+  // find disconnected components and create dummy nodes that connect them
+  let connectComponents = function(topMostNodes){      
+    let queue = new LinkedList();
+    let visited = new Set();
+    let visitedTopMostNodes = [];
+    let currentNeighbor;
+    let minDegreeNode;
+    let minDegree;
+
+    let isConnected = false;
+    let count = 1;
+    let nodesConnectedToDummy = [];
+
+    do{
+      let currentNode = topMostNodes[0];
+      let childrenOfCurrentNode = currentNode.union(currentNode.descendants());
+      visitedTopMostNodes.push(currentNode);
+
+      childrenOfCurrentNode.forEach(function(node) {
+        queue.push(node);
+        visited.add(node);
+      });
+
+      while(queue.length != 0){
+        currentNode = queue.shift();
+
+        // Traverse all neighbors of this node
+        let neighborNodes = currentNode.neighborhood().nodes();
+        for(let i = 0; i < neighborNodes.length; i++){
+          let neighborNode = neighborNodes[i];
+          currentNeighbor = topMostNodes.intersection(neighborNode.union(neighborNode.ancestors()));
+          if(currentNeighbor != null && !visited.has(currentNeighbor[0])){
+            let childrenOfNeighbor = currentNeighbor.union(currentNeighbor.descendants());
+
+            childrenOfNeighbor.forEach(function(node){
+              queue.push(node);
+              visited.add(node);
+              if(topMostNodes.has(node)){
+                visitedTopMostNodes.push(node);
+              }
+            });
+
+          }
+        }
+      }
+
+      if(visitedTopMostNodes.length == topMostNodes.length){
+        isConnected = true;
+      }
+
+      if(!isConnected || (isConnected && count > 1)){
+        minDegreeNode = visitedTopMostNodes[0];
+        minDegree = minDegreeNode.connectedEdges().length;
+        visitedTopMostNodes.forEach(function(node){
+          if(node.connectedEdges().length < minDegree){
+            minDegree = node.connectedEdges().length;
+            minDegreeNode = node;
+          }
+        });
+        nodesConnectedToDummy.push(minDegreeNode.id());
+        // TO DO: Check efficiency of this part
+        let temp = visitedTopMostNodes[0];
+        visitedTopMostNodes.forEach(function(node){
+          temp = temp.union(node);
+        });
+        visitedTopMostNodes = [];
+        topMostNodes = topMostNodes.difference(temp);
+        count++;
+      }
+
+    }
+    while(!isConnected);
+
+    if(nodesConnectedToDummy.length > 0 ){
+        dummyNodes.set('dummy'+(dummyNodes.size+1), nodesConnectedToDummy);
+    }
+  };
+
+  /**** Spectral layout functions ****/
+
+  // determine which columns to be sampled
+  let randomSampleCR = function() {
+    let sample = 0;
+    let count = 0;
+    let flag = false;
+
+    while(count < sampleSize){
+      sample = Math.floor(Math.random() * nodeSize); 
+
+      flag = false;
+      for(let i = 0; i < count; i++){
+        if(samplesColumn[i] == sample){
+          flag = true;
+          break;
+        }
+      }
+
+      if(!flag){
+        samplesColumn[count] = sample;
+        count++;
+      }
+      else{
+        continue;
+      }
+    }    
+  };
+
+  // takes the index of the node(pivot) to initiate BFS as a parameter
+  let BFS = function(pivot, index, samplingMethod){
+    let path = [];    // the front of the path
+    let front = 0;    // the back of the path
+    let back = 0;
+    let current = 0;
+    let temp;
+    let distance = [];
+
+    let max_dist = 0;    // the furthest node to be returned
+    let max_ind = 1;
+
+    for(let i = 0; i < nodeSize; i++){
+      distance[i] = infinity;
+    }
+
+    path[back] = pivot;
+    distance[pivot] = 0;
+
+    while(back >= front){
+      current = path[front++];
+      let neighbors = allNodesNeighborhood[current];
+      for(let i = 0; i < neighbors.length; i++){
+        temp = nodeIndexes.get(neighbors[i]);
+        if(distance[temp] == infinity){
+          distance[temp] = distance[current] + 1;
+          path[++back] = temp;
+        }
+      }        
+      C[current][index] = distance[current] * 75;       
+    }
+
+    if(samplingMethod){
+      for(let i = 0; i < nodeSize; i++){
+        if(C[i][index] < minDistancesColumn[i])
+          minDistancesColumn[i] = C[i][index];
+      }
+
+      for(let i = 0; i < nodeSize; i++){
+        if(minDistancesColumn[i] > max_dist ){
+          max_dist = minDistancesColumn[i];
+          max_ind = i;
+
+        }
+      }            
+    }
+    return max_ind;
+  };
+
+  // apply BFS to all nodes or selected samples
+  let allBFS = function(samplingMethod){
+
+    let sample;
+
+    if(!samplingMethod){
+      randomSampleCR();
+
+      // call BFS
+      for(let i = 0; i < sampleSize; i++){
+        BFS(samplesColumn[i], i, samplingMethod, false);
+      }          
+    }
+    else{
+      sample = Math.floor(Math.random() * nodeSize);
+      firstSample = sample;
+
+      for(let i = 0; i < nodeSize; i++){
+        minDistancesColumn[i] = infinity;
+      } 
+
+      for(let i = 0; i < sampleSize; i++){
+        samplesColumn[i] = sample;
+        sample = BFS(sample, i, samplingMethod);
+      } 
+
+    }
+
+    // form the squared distances for C
+    for(let i = 0; i < nodeSize; i++){
+      for(let j = 0; j < sampleSize; j++){
+        C[i][j] *= C[i][j];  
+      }
+    }
+
+    // form PHI
+    for(let i = 0; i < sampleSize; i++){
+      PHI[i] = [];  
+    }
+
+    for(let i = 0; i < sampleSize; i++){
+      for(let j = 0; j < sampleSize; j++){
+        PHI[i][j] = C[samplesColumn[j]][i];  
+      }
+    }        
+  };
+
+  // perform the SVD algorithm and apply a regularization step
+  let sample = function(){
+
+    let SVDResult = numeric.svd(PHI);
+
+    let a_w = SVDResult.S;
+    let a_u = SVDResult.U;
+    let a_v = SVDResult.V;        
+
+    let max_s = a_w[0]*a_w[0]*a_w[0];
+
+    let a_Sig = [];
+
+    //  regularization
+    for(let i = 0; i < sampleSize; i++){
+      a_Sig[i] = [];
+      for(let j = 0; j < sampleSize; j++){
+        a_Sig[i][j] = 0;
+        if(i == j){
+          a_Sig[i][j] = a_w[i]/(a_w[i]*a_w[i] + max_s/(a_w[i]*a_w[i]));
+        }
+      }
+    }
+
+    INV = aux.multMat(aux.multMat(a_v, a_Sig), numeric.transpose(a_u));
+
+  };
+
+  // calculate final coordinates 
+  let powerIteration = function(){
+    // two largest eigenvalues
+    let theta1; 
+    let theta2;
+
+    // initial guesses for eigenvectors
+    let Y1 = [];
+    let Y2 = [];
+
+    let V1 = [];
+    let V2 = [];      
+
+    for(let i = 0; i < nodeSize; i++){
+      Y1[i] = Math.random();
+      Y2[i] = Math.random();
+    }
+
+    Y1 = aux.normalize(Y1);
+    Y2 = aux.normalize(Y2);
+
+    let count = 0;
+    // to keep track of the improvement ratio in power iteration
+    let current = small; 
+    let previous = small;
+
+    let temp;
+
+    while(true){
+      count++;
+
+      for(let i = 0; i < nodeSize; i++){
+        V1[i] = Y1[i];
+      }
+
+      Y1 = aux.multGamma(aux.multL(aux.multGamma(V1), C, INV));
+      theta1 = aux.dotProduct(V1, Y1);
+      Y1 = aux.normalize(Y1);
+
+      current = aux.dotProduct(V1, Y1);
+
+      temp = Math.abs(current/previous);
+
+      if(temp < 1 + piTol && temp > 1){
+        break;
+      }
+
+      previous = current;        
+    }
+
+    for(let i = 0; i < nodeSize; i++){
+      V1[i] = Y1[i];
+    }
+
+    count = 0;
+    previous = small;
+    while(true){
+      count++;
+
+      for(let i = 0; i < nodeSize; i++){
+        V2[i] = Y2[i];
+      }
+
+      V2 = aux.minusOp(V2, aux.multCons(V1, (aux.dotProduct(V1, V2))));
+      Y2 = aux.multGamma(aux.multL(aux.multGamma(V2), C, INV));
+      theta2 = aux.dotProduct(V2, Y2);
+      Y2 = aux.normalize(Y2);
+
+      current = aux.dotProduct(V2, Y2);
+
+      temp = Math.abs(current/previous);
+
+      if(temp < 1 + piTol && temp > 1){
+        break;
+      }
+
+      previous = current;        
+    }
+
+    for(let i = 0; i < nodeSize; i++){
+      V2[i] = Y2[i];
+    }
+
+    // theta1 now contains dominant eigenvalue
+    // theta2 now contains the second-largest eigenvalue
+    // V1 now contains theta1's eigenvector
+    // V2 now contains theta2's eigenvector
+
+    //populate the two vectors
+    xCoords = aux.multCons(V1, Math.sqrt(Math.abs(theta1)));
+    yCoords = aux.multCons(V2, Math.sqrt(Math.abs(theta2)));
+
+  };
 
   /**** Preparation for spectral layout (Preprocessing) ****/
 
@@ -469,8 +465,11 @@ let spectralLayout = function(options){
     });
   }
 
-  //  nodeSize now only considers the size of transformed graph
-  nodeSize = nodeIndexes.size; 
+  // nodeSize now only considers the size of transformed graph
+  nodeSize = nodeIndexes.size;
+  // if # of nodes in transformed graph is smaller than sample size,
+  // then use # of nodes as sample size
+  sampleSize = nodeSize < options.sampleSize ? nodeSize : options.sampleSize;
 
   // instantiates the partial matrices that will be used in spectral layout
   for(let i = 0; i < nodeSize; i++){

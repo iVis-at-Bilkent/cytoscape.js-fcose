@@ -123,15 +123,6 @@ class Layout {
     // transfer calculated positions to nodes (positions of only simple nodes are evaluated, compounds are positioned automatically)
     eles.nodes().not(":parent").layoutPositions(layout, options, getPositions);    
     
-    document.getElementById("spectral").innerHTML = Math.floor(spectral) + " ms";
-    if(options.postProcessing){
-      document.getElementById("cose").innerHTML = Math.floor(cose) + " ms";
-      document.getElementById("total").innerHTML = Math.floor(spectral + cose) + " ms";
-    }
-    else{
-      document.getElementById("cose").innerHTML = "N/A";
-      document.getElementById("total").innerHTML = Math.floor(spectral) + " ms";
-    }
   }
 }
 

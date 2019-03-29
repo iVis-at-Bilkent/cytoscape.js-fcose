@@ -224,15 +224,6 @@ var Layout = function () {
 
       // transfer calculated positions to nodes (positions of only simple nodes are evaluated, compounds are positioned automatically)
       eles.nodes().not(":parent").layoutPositions(layout, options, getPositions);
-
-      document.getElementById("spectral").innerHTML = Math.floor(spectral) + " ms";
-      if (options.postProcessing) {
-        document.getElementById("cose").innerHTML = Math.floor(cose) + " ms";
-        document.getElementById("total").innerHTML = Math.floor(spectral + cose) + " ms";
-      } else {
-        document.getElementById("cose").innerHTML = "N/A";
-        document.getElementById("total").innerHTML = Math.floor(spectral) + " ms";
-      }
     }
   }]);
 
@@ -409,159 +400,6 @@ var LayoutConstants = __webpack_require__(0).layoutBase.LayoutConstants;
 var FDLayoutConstants = __webpack_require__(0).layoutBase.FDLayoutConstants;
 var CoSEConstants = __webpack_require__(0).CoSEConstants;
 
-var nodeIndexes = void 0;
-var xCoords = void 0;
-var yCoords = void 0;
-var idToLNode = {};
-
-/**** Postprocessing functions ****/
-
-// get the top most nodes
-var getTopMostNodes = function getTopMostNodes(nodes) {
-  var nodesMap = {};
-  for (var i = 0; i < nodes.length; i++) {
-    nodesMap[nodes[i].id()] = true;
-  }
-  var roots = nodes.filter(function (ele, i) {
-    if (typeof ele === "number") {
-      ele = i;
-    }
-    var parent = ele.parent()[0];
-    while (parent != null) {
-      if (nodesMap[parent.id()]) {
-        return false;
-      }
-      parent = parent.parent()[0];
-    }
-    return true;
-  });
-
-  return roots;
-};
-
-// transfer cytoscape nodes to cose nodes
-var processChildrenList = function processChildrenList(parent, children, layout, options) {
-  var size = children.length;
-  for (var i = 0; i < size; i++) {
-    var theChild = children[i];
-    var children_of_children = theChild.children();
-    var theNode = void 0;
-
-    var dimensions = theChild.layoutDimensions({
-      nodeDimensionsIncludeLabels: options.nodeDimensionsIncludeLabels
-    });
-
-    if (theChild.outerWidth() != null && theChild.outerHeight() != null) {
-      if (options.randomize) {
-        if (!theChild.isParent()) {
-          theNode = parent.add(new CoSENode(layout.graphManager, new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
-        } else {
-          var parentInfo = calcBoundingBox(theChild);
-          theNode = parent.add(new CoSENode(layout.graphManager, new PointD(parentInfo.topLeftX, parentInfo.topLeftY), new DimensionD(parentInfo.width, parentInfo.height)));
-        }
-      } else {
-        theNode = parent.add(new CoSENode(layout.graphManager, new PointD(theChild.position('x') - dimensions.w / 2, theChild.position('y') - dimensions.h / 2), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
-      }
-    } else {
-      theNode = parent.add(new CoSENode(this.graphManager));
-    }
-    // Attach id to the layout node
-    theNode.id = theChild.data("id");
-    // Attach the paddings of cy node to layout node
-    theNode.paddingLeft = parseInt(theChild.css('padding'));
-    theNode.paddingTop = parseInt(theChild.css('padding'));
-    theNode.paddingRight = parseInt(theChild.css('padding'));
-    theNode.paddingBottom = parseInt(theChild.css('padding'));
-
-    //Attach the label properties to compound if labels will be included in node dimensions  
-    if (options.nodeDimensionsIncludeLabels) {
-      if (theChild.isParent()) {
-        var labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false }).w;
-        var labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false }).h;
-        var labelPos = theChild.css("text-halign");
-        theNode.labelWidth = labelWidth;
-        theNode.labelHeight = labelHeight;
-        theNode.labelPos = labelPos;
-      }
-    }
-
-    // Map the layout node
-    idToLNode[theChild.data("id")] = theNode;
-
-    if (isNaN(theNode.rect.x)) {
-      theNode.rect.x = 0;
-    }
-
-    if (isNaN(theNode.rect.y)) {
-      theNode.rect.y = 0;
-    }
-
-    if (children_of_children != null && children_of_children.length > 0) {
-      var theNewGraph = void 0;
-      theNewGraph = layout.getGraphManager().add(layout.newGraph(), theNode);
-      processChildrenList(theNewGraph, children_of_children, layout, options);
-    }
-  }
-  function calcBoundingBox(parentNode) {
-    // calculate bounds
-    var left = Number.MAX_VALUE;
-    var right = Number.MIN_VALUE;
-    var top = Number.MAX_VALUE;
-    var bottom = Number.MIN_VALUE;
-    var nodeLeft = void 0;
-    var nodeRight = void 0;
-    var nodeTop = void 0;
-    var nodeBottom = void 0;
-
-    var nodes = parentNode.descendants().not(":parent");
-    var s = nodes.length;
-    for (var _i = 0; _i < s; _i++) {
-      var node = nodes[_i];
-
-      nodeLeft = xCoords[nodeIndexes.get(node.id())] - node.width() / 2;
-      nodeRight = xCoords[nodeIndexes.get(node.id())] + node.width() / 2;
-      nodeTop = yCoords[nodeIndexes.get(node.id())] - node.height() / 2;
-      nodeBottom = yCoords[nodeIndexes.get(node.id())] + node.height() / 2;
-
-      if (left > nodeLeft) {
-        left = nodeLeft;
-      }
-
-      if (right < nodeRight) {
-        right = nodeRight;
-      }
-
-      if (top > nodeTop) {
-        top = nodeTop;
-      }
-
-      if (bottom < nodeBottom) {
-        bottom = nodeBottom;
-      }
-    }
-
-    var boundingBox = {};
-    boundingBox.topLeftX = left;
-    boundingBox.topLeftY = top;
-    boundingBox.width = right - left;
-    boundingBox.height = top - bottom;
-    return boundingBox;
-  }
-};
-
-// transfer cytoscape edges to cose edges
-var processEdges = function processEdges(layout, gm, edges) {
-  for (var i = 0; i < edges.length; i++) {
-    var edge = edges[i];
-    var sourceNode = idToLNode[edge.data("source")];
-    var targetNode = idToLNode[edge.data("target")];
-    if (sourceNode !== targetNode && sourceNode.getEdgesBetween(targetNode).length == 0) {
-      var e1 = gm.add(layout.newEdge(), sourceNode, targetNode);
-      e1.id = edge.id();
-    }
-  }
-};
-
 // main function that cose layout is processed
 var coseLayout = function coseLayout(options, spectralResult) {
 
@@ -569,11 +407,164 @@ var coseLayout = function coseLayout(options, spectralResult) {
   var nodes = eles.nodes();
   var edges = eles.edges();
 
+  var nodeIndexes = void 0;
+  var xCoords = void 0;
+  var yCoords = void 0;
+  var idToLNode = {};
+
   if (options.randomize) {
     nodeIndexes = spectralResult["nodeIndexes"];
     xCoords = spectralResult["xCoords"];
     yCoords = spectralResult["yCoords"];
   }
+
+  /**** Postprocessing functions ****/
+
+  // get the top most nodes
+  var getTopMostNodes = function getTopMostNodes(nodes) {
+    var nodesMap = {};
+    for (var i = 0; i < nodes.length; i++) {
+      nodesMap[nodes[i].id()] = true;
+    }
+    var roots = nodes.filter(function (ele, i) {
+      if (typeof ele === "number") {
+        ele = i;
+      }
+      var parent = ele.parent()[0];
+      while (parent != null) {
+        if (nodesMap[parent.id()]) {
+          return false;
+        }
+        parent = parent.parent()[0];
+      }
+      return true;
+    });
+
+    return roots;
+  };
+
+  // transfer cytoscape nodes to cose nodes
+  var processChildrenList = function processChildrenList(parent, children, layout, options) {
+    var size = children.length;
+    for (var i = 0; i < size; i++) {
+      var theChild = children[i];
+      var children_of_children = theChild.children();
+      var theNode = void 0;
+
+      var dimensions = theChild.layoutDimensions({
+        nodeDimensionsIncludeLabels: options.nodeDimensionsIncludeLabels
+      });
+
+      if (theChild.outerWidth() != null && theChild.outerHeight() != null) {
+        if (options.randomize) {
+          if (!theChild.isParent()) {
+            theNode = parent.add(new CoSENode(layout.graphManager, new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
+          } else {
+            var parentInfo = calcBoundingBox(theChild);
+            theNode = parent.add(new CoSENode(layout.graphManager, new PointD(parentInfo.topLeftX, parentInfo.topLeftY), new DimensionD(parentInfo.width, parentInfo.height)));
+          }
+        } else {
+          theNode = parent.add(new CoSENode(layout.graphManager, new PointD(theChild.position('x') - dimensions.w / 2, theChild.position('y') - dimensions.h / 2), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
+        }
+      } else {
+        theNode = parent.add(new CoSENode(this.graphManager));
+      }
+      // Attach id to the layout node
+      theNode.id = theChild.data("id");
+      // Attach the paddings of cy node to layout node
+      theNode.paddingLeft = parseInt(theChild.css('padding'));
+      theNode.paddingTop = parseInt(theChild.css('padding'));
+      theNode.paddingRight = parseInt(theChild.css('padding'));
+      theNode.paddingBottom = parseInt(theChild.css('padding'));
+
+      //Attach the label properties to compound if labels will be included in node dimensions  
+      if (options.nodeDimensionsIncludeLabels) {
+        if (theChild.isParent()) {
+          var labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false }).w;
+          var labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false }).h;
+          var labelPos = theChild.css("text-halign");
+          theNode.labelWidth = labelWidth;
+          theNode.labelHeight = labelHeight;
+          theNode.labelPos = labelPos;
+        }
+      }
+
+      // Map the layout node
+      idToLNode[theChild.data("id")] = theNode;
+
+      if (isNaN(theNode.rect.x)) {
+        theNode.rect.x = 0;
+      }
+
+      if (isNaN(theNode.rect.y)) {
+        theNode.rect.y = 0;
+      }
+
+      if (children_of_children != null && children_of_children.length > 0) {
+        var theNewGraph = void 0;
+        theNewGraph = layout.getGraphManager().add(layout.newGraph(), theNode);
+        processChildrenList(theNewGraph, children_of_children, layout, options);
+      }
+    }
+    function calcBoundingBox(parentNode) {
+      // calculate bounds
+      var left = Number.MAX_VALUE;
+      var right = Number.MIN_VALUE;
+      var top = Number.MAX_VALUE;
+      var bottom = Number.MIN_VALUE;
+      var nodeLeft = void 0;
+      var nodeRight = void 0;
+      var nodeTop = void 0;
+      var nodeBottom = void 0;
+
+      var nodes = parentNode.descendants().not(":parent");
+      var s = nodes.length;
+      for (var _i = 0; _i < s; _i++) {
+        var node = nodes[_i];
+
+        nodeLeft = xCoords[nodeIndexes.get(node.id())] - node.width() / 2;
+        nodeRight = xCoords[nodeIndexes.get(node.id())] + node.width() / 2;
+        nodeTop = yCoords[nodeIndexes.get(node.id())] - node.height() / 2;
+        nodeBottom = yCoords[nodeIndexes.get(node.id())] + node.height() / 2;
+
+        if (left > nodeLeft) {
+          left = nodeLeft;
+        }
+
+        if (right < nodeRight) {
+          right = nodeRight;
+        }
+
+        if (top > nodeTop) {
+          top = nodeTop;
+        }
+
+        if (bottom < nodeBottom) {
+          bottom = nodeBottom;
+        }
+      }
+
+      var boundingBox = {};
+      boundingBox.topLeftX = left;
+      boundingBox.topLeftY = top;
+      boundingBox.width = right - left;
+      boundingBox.height = top - bottom;
+      return boundingBox;
+    }
+  };
+
+  // transfer cytoscape edges to cose edges
+  var processEdges = function processEdges(layout, gm, edges) {
+    for (var i = 0; i < edges.length; i++) {
+      var edge = edges[i];
+      var sourceNode = idToLNode[edge.data("source")];
+      var targetNode = idToLNode[edge.data("target")];
+      if (sourceNode !== targetNode && sourceNode.getEdgesBetween(targetNode).length == 0) {
+        var e1 = gm.add(layout.newEdge(), sourceNode, targetNode);
+        e1.id = edge.id();
+      }
+    }
+  };
 
   /**** Apply postprocessing ****/
 
@@ -629,371 +620,6 @@ var aux = __webpack_require__(3);
 var numeric = __webpack_require__(7);
 var LinkedList = __webpack_require__(0).layoutBase.LinkedList;
 
-var dummyNodes = new Map(); // map to keep dummy nodes and their neighbors
-var nodeIndexes = new Map(); // map to keep indexes to nodes
-var parentChildMap = new Map(); // mapping btw. compound and its representative node 
-var allNodesNeighborhood = []; // array to keep neighborhood of all nodes
-var xCoords = [];
-var yCoords = [];
-
-var samplesColumn = []; // sampled vertices
-var minDistancesColumn = [];
-var C = []; // column sampling matrix
-var PHI = []; // intersection of column and row sampling matrices 
-var INV = []; // inverse of PHI 
-
-var firstSample = void 0; // the first sampled node
-var nodeSize = void 0;
-
-var infinity = 100000000;
-var small = 0.000000001;
-
-var piTol = void 0;
-var samplingType = void 0; // false for random, true for greedy
-var sampleSize = void 0;
-
-/**** Spectral-preprocessing functions ****/
-
-// get the top most nodes
-var getTopMostNodes = function getTopMostNodes(nodes) {
-  var nodesMap = {};
-  for (var i = 0; i < nodes.length; i++) {
-    nodesMap[nodes[i].id()] = true;
-  }
-  var roots = nodes.filter(function (ele, i) {
-    if (typeof ele === "number") {
-      ele = i;
-    }
-    var parent = ele.parent()[0];
-    while (parent != null) {
-      if (nodesMap[parent.id()]) {
-        return false;
-      }
-      parent = parent.parent()[0];
-    }
-    return true;
-  });
-
-  return roots;
-};
-
-// find disconnected components and create dummy nodes that connect them
-var connectComponents = function connectComponents(topMostNodes) {
-  var queue = new LinkedList();
-  var visited = new Set();
-  var visitedTopMostNodes = [];
-  var currentNeighbor = void 0;
-  var minDegreeNode = void 0;
-  var minDegree = void 0;
-
-  var isConnected = false;
-  var count = 1;
-  var nodesConnectedToDummy = [];
-
-  do {
-    var currentNode = topMostNodes[0];
-    var childrenOfCurrentNode = currentNode.union(currentNode.descendants());
-    visitedTopMostNodes.push(currentNode);
-
-    childrenOfCurrentNode.forEach(function (node) {
-      queue.push(node);
-      visited.add(node);
-    });
-
-    while (queue.length != 0) {
-      currentNode = queue.shift();
-
-      // Traverse all neighbors of this node
-      var neighborNodes = currentNode.neighborhood().nodes();
-      for (var i = 0; i < neighborNodes.length; i++) {
-        var neighborNode = neighborNodes[i];
-        currentNeighbor = topMostNodes.intersection(neighborNode.union(neighborNode.ancestors()));
-        if (currentNeighbor != null && !visited.has(currentNeighbor[0])) {
-          var childrenOfNeighbor = currentNeighbor.union(currentNeighbor.descendants());
-
-          childrenOfNeighbor.forEach(function (node) {
-            queue.push(node);
-            visited.add(node);
-            if (topMostNodes.has(node)) {
-              visitedTopMostNodes.push(node);
-            }
-          });
-        }
-      }
-    }
-
-    if (visitedTopMostNodes.length == topMostNodes.length) {
-      isConnected = true;
-    }
-
-    if (!isConnected || isConnected && count > 1) {
-      (function () {
-        minDegreeNode = visitedTopMostNodes[0];
-        minDegree = minDegreeNode.connectedEdges().length;
-        visitedTopMostNodes.forEach(function (node) {
-          if (node.connectedEdges().length < minDegree) {
-            minDegree = node.connectedEdges().length;
-            minDegreeNode = node;
-          }
-        });
-        nodesConnectedToDummy.push(minDegreeNode.id());
-        // TO DO: Check efficiency of this part
-        var temp = visitedTopMostNodes[0];
-        visitedTopMostNodes.forEach(function (node) {
-          temp = temp.union(node);
-        });
-        visitedTopMostNodes = [];
-        topMostNodes = topMostNodes.difference(temp);
-        count++;
-      })();
-    }
-  } while (!isConnected);
-
-  if (nodesConnectedToDummy.length > 0) {
-    dummyNodes.set('dummy' + (dummyNodes.size + 1), nodesConnectedToDummy);
-  }
-};
-
-/**** Spectral layout functions ****/
-
-// determine which columns to be sampled
-var randomSampleCR = function randomSampleCR() {
-  var sample = 0;
-  var count = 0;
-  var flag = false;
-
-  while (count < sampleSize) {
-    sample = Math.floor(Math.random() * nodeSize);
-
-    flag = false;
-    for (var i = 0; i < count; i++) {
-      if (samplesColumn[i] == sample) {
-        flag = true;
-        break;
-      }
-    }
-
-    if (!flag) {
-      samplesColumn[count] = sample;
-      count++;
-    } else {
-      continue;
-    }
-  }
-};
-
-// takes the index of the node(pivot) to initiate BFS as a parameter
-var BFS = function BFS(pivot, index, samplingMethod) {
-  var path = []; // the front of the path
-  var front = 0; // the back of the path
-  var back = 0;
-  var current = 0;
-  var temp = void 0;
-  var distance = [];
-
-  var max_dist = 0; // the furthest node to be returned
-  var max_ind = 1;
-
-  for (var i = 0; i < nodeSize; i++) {
-    distance[i] = infinity;
-  }
-
-  path[back] = pivot;
-  distance[pivot] = 0;
-
-  while (back >= front) {
-    current = path[front++];
-    var neighbors = allNodesNeighborhood[current];
-    for (var _i = 0; _i < neighbors.length; _i++) {
-      temp = nodeIndexes.get(neighbors[_i]);
-      if (distance[temp] == infinity) {
-        distance[temp] = distance[current] + 1;
-        path[++back] = temp;
-      }
-    }
-    C[current][index] = distance[current] * 75;
-  }
-
-  if (samplingMethod) {
-    for (var _i2 = 0; _i2 < nodeSize; _i2++) {
-      if (C[_i2][index] < minDistancesColumn[_i2]) minDistancesColumn[_i2] = C[_i2][index];
-    }
-
-    for (var _i3 = 0; _i3 < nodeSize; _i3++) {
-      if (minDistancesColumn[_i3] > max_dist) {
-        max_dist = minDistancesColumn[_i3];
-        max_ind = _i3;
-      }
-    }
-  }
-  return max_ind;
-};
-
-// apply BFS to all nodes or selected samples
-var allBFS = function allBFS(samplingMethod) {
-
-  var sample = void 0;
-
-  if (!samplingMethod) {
-    randomSampleCR();
-
-    // call BFS
-    for (var i = 0; i < sampleSize; i++) {
-      BFS(samplesColumn[i], i, samplingMethod, false);
-    }
-  } else {
-    sample = Math.floor(Math.random() * nodeSize);
-    firstSample = sample;
-
-    for (var _i4 = 0; _i4 < nodeSize; _i4++) {
-      minDistancesColumn[_i4] = infinity;
-    }
-
-    for (var _i5 = 0; _i5 < sampleSize; _i5++) {
-      samplesColumn[_i5] = sample;
-      sample = BFS(sample, _i5, samplingMethod);
-    }
-  }
-
-  // form the squared distances for C
-  for (var _i6 = 0; _i6 < nodeSize; _i6++) {
-    for (var j = 0; j < sampleSize; j++) {
-      C[_i6][j] *= C[_i6][j];
-    }
-  }
-
-  // form PHI
-  for (var _i7 = 0; _i7 < sampleSize; _i7++) {
-    PHI[_i7] = [];
-  }
-
-  for (var _i8 = 0; _i8 < sampleSize; _i8++) {
-    for (var _j = 0; _j < sampleSize; _j++) {
-      PHI[_i8][_j] = C[samplesColumn[_j]][_i8];
-    }
-  }
-};
-
-// perform the SVD algorithm and apply a regularization step
-var sample = function sample() {
-
-  var SVDResult = numeric.svd(PHI);
-
-  var a_w = SVDResult.S;
-  var a_u = SVDResult.U;
-  var a_v = SVDResult.V;
-
-  var max_s = a_w[0] * a_w[0] * a_w[0];
-
-  var a_Sig = [];
-
-  //  regularization
-  for (var i = 0; i < sampleSize; i++) {
-    a_Sig[i] = [];
-    for (var j = 0; j < sampleSize; j++) {
-      a_Sig[i][j] = 0;
-      if (i == j) {
-        a_Sig[i][j] = a_w[i] / (a_w[i] * a_w[i] + max_s / (a_w[i] * a_w[i]));
-      }
-    }
-  }
-
-  INV = aux.multMat(aux.multMat(a_v, a_Sig), numeric.transpose(a_u));
-};
-
-// calculate final coordinates 
-var powerIteration = function powerIteration() {
-  // two largest eigenvalues
-  var theta1 = void 0;
-  var theta2 = void 0;
-
-  // initial guesses for eigenvectors
-  var Y1 = [];
-  var Y2 = [];
-
-  var V1 = [];
-  var V2 = [];
-
-  for (var i = 0; i < nodeSize; i++) {
-    Y1[i] = Math.random();
-    Y2[i] = Math.random();
-  }
-
-  Y1 = aux.normalize(Y1);
-  Y2 = aux.normalize(Y2);
-
-  var count = 0;
-  // to keep track of the improvement ratio in power iteration
-  var current = small;
-  var previous = small;
-
-  var temp = void 0;
-
-  while (true) {
-    count++;
-
-    for (var _i9 = 0; _i9 < nodeSize; _i9++) {
-      V1[_i9] = Y1[_i9];
-    }
-
-    Y1 = aux.multGamma(aux.multL(aux.multGamma(V1), C, INV));
-    theta1 = aux.dotProduct(V1, Y1);
-    Y1 = aux.normalize(Y1);
-
-    current = aux.dotProduct(V1, Y1);
-
-    temp = Math.abs(current / previous);
-
-    if (temp < 1 + piTol && temp > 1) {
-      break;
-    }
-
-    previous = current;
-  }
-
-  for (var _i10 = 0; _i10 < nodeSize; _i10++) {
-    V1[_i10] = Y1[_i10];
-  }
-
-  count = 0;
-  previous = small;
-  while (true) {
-    count++;
-
-    for (var _i11 = 0; _i11 < nodeSize; _i11++) {
-      V2[_i11] = Y2[_i11];
-    }
-
-    V2 = aux.minusOp(V2, aux.multCons(V1, aux.dotProduct(V1, V2)));
-    Y2 = aux.multGamma(aux.multL(aux.multGamma(V2), C, INV));
-    theta2 = aux.dotProduct(V2, Y2);
-    Y2 = aux.normalize(Y2);
-
-    current = aux.dotProduct(V2, Y2);
-
-    temp = Math.abs(current / previous);
-
-    if (temp < 1 + piTol && temp > 1) {
-      break;
-    }
-
-    previous = current;
-  }
-
-  for (var _i12 = 0; _i12 < nodeSize; _i12++) {
-    V2[_i12] = Y2[_i12];
-  }
-
-  // theta1 now contains dominant eigenvalue
-  // theta2 now contains the second-largest eigenvalue
-  // V1 now contains theta1's eigenvector
-  // V2 now contains theta2's eigenvector
-
-  //populate the two vectors
-  xCoords = aux.multCons(V1, Math.sqrt(Math.abs(theta1)));
-  yCoords = aux.multCons(V2, Math.sqrt(Math.abs(theta2)));
-};
-
 // main function that spectral layout is processed
 var spectralLayout = function spectralLayout(options) {
 
@@ -1001,9 +627,370 @@ var spectralLayout = function spectralLayout(options) {
   var eles = options.eles;
   var nodes = eles.nodes();
 
-  piTol = options.piTol;
-  samplingType = options.samplingType; // false for random, true for greedy
-  sampleSize = options.sampleSize;
+  var dummyNodes = new Map(); // map to keep dummy nodes and their neighbors
+  var nodeIndexes = new Map(); // map to keep indexes to nodes
+  var parentChildMap = new Map(); // mapping btw. compound and its representative node 
+  var allNodesNeighborhood = []; // array to keep neighborhood of all nodes
+  var xCoords = [];
+  var yCoords = [];
+
+  var samplesColumn = []; // sampled vertices
+  var minDistancesColumn = [];
+  var C = []; // column sampling matrix
+  var PHI = []; // intersection of column and row sampling matrices 
+  var INV = []; // inverse of PHI 
+
+  var firstSample = void 0; // the first sampled node
+  var nodeSize = void 0;
+
+  var infinity = 100000000;
+  var small = 0.000000001;
+
+  var piTol = options.piTol;
+  var samplingType = options.samplingType; // false for random, true for greedy
+  var sampleSize = void 0;
+
+  /**** Spectral-preprocessing functions ****/
+
+  // get the top most nodes
+  var getTopMostNodes = function getTopMostNodes(nodes) {
+    var nodesMap = {};
+    for (var i = 0; i < nodes.length; i++) {
+      nodesMap[nodes[i].id()] = true;
+    }
+    var roots = nodes.filter(function (ele, i) {
+      if (typeof ele === "number") {
+        ele = i;
+      }
+      var parent = ele.parent()[0];
+      while (parent != null) {
+        if (nodesMap[parent.id()]) {
+          return false;
+        }
+        parent = parent.parent()[0];
+      }
+      return true;
+    });
+
+    return roots;
+  };
+
+  // find disconnected components and create dummy nodes that connect them
+  var connectComponents = function connectComponents(topMostNodes) {
+    var queue = new LinkedList();
+    var visited = new Set();
+    var visitedTopMostNodes = [];
+    var currentNeighbor = void 0;
+    var minDegreeNode = void 0;
+    var minDegree = void 0;
+
+    var isConnected = false;
+    var count = 1;
+    var nodesConnectedToDummy = [];
+
+    do {
+      var currentNode = topMostNodes[0];
+      var childrenOfCurrentNode = currentNode.union(currentNode.descendants());
+      visitedTopMostNodes.push(currentNode);
+
+      childrenOfCurrentNode.forEach(function (node) {
+        queue.push(node);
+        visited.add(node);
+      });
+
+      while (queue.length != 0) {
+        currentNode = queue.shift();
+
+        // Traverse all neighbors of this node
+        var neighborNodes = currentNode.neighborhood().nodes();
+        for (var i = 0; i < neighborNodes.length; i++) {
+          var neighborNode = neighborNodes[i];
+          currentNeighbor = topMostNodes.intersection(neighborNode.union(neighborNode.ancestors()));
+          if (currentNeighbor != null && !visited.has(currentNeighbor[0])) {
+            var childrenOfNeighbor = currentNeighbor.union(currentNeighbor.descendants());
+
+            childrenOfNeighbor.forEach(function (node) {
+              queue.push(node);
+              visited.add(node);
+              if (topMostNodes.has(node)) {
+                visitedTopMostNodes.push(node);
+              }
+            });
+          }
+        }
+      }
+
+      if (visitedTopMostNodes.length == topMostNodes.length) {
+        isConnected = true;
+      }
+
+      if (!isConnected || isConnected && count > 1) {
+        (function () {
+          minDegreeNode = visitedTopMostNodes[0];
+          minDegree = minDegreeNode.connectedEdges().length;
+          visitedTopMostNodes.forEach(function (node) {
+            if (node.connectedEdges().length < minDegree) {
+              minDegree = node.connectedEdges().length;
+              minDegreeNode = node;
+            }
+          });
+          nodesConnectedToDummy.push(minDegreeNode.id());
+          // TO DO: Check efficiency of this part
+          var temp = visitedTopMostNodes[0];
+          visitedTopMostNodes.forEach(function (node) {
+            temp = temp.union(node);
+          });
+          visitedTopMostNodes = [];
+          topMostNodes = topMostNodes.difference(temp);
+          count++;
+        })();
+      }
+    } while (!isConnected);
+
+    if (nodesConnectedToDummy.length > 0) {
+      dummyNodes.set('dummy' + (dummyNodes.size + 1), nodesConnectedToDummy);
+    }
+  };
+
+  /**** Spectral layout functions ****/
+
+  // determine which columns to be sampled
+  var randomSampleCR = function randomSampleCR() {
+    var sample = 0;
+    var count = 0;
+    var flag = false;
+
+    while (count < sampleSize) {
+      sample = Math.floor(Math.random() * nodeSize);
+
+      flag = false;
+      for (var i = 0; i < count; i++) {
+        if (samplesColumn[i] == sample) {
+          flag = true;
+          break;
+        }
+      }
+
+      if (!flag) {
+        samplesColumn[count] = sample;
+        count++;
+      } else {
+        continue;
+      }
+    }
+  };
+
+  // takes the index of the node(pivot) to initiate BFS as a parameter
+  var BFS = function BFS(pivot, index, samplingMethod) {
+    var path = []; // the front of the path
+    var front = 0; // the back of the path
+    var back = 0;
+    var current = 0;
+    var temp = void 0;
+    var distance = [];
+
+    var max_dist = 0; // the furthest node to be returned
+    var max_ind = 1;
+
+    for (var i = 0; i < nodeSize; i++) {
+      distance[i] = infinity;
+    }
+
+    path[back] = pivot;
+    distance[pivot] = 0;
+
+    while (back >= front) {
+      current = path[front++];
+      var neighbors = allNodesNeighborhood[current];
+      for (var _i = 0; _i < neighbors.length; _i++) {
+        temp = nodeIndexes.get(neighbors[_i]);
+        if (distance[temp] == infinity) {
+          distance[temp] = distance[current] + 1;
+          path[++back] = temp;
+        }
+      }
+      C[current][index] = distance[current] * 75;
+    }
+
+    if (samplingMethod) {
+      for (var _i2 = 0; _i2 < nodeSize; _i2++) {
+        if (C[_i2][index] < minDistancesColumn[_i2]) minDistancesColumn[_i2] = C[_i2][index];
+      }
+
+      for (var _i3 = 0; _i3 < nodeSize; _i3++) {
+        if (minDistancesColumn[_i3] > max_dist) {
+          max_dist = minDistancesColumn[_i3];
+          max_ind = _i3;
+        }
+      }
+    }
+    return max_ind;
+  };
+
+  // apply BFS to all nodes or selected samples
+  var allBFS = function allBFS(samplingMethod) {
+
+    var sample = void 0;
+
+    if (!samplingMethod) {
+      randomSampleCR();
+
+      // call BFS
+      for (var i = 0; i < sampleSize; i++) {
+        BFS(samplesColumn[i], i, samplingMethod, false);
+      }
+    } else {
+      sample = Math.floor(Math.random() * nodeSize);
+      firstSample = sample;
+
+      for (var _i4 = 0; _i4 < nodeSize; _i4++) {
+        minDistancesColumn[_i4] = infinity;
+      }
+
+      for (var _i5 = 0; _i5 < sampleSize; _i5++) {
+        samplesColumn[_i5] = sample;
+        sample = BFS(sample, _i5, samplingMethod);
+      }
+    }
+
+    // form the squared distances for C
+    for (var _i6 = 0; _i6 < nodeSize; _i6++) {
+      for (var j = 0; j < sampleSize; j++) {
+        C[_i6][j] *= C[_i6][j];
+      }
+    }
+
+    // form PHI
+    for (var _i7 = 0; _i7 < sampleSize; _i7++) {
+      PHI[_i7] = [];
+    }
+
+    for (var _i8 = 0; _i8 < sampleSize; _i8++) {
+      for (var _j = 0; _j < sampleSize; _j++) {
+        PHI[_i8][_j] = C[samplesColumn[_j]][_i8];
+      }
+    }
+  };
+
+  // perform the SVD algorithm and apply a regularization step
+  var sample = function sample() {
+
+    var SVDResult = numeric.svd(PHI);
+
+    var a_w = SVDResult.S;
+    var a_u = SVDResult.U;
+    var a_v = SVDResult.V;
+
+    var max_s = a_w[0] * a_w[0] * a_w[0];
+
+    var a_Sig = [];
+
+    //  regularization
+    for (var i = 0; i < sampleSize; i++) {
+      a_Sig[i] = [];
+      for (var j = 0; j < sampleSize; j++) {
+        a_Sig[i][j] = 0;
+        if (i == j) {
+          a_Sig[i][j] = a_w[i] / (a_w[i] * a_w[i] + max_s / (a_w[i] * a_w[i]));
+        }
+      }
+    }
+
+    INV = aux.multMat(aux.multMat(a_v, a_Sig), numeric.transpose(a_u));
+  };
+
+  // calculate final coordinates 
+  var powerIteration = function powerIteration() {
+    // two largest eigenvalues
+    var theta1 = void 0;
+    var theta2 = void 0;
+
+    // initial guesses for eigenvectors
+    var Y1 = [];
+    var Y2 = [];
+
+    var V1 = [];
+    var V2 = [];
+
+    for (var i = 0; i < nodeSize; i++) {
+      Y1[i] = Math.random();
+      Y2[i] = Math.random();
+    }
+
+    Y1 = aux.normalize(Y1);
+    Y2 = aux.normalize(Y2);
+
+    var count = 0;
+    // to keep track of the improvement ratio in power iteration
+    var current = small;
+    var previous = small;
+
+    var temp = void 0;
+
+    while (true) {
+      count++;
+
+      for (var _i9 = 0; _i9 < nodeSize; _i9++) {
+        V1[_i9] = Y1[_i9];
+      }
+
+      Y1 = aux.multGamma(aux.multL(aux.multGamma(V1), C, INV));
+      theta1 = aux.dotProduct(V1, Y1);
+      Y1 = aux.normalize(Y1);
+
+      current = aux.dotProduct(V1, Y1);
+
+      temp = Math.abs(current / previous);
+
+      if (temp < 1 + piTol && temp > 1) {
+        break;
+      }
+
+      previous = current;
+    }
+
+    for (var _i10 = 0; _i10 < nodeSize; _i10++) {
+      V1[_i10] = Y1[_i10];
+    }
+
+    count = 0;
+    previous = small;
+    while (true) {
+      count++;
+
+      for (var _i11 = 0; _i11 < nodeSize; _i11++) {
+        V2[_i11] = Y2[_i11];
+      }
+
+      V2 = aux.minusOp(V2, aux.multCons(V1, aux.dotProduct(V1, V2)));
+      Y2 = aux.multGamma(aux.multL(aux.multGamma(V2), C, INV));
+      theta2 = aux.dotProduct(V2, Y2);
+      Y2 = aux.normalize(Y2);
+
+      current = aux.dotProduct(V2, Y2);
+
+      temp = Math.abs(current / previous);
+
+      if (temp < 1 + piTol && temp > 1) {
+        break;
+      }
+
+      previous = current;
+    }
+
+    for (var _i12 = 0; _i12 < nodeSize; _i12++) {
+      V2[_i12] = Y2[_i12];
+    }
+
+    // theta1 now contains dominant eigenvalue
+    // theta2 now contains the second-largest eigenvalue
+    // V1 now contains theta1's eigenvector
+    // V2 now contains theta2's eigenvector
+
+    //populate the two vectors
+    xCoords = aux.multCons(V1, Math.sqrt(Math.abs(theta1)));
+    yCoords = aux.multCons(V2, Math.sqrt(Math.abs(theta2)));
+  };
 
   /**** Preparation for spectral layout (Preprocessing) ****/
 
@@ -1108,7 +1095,7 @@ var spectralLayout = function spectralLayout(options) {
       _loop(_key);
     }
 
-    //  nodeSize now only considers the size of transformed graph
+    // nodeSize now only considers the size of transformed graph
   } catch (err) {
     _didIteratorError2 = true;
     _iteratorError2 = err;
@@ -1125,6 +1112,9 @@ var spectralLayout = function spectralLayout(options) {
   }
 
   nodeSize = nodeIndexes.size;
+  // if # of nodes in transformed graph is smaller than sample size,
+  // then use # of nodes as sample size
+  sampleSize = nodeSize < options.sampleSize ? nodeSize : options.sampleSize;
 
   // instantiates the partial matrices that will be used in spectral layout
   for (var _i14 = 0; _i14 < nodeSize; _i14++) {
