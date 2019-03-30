@@ -42,10 +42,20 @@
 
           var cy = window.cy = cytoscape({
             container: document.getElementById('cy'),
-
+            
+            ready: function(){
+              this.nodes().forEach(function(node){
+                let width = [30, 50, 70];
+                let size = width[Math.floor(Math.random()*3)];
+                node.css("width", size);
+                node.css("height", size);
+              });
+              this.layout({name: 'fcose'}).run();
+            },
+            
             // demo your layout
             layout: {
-              name: 'fcose',
+              name: 'grid'
               // some more options here...
             },
 
