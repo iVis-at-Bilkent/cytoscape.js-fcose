@@ -34,6 +34,7 @@ let spectralLayout = function(options){
 
   let piTol = options.piTol;
   let samplingType = options.samplingType;   // false for random, true for greedy
+	let nodeSeparation = options.nodeSeparation;
   let sampleSize;  
 
   /**** Spectral-preprocessing functions ****/
@@ -197,7 +198,7 @@ let spectralLayout = function(options){
           path[++back] = temp;
         }
       }        
-      C[current][index] = distance[current] * 75;       
+      C[current][index] = distance[current] * nodeSeparation;       
     }
 
     if(samplingMethod){

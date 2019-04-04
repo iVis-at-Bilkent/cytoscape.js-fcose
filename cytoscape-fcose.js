@@ -133,6 +133,8 @@ var defaults = Object.freeze({
   samplingType: true,
   // sample size to construct distance matrix
   sampleSize: 25,
+  // separation amount between nodes
+  nodeSeparation: 75,
   // power iteration tolerance
   piTol: 0.0000001,
 
@@ -653,6 +655,7 @@ var spectralLayout = function spectralLayout(options) {
 
   var piTol = options.piTol;
   var samplingType = options.samplingType; // false for random, true for greedy
+  var nodeSeparation = options.nodeSeparation;
   var sampleSize = void 0;
 
   /**** Spectral-preprocessing functions ****/
@@ -814,7 +817,7 @@ var spectralLayout = function spectralLayout(options) {
           path[++back] = temp;
         }
       }
-      C[current][index] = distance[current] * 75;
+      C[current][index] = distance[current] * nodeSeparation;
     }
 
     if (samplingMethod) {
