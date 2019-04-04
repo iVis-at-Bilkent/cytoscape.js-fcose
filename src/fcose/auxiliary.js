@@ -1,4 +1,4 @@
-/* 
+/*
  * Auxiliary functions used in spectral layout (especially in power iteration)
  */
 

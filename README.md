@@ -90,8 +90,8 @@ var defaultOptions = {
   samplingType: true,
   // sample size to construct distance matrix
   sampleSize: 25,
-	// separation amount between nodes
-	nodeSeparation: 75,
+  // separation amount between nodes
+  nodeSeparation: 75,
   // power iteration tolerance
   piTol: 0.0000001,
   

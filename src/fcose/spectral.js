@@ -34,7 +34,7 @@ let spectralLayout = function(options){
 
   let piTol = options.piTol;
   let samplingType = options.samplingType;   // false for random, true for greedy
-	let nodeSeparation = options.nodeSeparation;
+  let nodeSeparation = options.nodeSeparation;
   let sampleSize;  
 
   /**** Spectral-preprocessing functions ****/

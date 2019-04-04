@@ -269,7 +269,7 @@ module.exports = Object.assign != null ? Object.assign.bind(Object) : function (
 "use strict";
 
 
-/* 
+/*
  * Auxiliary functions used in spectral layout (especially in power iteration)
  */
 
