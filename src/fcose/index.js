@@ -120,8 +120,14 @@ class Layout {
       }
     }; 
     
-    // transfer calculated positions to nodes (positions of only simple nodes are evaluated, compounds are positioned automatically)
-    eles.nodes().not(":parent").layoutPositions(layout, options, getPositions);    
+    // quality = "draft" and randomize = false are contradictive so in that case positions don't change
+    if(!(options.quality == "draft" && !options.randomize)) {
+      // transfer calculated positions to nodes (positions of only simple nodes are evaluated, compounds are positioned automatically)
+      eles.nodes().not(":parent").layoutPositions(layout, options, getPositions); 
+    }
+    else{
+      console.log("If randomize option is set to false, then quality option must be 'proof'.");
+    }
     
   }
 }
