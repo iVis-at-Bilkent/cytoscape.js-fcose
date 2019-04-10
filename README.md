@@ -64,10 +64,11 @@ When calling the layout, e.g. `cy.layout({ name: 'fcose', ... })`, the following
 ```js
 var defaultOptions = {
 
-  // "draft" or "proof" 
+  // 'draft', 'default' or 'proof' 
   // - "draft" only applies spectral layout 
-  // - "proof" improves the quality with incremental layout  
-  quality: "proof",
+  // - "default" improves the quality with incremental layout (fast cooling rate)
+  // - "proof" improves the quality with incremental layout (slow cooling rate) 
+  quality: "default",
   // use random node positions at beginning of layout
   // if this is set to false, then quality option must be "proof"
   randomize: true, 

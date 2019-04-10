@@ -8,10 +8,11 @@ const { coseLayout }= require('./cose');
 
 const defaults = Object.freeze({
   
-  // "draft" or "proof" 
-  // - "draft" only applies spectral layout 
-  // - "proof" improves the quality with subsequent CoSE layout  
-  quality: "proof",
+  // 'draft', 'default' or 'proof' 
+  // - 'draft' only applies spectral layout 
+  // - 'default' improves the quality with subsequent CoSE layout (fast cooling rate)
+  // - 'proof' improves the quality with subsequent CoSE layout (slow cooling rate) 
+  quality: "default",
   // use random node positions at beginning of layout
   // if this is set to false, then quality option must be "proof"
   randomize: true, 
@@ -95,14 +96,14 @@ class Layout {
       yCoords = spectralResult["yCoords"];
     }
     
-    if(options.quality == "proof"){  
+    if(options.quality == "default" || options.quality == "proof"){  
       // Apply cose layout as postprocessing
       coseResult = coseLayout(options, spectralResult);
     }
     
     // get each element's calculated position
     let getPositions = function(ele, i ){
-      if(options.quality == "proof") {
+      if(options.quality == "default" || options.quality == "proof") {
         if(typeof ele === "number") {
           ele = i;
         }
@@ -123,12 +124,12 @@ class Layout {
     }; 
     
     // quality = "draft" and randomize = false are contradictive so in that case positions don't change
-    if(!(options.quality == "draft" && !options.randomize)) {
+    if((options.quality == "default" || options.quality == "proof") || options.randomize) {
       // transfer calculated positions to nodes (positions of only simple nodes are evaluated, compounds are positioned automatically)
       eles.nodes().not(":parent").layoutPositions(layout, options, getPositions); 
     }
     else{
-      console.log("If randomize option is set to false, then quality option must be 'proof'.");
+      console.log("If randomize option is set to false, then quality option must be 'default' or 'proof'.");
     }
     
   }
