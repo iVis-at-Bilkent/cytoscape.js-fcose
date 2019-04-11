@@ -192,14 +192,16 @@ var Layout = function () {
       var yCoords = void 0;
       var coseResult = void 0;
 
-      if (options.randomize) {
+      // If number of nodes is 1 or 2, either SVD or powerIteration causes problem
+      // So direct the graph to cose layout
+      if (options.randomize && eles.nodes().length > 2) {
         // Apply spectral layout
         spectralResult = spectralLayout(options);
         xCoords = spectralResult["xCoords"];
         yCoords = spectralResult["yCoords"];
       }
 
-      if (options.quality == "default" || options.quality == "proof") {
+      if (options.quality == "default" || options.quality == "proof" || eles.nodes().length <= 2) {
         // Apply cose layout as postprocessing
         coseResult = coseLayout(options, spectralResult);
       }
@@ -420,7 +422,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
   var yCoords = void 0;
   var idToLNode = {};
 
-  if (options.randomize) {
+  if (options.randomize && nodes.length > 2) {
     nodeIndexes = spectralResult["nodeIndexes"];
     xCoords = spectralResult["xCoords"];
     yCoords = spectralResult["yCoords"];
@@ -464,7 +466,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
       });
 
       if (theChild.outerWidth() != null && theChild.outerHeight() != null) {
-        if (options.randomize) {
+        if (options.randomize && nodes.length > 2) {
           if (!theChild.isParent()) {
             theNode = parent.add(new CoSENode(layout.graphManager, new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
           } else {
@@ -950,7 +952,7 @@ var spectralLayout = function spectralLayout(options) {
 
       temp = Math.abs(current / previous);
 
-      if (temp < 1 + piTol && temp > 1) {
+      if (temp <= 1 + piTol && temp >= 1) {
         break;
       }
 
@@ -979,7 +981,7 @@ var spectralLayout = function spectralLayout(options) {
 
       temp = Math.abs(current / previous);
 
-      if (temp < 1 + piTol && temp > 1) {
+      if (temp <= 1 + piTol && temp >= 1) {
         break;
       }
 

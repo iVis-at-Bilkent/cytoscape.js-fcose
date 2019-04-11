@@ -336,7 +336,7 @@ let spectralLayout = function(options){
 
       temp = Math.abs(current/previous);
 
-      if(temp < 1 + piTol && temp > 1){
+      if(temp <= 1 + piTol && temp >= 1){
         break;
       }
 
@@ -365,7 +365,7 @@ let spectralLayout = function(options){
 
       temp = Math.abs(current/previous);
 
-      if(temp < 1 + piTol && temp > 1){
+      if(temp <= 1 + piTol && temp >= 1){
         break;
       }
 

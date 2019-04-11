@@ -22,7 +22,7 @@ let coseLayout = function(options, spectralResult){
   let yCoords;
   let idToLNode =  {};  
   
-  if(options.randomize){
+  if(options.randomize && nodes.length > 2){
     nodeIndexes = spectralResult["nodeIndexes"];
     xCoords = spectralResult["xCoords"];
     yCoords = spectralResult["yCoords"];
@@ -67,7 +67,7 @@ let coseLayout = function(options, spectralResult){
 
       if (theChild.outerWidth() != null
               && theChild.outerHeight() != null) {
-        if(options.randomize){
+        if(options.randomize && nodes.length > 2){
           if(!theChild.isParent()){
             theNode = parent.add(new CoSENode(layout.graphManager,
                     new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2),

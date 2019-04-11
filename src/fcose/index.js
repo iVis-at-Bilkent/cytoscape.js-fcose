@@ -89,14 +89,16 @@ class Layout {
     let yCoords;
     let coseResult;
     
-    if(options.randomize){
+    // If number of nodes is 1 or 2, either SVD or powerIteration causes problem
+    // So direct the graph to cose layout
+    if(options.randomize && eles.nodes().length > 2){
       // Apply spectral layout
       spectralResult = spectralLayout(options);
       xCoords = spectralResult["xCoords"];
       yCoords = spectralResult["yCoords"];
     }
     
-    if(options.quality == "default" || options.quality == "proof"){  
+    if(options.quality == "default" || options.quality == "proof" || eles.nodes().length <= 2){  
       // Apply cose layout as postprocessing
       coseResult = coseLayout(options, spectralResult);
     }
