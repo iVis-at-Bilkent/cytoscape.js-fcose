@@ -7,10 +7,8 @@
     "name": "iVis-at-Bilkent"
   },
   "scripts": {
-    "postpublish": "run-s gh-pages:demo gh-pages:deploy gh-pages:clean",
-    "gh-pages:demo": "cpy demo.html . --rename=index.html",
-    "gh-pages:deploy": "gh-pages -d .",
-    "gh-pages:clean": "rimraf index.html",
+    "postpublish": "run-s gh-pages",
+    "gh-pages": "gh-pages -d pages",
     "copyright": "update license",
     "lint": "eslint src",
     "build": "cross-env NODE_ENV=production webpack",
@@ -56,6 +54,6 @@
   },
   "dependencies": {
     "numeric": "1.2.6",
-    "cose-base": "https://github.com/iVis-at-Bilkent/cose-base#unstable"
+    "cose-base": "^1.0.0"
   }
 }
