@@ -113,7 +113,7 @@ var defaultOptions = {
   // Maximum number of iterations to perform
   numIter: 2500,
   // For enabling tiling
-  tile: false,  
+  tile: true,  
   // Represents the amount of the vertical space to put between the zero degree members during the tiling operation(can also be a function)
   tilingPaddingVertical: 10,
   // Represents the amount of the horizontal space to put between the zero degree members during the tiling operation(can also be a function)
