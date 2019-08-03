@@ -89,23 +89,23 @@ class Layout {
     let yCoords;
     let coseResult;
     
-    // If number of nodes is 1 or 2, either SVD or powerIteration causes problem
-    // So direct the graph to cose layout
-    if(options.randomize && eles.nodes().length > 2){
+    if(options.randomize){
       // Apply spectral layout
       spectralResult = spectralLayout(options);
-      xCoords = spectralResult["xCoords"];
-      yCoords = spectralResult["yCoords"];
+      if(spectralLayout){
+        xCoords = spectralResult["xCoords"];
+        yCoords = spectralResult["yCoords"];
+      }
     }
     
-    if(options.quality == "default" || options.quality == "proof" || eles.nodes().length <= 2){  
+    if(options.quality == "default" || options.quality == "proof" || !spectralResult){  
       // Apply cose layout as postprocessing
       coseResult = coseLayout(options, spectralResult);
     }
     
     // get each element's calculated position
     let getPositions = function(ele, i ){
-      if(options.quality == "default" || options.quality == "proof") {
+      if(options.quality == "default" || options.quality == "proof" || !spectralResult) {
         if(typeof ele === "number") {
           ele = i;
         }

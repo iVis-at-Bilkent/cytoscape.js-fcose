@@ -192,23 +192,23 @@ var Layout = function () {
       var yCoords = void 0;
       var coseResult = void 0;
 
-      // If number of nodes is 1 or 2, either SVD or powerIteration causes problem
-      // So direct the graph to cose layout
-      if (options.randomize && eles.nodes().length > 2) {
+      if (options.randomize) {
         // Apply spectral layout
         spectralResult = spectralLayout(options);
-        xCoords = spectralResult["xCoords"];
-        yCoords = spectralResult["yCoords"];
+        if (spectralLayout) {
+          xCoords = spectralResult["xCoords"];
+          yCoords = spectralResult["yCoords"];
+        }
       }
 
-      if (options.quality == "default" || options.quality == "proof" || eles.nodes().length <= 2) {
+      if (options.quality == "default" || options.quality == "proof" || !spectralResult) {
         // Apply cose layout as postprocessing
         coseResult = coseLayout(options, spectralResult);
       }
 
       // get each element's calculated position
       var getPositions = function getPositions(ele, i) {
-        if (options.quality == "default" || options.quality == "proof") {
+        if (options.quality == "default" || options.quality == "proof" || !spectralResult) {
           if (typeof ele === "number") {
             ele = i;
           }
@@ -422,7 +422,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
   var yCoords = void 0;
   var idToLNode = {};
 
-  if (options.randomize && nodes.length > 2) {
+  if (options.randomize && spectralResult) {
     nodeIndexes = spectralResult["nodeIndexes"];
     xCoords = spectralResult["xCoords"];
     yCoords = spectralResult["yCoords"];
@@ -466,7 +466,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
       });
 
       if (theChild.outerWidth() != null && theChild.outerHeight() != null) {
-        if (options.randomize && nodes.length > 2) {
+        if (options.randomize && spectralResult) {
           if (!theChild.isParent()) {
             theNode = parent.add(new CoSENode(layout.graphManager, new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
           } else {
@@ -1122,26 +1122,36 @@ var spectralLayout = function spectralLayout(options) {
   }
 
   nodeSize = nodeIndexes.size;
-  // if # of nodes in transformed graph is smaller than sample size,
-  // then use # of nodes as sample size
-  sampleSize = nodeSize < options.sampleSize ? nodeSize : options.sampleSize;
 
-  // instantiates the partial matrices that will be used in spectral layout
-  for (var _i14 = 0; _i14 < nodeSize; _i14++) {
-    C[_i14] = [];
+  var spectralResult = void 0;
+
+  // If number of nodes in transformed graph is 1 or 2, either SVD or powerIteration causes problem
+  // So skip spectral and layout the graph with cose
+  if (nodeSize > 2) {
+    // if # of nodes in transformed graph is smaller than sample size,
+    // then use # of nodes as sample size
+    sampleSize = nodeSize < options.sampleSize ? nodeSize : options.sampleSize;
+
+    // instantiates the partial matrices that will be used in spectral layout
+    for (var _i14 = 0; _i14 < nodeSize; _i14++) {
+      C[_i14] = [];
+    }
+    for (var _i15 = 0; _i15 < sampleSize; _i15++) {
+      INV[_i15] = [];
+    }
+
+    /**** Apply spectral layout ****/
+
+    allBFS(samplingType);
+    sample();
+    powerIteration();
+
+    spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
+    return spectralResult;
+  } else {
+    spectralResult = false;
+    return spectralResult;
   }
-  for (var _i15 = 0; _i15 < sampleSize; _i15++) {
-    INV[_i15] = [];
-  }
-
-  /**** Apply spectral layout ****/
-
-  allBFS(samplingType);
-  sample();
-  powerIteration();
-
-  var spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
-  return spectralResult;
 };
 
 module.exports = { spectralLayout: spectralLayout };

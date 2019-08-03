@@ -468,26 +468,37 @@ let spectralLayout = function(options){
 
   // nodeSize now only considers the size of transformed graph
   nodeSize = nodeIndexes.size;
-  // if # of nodes in transformed graph is smaller than sample size,
-  // then use # of nodes as sample size
-  sampleSize = nodeSize < options.sampleSize ? nodeSize : options.sampleSize;
+  
+  let spectralResult;
+  
+  // If number of nodes in transformed graph is 1 or 2, either SVD or powerIteration causes problem
+  // So skip spectral and layout the graph with cose
+  if(nodeSize > 2) {
+    // if # of nodes in transformed graph is smaller than sample size,
+    // then use # of nodes as sample size
+    sampleSize = nodeSize < options.sampleSize ? nodeSize : options.sampleSize;
 
-  // instantiates the partial matrices that will be used in spectral layout
-  for(let i = 0; i < nodeSize; i++){
-    C[i] = [];
+    // instantiates the partial matrices that will be used in spectral layout
+    for(let i = 0; i < nodeSize; i++){
+      C[i] = [];
+    }
+    for(let i = 0; i < sampleSize; i++){
+      INV[i] = [];
+    } 
+
+    /**** Apply spectral layout ****/
+
+    allBFS(samplingType);  
+    sample();
+    powerIteration();
+
+    spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
+    return spectralResult;
   }
-  for(let i = 0; i < sampleSize; i++){
-    INV[i] = [];
-  } 
-
-  /**** Apply spectral layout ****/
-
-  allBFS(samplingType);  
-  sample();
-  powerIteration();
-
-  let spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
-  return spectralResult;
+  else {
+    spectralResult = false;
+    return spectralResult;
+  }
 };
 
 module.exports = { spectralLayout };
