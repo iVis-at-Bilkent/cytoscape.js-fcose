@@ -195,13 +195,14 @@ var Layout = function () {
       if (options.eles.length == 0) return;
 
       if (options.eles.length != options.cy.elements().length) {
+        var prevNodes = eles.nodes();
         eles = eles.union(eles.descendants());
 
         eles.forEach(function (ele) {
           if (ele.isNode()) {
             var connectedEdges = ele.connectedEdges();
             connectedEdges.forEach(function (edge) {
-              if (eles.contains(edge.source()) && eles.contains(edge.target())) {
+              if (eles.contains(edge.source()) && eles.contains(edge.target()) && !prevNodes.contains(edge.source().union(edge.target()))) {
                 eles = eles.union(edge);
               }
             });
@@ -718,7 +719,7 @@ var spectralLayout = function spectralLayout(options) {
     var count = 1;
     var nodesConnectedToDummy = [];
 
-    do {
+    var _loop = function _loop() {
       var currentNode = topMostNodes[0];
       var childrenOfCurrentNode = currentNode.union(currentNode.descendants());
       visitedTopMostNodes.push(currentNode);
@@ -728,11 +729,17 @@ var spectralLayout = function spectralLayout(options) {
         visited.add(node);
       });
 
-      while (queue.length != 0) {
+      var _loop2 = function _loop2() {
         currentNode = queue.shift();
 
         // Traverse all neighbors of this node
-        var neighborNodes = currentNode.neighborhood().nodes();
+        var neighborNodes = cy.collection();
+        currentNode.neighborhood().nodes().forEach(function (node) {
+          if (eles.contains(currentNode.edgesWith(node))) {
+            neighborNodes = neighborNodes.union(node);
+          }
+        });
+
         for (var i = 0; i < neighborNodes.length; i++) {
           var neighborNode = neighborNodes[i];
           currentNeighbor = topMostNodes.intersection(neighborNode.union(neighborNode.ancestors()));
@@ -748,6 +755,10 @@ var spectralLayout = function spectralLayout(options) {
             });
           }
         }
+      };
+
+      while (queue.length != 0) {
+        _loop2();
       }
 
       if (visitedTopMostNodes.length == topMostNodes.length) {
@@ -755,26 +766,28 @@ var spectralLayout = function spectralLayout(options) {
       }
 
       if (!isConnected || isConnected && count > 1) {
-        (function () {
-          minDegreeNode = visitedTopMostNodes[0];
-          minDegree = minDegreeNode.connectedEdges().length;
-          visitedTopMostNodes.forEach(function (node) {
-            if (node.connectedEdges().length < minDegree) {
-              minDegree = node.connectedEdges().length;
-              minDegreeNode = node;
-            }
-          });
-          nodesConnectedToDummy.push(minDegreeNode.id());
-          // TO DO: Check efficiency of this part
-          var temp = visitedTopMostNodes[0];
-          visitedTopMostNodes.forEach(function (node) {
-            temp = temp.union(node);
-          });
-          visitedTopMostNodes = [];
-          topMostNodes = topMostNodes.difference(temp);
-          count++;
-        })();
+        minDegreeNode = visitedTopMostNodes[0];
+        minDegree = minDegreeNode.connectedEdges().length;
+        visitedTopMostNodes.forEach(function (node) {
+          if (node.connectedEdges().length < minDegree) {
+            minDegree = node.connectedEdges().length;
+            minDegreeNode = node;
+          }
+        });
+        nodesConnectedToDummy.push(minDegreeNode.id());
+        // TO DO: Check efficiency of this part
+        var temp = visitedTopMostNodes[0];
+        visitedTopMostNodes.forEach(function (node) {
+          temp = temp.union(node);
+        });
+        visitedTopMostNodes = [];
+        topMostNodes = topMostNodes.difference(temp);
+        count++;
       }
+    };
+
+    do {
+      _loop();
     } while (!isConnected);
 
     if (nodesConnectedToDummy.length > 0) {
@@ -1099,11 +1112,13 @@ var spectralLayout = function spectralLayout(options) {
     if (ele.isParent()) eleIndex = nodeIndexes.get(parentChildMap.get(ele.id()));else eleIndex = nodeIndexes.get(ele.id());
 
     ele.neighborhood().nodes().forEach(function (node) {
-      if (node.isParent()) allNodesNeighborhood[eleIndex].push(parentChildMap.get(node.id()));else allNodesNeighborhood[eleIndex].push(node.id());
+      if (eles.contains(ele.edgesWith(node))) {
+        if (node.isParent()) allNodesNeighborhood[eleIndex].push(parentChildMap.get(node.id()));else allNodesNeighborhood[eleIndex].push(node.id());
+      }
     });
   });
 
-  var _loop = function _loop(_key) {
+  var _loop3 = function _loop3(_key) {
     var eleIndex = nodeIndexes.get(_key);
     var disconnectedId = void 0;
     dummyNodes.get(_key).forEach(function (id) {
@@ -1122,7 +1137,7 @@ var spectralLayout = function spectralLayout(options) {
     for (var _iterator2 = dummyNodes.keys()[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
       var _key = _step2.value;
 
-      _loop(_key);
+      _loop3(_key);
     }
 
     // nodeSize now only considers the size of transformed graph

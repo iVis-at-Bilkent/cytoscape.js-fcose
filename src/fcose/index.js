@@ -93,13 +93,14 @@ class Layout {
       return;
 
     if(options.eles.length != options.cy.elements().length){
+      let prevNodes = eles.nodes();
       eles = eles.union(eles.descendants());
       
       eles.forEach(function(ele){
         if(ele.isNode()){
           let connectedEdges = ele.connectedEdges();
           connectedEdges.forEach(function(edge){
-            if(eles.contains(edge.source()) && eles.contains(edge.target())){
+            if(eles.contains(edge.source()) && eles.contains(edge.target()) && !prevNodes.contains(edge.source().union(edge.target()))){
               eles = eles.union(edge);
             }
           });

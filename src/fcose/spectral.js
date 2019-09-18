@@ -90,7 +90,13 @@ let spectralLayout = function(options){
         currentNode = queue.shift();
 
         // Traverse all neighbors of this node
-        let neighborNodes = currentNode.neighborhood().nodes();
+        let neighborNodes = cy.collection();
+        currentNode.neighborhood().nodes().forEach(function(node){
+          if(eles.contains(currentNode.edgesWith(node))){
+            neighborNodes = neighborNodes.union(node);
+          }
+        });
+
         for(let i = 0; i < neighborNodes.length; i++){
           let neighborNode = neighborNodes[i];
           currentNeighbor = topMostNodes.intersection(neighborNode.union(neighborNode.ancestors()));
@@ -446,10 +452,12 @@ let spectralLayout = function(options){
       eleIndex = nodeIndexes.get(ele.id());
 
     ele.neighborhood().nodes().forEach(function(node){
-      if(node.isParent())
-        allNodesNeighborhood[eleIndex].push(parentChildMap.get(node.id()));       
-      else
-        allNodesNeighborhood[eleIndex].push(node.id());          
+      if(eles.contains(ele.edgesWith(node))){
+        if(node.isParent())
+          allNodesNeighborhood[eleIndex].push(parentChildMap.get(node.id()));       
+        else
+          allNodesNeighborhood[eleIndex].push(node.id()); 
+      }
     });
   });
 
