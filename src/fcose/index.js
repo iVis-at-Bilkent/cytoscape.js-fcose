@@ -89,6 +89,26 @@ class Layout {
     let yCoords;
     let coseResult;
     
+    if(options.eles.length == 0)
+      return;
+
+    if(options.eles.length != options.cy.elements().length){
+      eles = eles.union(eles.descendants());
+      
+      eles.forEach(function(ele){
+        if(ele.isNode()){
+          let connectedEdges = ele.connectedEdges();
+          connectedEdges.forEach(function(edge){
+            if(eles.contains(edge.source()) && eles.contains(edge.target())){
+              eles = eles.union(edge);
+            }
+          });
+        }
+      });
+
+      options.eles = eles;
+    }
+    
     if(options.randomize){
       // Apply spectral layout
       spectralResult = spectralLayout(options);

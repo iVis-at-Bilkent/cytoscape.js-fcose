@@ -11,8 +11,9 @@ let spectralLayout = function(options){
   
   let cy = options.cy;
   let eles = options.eles;
-  let nodes = eles.nodes();  
-
+  let nodes = eles.nodes();
+  let parentNodes = eles.nodes(":parent");
+  
   let dummyNodes = new Map();  // map to keep dummy nodes and their neighbors
   let nodeIndexes = new Map();  // map to keep indexes to nodes
   let parentChildMap = new Map(); // mapping btw. compound and its representative node 
@@ -392,7 +393,7 @@ let spectralLayout = function(options){
   // connect disconnected components (first top level, then inside of each compound node)
   connectComponents(getTopMostNodes(nodes));
 
-  cy.nodes(":parent").forEach(function( ele ){
+  parentNodes.forEach(function( ele ){
     connectComponents(getTopMostNodes(ele.descendants()));
   });
 
@@ -414,29 +415,29 @@ let spectralLayout = function(options){
   } 
 
   // form a parent-child map to keep representative node of each compound node  
-  cy.nodes(":parent").forEach(function( ele ){
-    let children = ele.children();
+  parentNodes.forEach(function( ele ){
+      let children = ele.children();
 
-//      let random = 0;
-    while(children.nodes(":childless").length == 0){
-//        random = Math.floor(Math.random() * children.nodes().length); // if all children are compound then proceed randomly
-      children = children.nodes()[0].children();
-    }
-    //  select the representative node - we can apply different methods here
-//      random = Math.floor(Math.random() * children.nodes(":childless").length);
-    let index = 0;
-    let min = children.nodes(":childless")[0].connectedEdges().length;
-    children.nodes(":childless").forEach(function(ele2, i){
-      if(ele2.connectedEdges().length < min){
-        min = ele2.connectedEdges().length;
-        index = i;
+  //      let random = 0;
+      while(children.nodes(":childless").length == 0){
+  //        random = Math.floor(Math.random() * children.nodes().length); // if all children are compound then proceed randomly
+        children = children.nodes()[0].children();
       }
-    });
-    parentChildMap.set(ele.id(), children.nodes(":childless")[index].id());
+      //  select the representative node - we can apply different methods here
+  //      random = Math.floor(Math.random() * children.nodes(":childless").length);
+      let index = 0;
+      let min = children.nodes(":childless")[0].connectedEdges().length;
+      children.nodes(":childless").forEach(function(ele2, i){
+        if(ele2.connectedEdges().length < min){
+          min = ele2.connectedEdges().length;
+          index = i;
+        }
+      });
+      parentChildMap.set(ele.id(), children.nodes(":childless")[index].id());
   }); 
 
   // add neighborhood relations (first real, then dummy nodes)
-  cy.nodes().forEach(function( ele ){
+  nodes.forEach(function( ele ){
     let eleIndex;
 
     if(ele.isParent())

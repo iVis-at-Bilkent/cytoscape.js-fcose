@@ -192,6 +192,25 @@ var Layout = function () {
       var yCoords = void 0;
       var coseResult = void 0;
 
+      if (options.eles.length == 0) return;
+
+      if (options.eles.length != options.cy.elements().length) {
+        eles = eles.union(eles.descendants());
+
+        eles.forEach(function (ele) {
+          if (ele.isNode()) {
+            var connectedEdges = ele.connectedEdges();
+            connectedEdges.forEach(function (edge) {
+              if (eles.contains(edge.source()) && eles.contains(edge.target())) {
+                eles = eles.union(edge);
+              }
+            });
+          }
+        });
+
+        options.eles = eles;
+      }
+
       if (options.randomize) {
         // Apply spectral layout
         spectralResult = spectralLayout(options);
@@ -635,6 +654,7 @@ var spectralLayout = function spectralLayout(options) {
   var cy = options.cy;
   var eles = options.eles;
   var nodes = eles.nodes();
+  var parentNodes = eles.nodes(":parent");
 
   var dummyNodes = new Map(); // map to keep dummy nodes and their neighbors
   var nodeIndexes = new Map(); // map to keep indexes to nodes
@@ -1007,7 +1027,7 @@ var spectralLayout = function spectralLayout(options) {
   // connect disconnected components (first top level, then inside of each compound node)
   connectComponents(getTopMostNodes(nodes));
 
-  cy.nodes(":parent").forEach(function (ele) {
+  parentNodes.forEach(function (ele) {
     connectComponents(getTopMostNodes(ele.descendants()));
   });
 
@@ -1051,7 +1071,7 @@ var spectralLayout = function spectralLayout(options) {
   }
 
   // form a parent-child map to keep representative node of each compound node  
-  cy.nodes(":parent").forEach(function (ele) {
+  parentNodes.forEach(function (ele) {
     var children = ele.children();
 
     //      let random = 0;
@@ -1073,7 +1093,7 @@ var spectralLayout = function spectralLayout(options) {
   });
 
   // add neighborhood relations (first real, then dummy nodes)
-  cy.nodes().forEach(function (ele) {
+  nodes.forEach(function (ele) {
     var eleIndex = void 0;
 
     if (ele.isParent()) eleIndex = nodeIndexes.get(parentChildMap.get(ele.id()));else eleIndex = nodeIndexes.get(ele.id());
