@@ -56,7 +56,14 @@ require(['cytoscape', 'cytoscape-fcose'], function( cytoscape, fcose ){
 });
 ```
 
-Plain HTML/JS has the extension registered for you automatically, because no `require()` is needed.
+Plain HTML/JS has the extension registered for you automatically, because no `require()` is needed. Just add the following files:
+
+```
+<script src="https://unpkg.com/numeric/numeric-1.2.6.js"></script>
+<script src="https://unpkg.com/layout-base/layout-base.js"></script>
+<script src="https://unpkg.com/cose-base/cose-base.js"></script>
+<script src="cytoscape-fcose.js"></script>
+```
 
 
 ## API
