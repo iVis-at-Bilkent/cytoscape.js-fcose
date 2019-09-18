@@ -79,7 +79,22 @@
                 style: {
                   'line-color': '#2B65EC'
                 }
-              }
+              },
+              
+              {
+                selector: 'node:selected',
+                style: {
+                  'background-color': '#F08080',
+                  'border-color': 'red'
+                }
+              },
+              
+              {
+                selector: 'edge:selected',
+                style: {
+                  'line-color': '#F08080'
+                }
+              }                 
             ],  
             
             elements: [{ group:'nodes', data:{ id: 'n0'}},
