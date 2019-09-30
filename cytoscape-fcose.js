@@ -721,7 +721,8 @@ var spectralLayout = function spectralLayout(options) {
 
     var _loop = function _loop() {
       var currentNode = topMostNodes[0];
-      var childrenOfCurrentNode = currentNode.union(currentNode.descendants());
+      var childrenOfCurrentNode = cy.collection();
+      childrenOfCurrentNode.merge(currentNode).merge(currentNode.descendants());
       visitedTopMostNodes.push(currentNode);
 
       childrenOfCurrentNode.forEach(function (node) {
@@ -736,7 +737,7 @@ var spectralLayout = function spectralLayout(options) {
         var neighborNodes = cy.collection();
         currentNode.neighborhood().nodes().forEach(function (node) {
           if (eles.contains(currentNode.edgesWith(node))) {
-            neighborNodes = neighborNodes.union(node);
+            neighborNodes.merge(node);
           }
         });
 
@@ -776,9 +777,10 @@ var spectralLayout = function spectralLayout(options) {
         });
         nodesConnectedToDummy.push(minDegreeNode.id());
         // TO DO: Check efficiency of this part
-        var temp = visitedTopMostNodes[0];
+        var temp = cy.collection();
+        temp.merge(visitedTopMostNodes[0]);
         visitedTopMostNodes.forEach(function (node) {
-          temp = temp.union(node);
+          temp.merge(node);
         });
         visitedTopMostNodes = [];
         topMostNodes = topMostNodes.difference(temp);
