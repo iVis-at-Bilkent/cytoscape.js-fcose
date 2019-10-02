@@ -19,7 +19,7 @@ A. Civril, M. Magdon-Ismail, and E. Bocek-Rivele, "[SSDE: Fast Graph Drawing Usi
  * Cytoscape.js ^3.2.0
  * numeric.js ^1.2.6
  * cose-base ^1.0.0
- * cytoscape-layout-utilities.js (optional/for packing disconnected components) ^1.0.1
+ * cytoscape-layout-utilities.js (optional for packing disconnected components) ^1.0.0
 
 
 ## Usage instructions
