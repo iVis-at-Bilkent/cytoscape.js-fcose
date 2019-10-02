@@ -4,7 +4,6 @@
 
 const aux = require('./auxiliary');
 const numeric = require('numeric');
-const LinkedList = require('cose-base').layoutBase.LinkedList;
 
 // main function that spectral layout is processed
 let spectralLayout = function(options){
@@ -39,115 +38,6 @@ let spectralLayout = function(options){
   let sampleSize;  
 
   /**** Spectral-preprocessing functions ****/
-
-  // get the top most nodes
-  let getTopMostNodes = function(nodes) {
-    let nodesMap = {};
-    for (let i = 0; i < nodes.length; i++) {
-        nodesMap[nodes[i].id()] = true;
-    }
-    let roots = nodes.filter(function (ele, i) {
-        if(typeof ele === "number") {
-          ele = i;
-        }
-        let parent = ele.parent()[0];
-        while(parent != null){
-          if(nodesMap[parent.id()]){
-            return false;
-          }
-          parent = parent.parent()[0];
-        }
-        return true;
-    });
-
-    return roots;
-  };  
-
-  // find disconnected components and create dummy nodes that connect them
-  let connectComponents = function(topMostNodes){      
-    let queue = new LinkedList();
-    let visited = new Set();
-    let visitedTopMostNodes = [];
-    let currentNeighbor;
-    let minDegreeNode;
-    let minDegree;
-
-    let isConnected = false;
-    let count = 1;
-    let nodesConnectedToDummy = [];
-
-    do{
-      let currentNode = topMostNodes[0];
-      let childrenOfCurrentNode = cy.collection();
-      childrenOfCurrentNode.merge(currentNode).merge(currentNode.descendants());
-      visitedTopMostNodes.push(currentNode);
-
-      childrenOfCurrentNode.forEach(function(node) {
-        queue.push(node);
-        visited.add(node);
-      });
-
-      while(queue.length != 0){
-        currentNode = queue.shift();
-
-        // Traverse all neighbors of this node
-        let neighborNodes = cy.collection();
-        currentNode.neighborhood().nodes().forEach(function(node){
-          if(eles.contains(currentNode.edgesWith(node))){
-            neighborNodes.merge(node);
-          }
-        });
-
-        for(let i = 0; i < neighborNodes.length; i++){
-          let neighborNode = neighborNodes[i];
-          currentNeighbor = topMostNodes.intersection(neighborNode.union(neighborNode.ancestors()));
-          if(currentNeighbor != null && !visited.has(currentNeighbor[0])){
-            let childrenOfNeighbor = currentNeighbor.union(currentNeighbor.descendants());
-
-            childrenOfNeighbor.forEach(function(node){
-              queue.push(node);
-              visited.add(node);
-              if(topMostNodes.has(node)){
-                visitedTopMostNodes.push(node);
-              }
-            });
-
-          }
-        }
-      }
-
-      if(visitedTopMostNodes.length == topMostNodes.length){
-        isConnected = true;
-      }
-
-      if(!isConnected || (isConnected && count > 1)){
-        minDegreeNode = visitedTopMostNodes[0];
-        minDegree = minDegreeNode.connectedEdges().length;
-        visitedTopMostNodes.forEach(function(node){
-          if(node.connectedEdges().length < minDegree){
-            minDegree = node.connectedEdges().length;
-            minDegreeNode = node;
-          }
-        });
-        nodesConnectedToDummy.push(minDegreeNode.id());
-        // TO DO: Check efficiency of this part
-        let temp = cy.collection();
-        temp.merge(visitedTopMostNodes[0]);
-        visitedTopMostNodes.forEach(function(node){
-          temp.merge(node);
-        });
-        visitedTopMostNodes = [];
-        topMostNodes = topMostNodes.difference(temp);
-        count++;
-      }
-
-    }
-    while(!isConnected);
-
-    if(nodesConnectedToDummy.length > 0 ){
-        dummyNodes.set('dummy'+(dummyNodes.size+1), nodesConnectedToDummy);
-    }
-  };
 
   /**** Spectral layout functions ****/
 
@@ -399,10 +289,10 @@ let spectralLayout = function(options){
   /**** Preparation for spectral layout (Preprocessing) ****/
 
   // connect disconnected components (first top level, then inside of each compound node)
-  connectComponents(getTopMostNodes(nodes));
+  aux.connectComponents(cy, eles, aux.getTopMostNodes(nodes), dummyNodes);
 
   parentNodes.forEach(function( ele ){
-    connectComponents(getTopMostNodes(ele.descendants()));
+    aux.connectComponents(cy, eles, aux.getTopMostNodes(ele.descendants()), dummyNodes);
   });
 
   // assign indexes to nodes (first real, then dummy nodes)

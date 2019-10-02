@@ -19,6 +19,7 @@ A. Civril, M. Magdon-Ismail, and E. Bocek-Rivele, "[SSDE: Fast Graph Drawing Usi
  * Cytoscape.js ^3.2.0
  * numeric.js ^1.2.6
  * cose-base ^1.0.0
+ * cytoscape-layout-utilities.js (optional/for packing disconnected components) ^1.0.1
 
 
 ## Usage instructions
@@ -93,6 +94,8 @@ var defaultOptions = {
   padding: 10,
   // whether to include labels in node dimensions. Valid in "proof" quality
   nodeDimensionsIncludeLabels: false,
+  // whether to pack disconnected components - valid only if randomize: true
+  packComponents: true,
   
   /* spectral layout options */
   
