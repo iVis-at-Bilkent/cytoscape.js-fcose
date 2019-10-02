@@ -573,9 +573,46 @@ var Layout = function () {
               }
             });
           } else {
+            var toBeTiledNodes = cy.collection();
+            if (options.tile) {
+              var nodeIndexes = new Map();
+              var _xCoords2 = [];
+              var _yCoords2 = [];
+              var count = 0;
+              var tempSpectralResult = { nodeIndexes: nodeIndexes, xCoords: _xCoords2, yCoords: _yCoords2 };
+              var indexesToBeDeleted = [];
+              components.forEach(function (component, index) {
+                if (component.edges().length == 0) {
+                  component.nodes().forEach(function (node, i) {
+                    toBeTiledNodes.merge(component.nodes()[i]);
+                    if (!node.isParent()) {
+                      tempSpectralResult.nodeIndexes.set(component.nodes()[i].id(), count++);
+                      tempSpectralResult.xCoords.push(component.nodes()[0].position().x);
+                      tempSpectralResult.yCoords.push(component.nodes()[0].position().y);
+                    }
+                  });
+                  indexesToBeDeleted.push(index);
+                }
+              });
+              if (toBeTiledNodes.length > 1) {
+                components.push(toBeTiledNodes);
+                for (var i = indexesToBeDeleted.length - 1; i >= 0; i--) {
+                  components.splice(indexesToBeDeleted[i], 1);
+                  spectralResult.splice(indexesToBeDeleted[i], 1);
+                };
+                spectralResult.push(tempSpectralResult);
+              }
+            }
             components.forEach(function (component, index) {
-              options.eles = component;
-              coseResult.push(coseLayout(options, spectralResult[index]));
+              if (options.tile) {
+                if (!(component.edges().length == 0 && toBeTiledNodes.length == 1)) {
+                  options.eles = component;
+                  coseResult.push(coseLayout(options, spectralResult[index]));
+                }
+              } else {
+                options.eles = component;
+                coseResult.push(coseLayout(options, spectralResult[index]));
+              }
             });
           }
         } else {

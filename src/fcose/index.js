@@ -167,9 +167,47 @@ class Layout {
           });
         }
         else{
+          let toBeTiledNodes = cy.collection();
+          if(options.tile){
+            let nodeIndexes = new Map();
+            let xCoords = [];
+            let yCoords = [];
+            let count = 0;
+            let tempSpectralResult = {nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords};
+            let indexesToBeDeleted = [];
+            components.forEach(function(component, index){
+                if(component.edges().length == 0){
+                  component.nodes().forEach(function(node, i){
+                    toBeTiledNodes.merge(component.nodes()[i]);
+                    if(!node.isParent()){
+                      tempSpectralResult.nodeIndexes.set(component.nodes()[i].id(), count++);
+                      tempSpectralResult.xCoords.push(component.nodes()[0].position().x);
+                      tempSpectralResult.yCoords.push(component.nodes()[0].position().y);
+                    }
+                  });
+                  indexesToBeDeleted.push(index);
+                }              
+            });
+            if(toBeTiledNodes.length > 1){
+              components.push(toBeTiledNodes);
+              for(let i = indexesToBeDeleted.length-1; i >= 0; i--){
+                components.splice(indexesToBeDeleted[i], 1);
+                spectralResult.splice(indexesToBeDeleted[i], 1);
+              };
+              spectralResult.push(tempSpectralResult);
+            }
+          }
           components.forEach(function(component, index){
-            options.eles = component;
-            coseResult.push(coseLayout(options, spectralResult[index]));          
+            if(options.tile){
+              if(!(component.edges().length == 0 && toBeTiledNodes.length == 1)){
+                options.eles = component;
+                coseResult.push(coseLayout(options, spectralResult[index]));
+              }
+            }
+            else{
+              options.eles = component;
+              coseResult.push(coseLayout(options, spectralResult[index]));
+            }
           });
         }
       }
