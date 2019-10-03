@@ -198,16 +198,8 @@ class Layout {
             }
           }
           components.forEach(function(component, index){
-            if(options.tile){
-              if(!(component.edges().length == 0 && toBeTiledNodes.length == 1)){
-                options.eles = component;
-                coseResult.push(coseLayout(options, spectralResult[index]));
-              }
-            }
-            else{
-              options.eles = component;
-              coseResult.push(coseLayout(options, spectralResult[index]));
-            }
+            options.eles = component;
+            coseResult.push(coseLayout(options, spectralResult[index]));
           });
         }
       }
