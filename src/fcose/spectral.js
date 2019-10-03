@@ -4,15 +4,15 @@
 
 const aux = require('./auxiliary');
 const numeric = require('numeric');
-const LinkedList = require('cose-base').layoutBase.LinkedList;
 
 // main function that spectral layout is processed
 let spectralLayout = function(options){
   
   let cy = options.cy;
   let eles = options.eles;
-  let nodes = eles.nodes();  
-
+  let nodes = eles.nodes();
+  let parentNodes = eles.nodes(":parent");
+  
   let dummyNodes = new Map();  // map to keep dummy nodes and their neighbors
   let nodeIndexes = new Map();  // map to keep indexes to nodes
   let parentChildMap = new Map(); // mapping btw. compound and its representative node 
@@ -38,107 +38,6 @@ let spectralLayout = function(options){
   let sampleSize;  
 
   /**** Spectral-preprocessing functions ****/
-
-  // get the top most nodes
-  let getTopMostNodes = function(nodes) {
-    let nodesMap = {};
-    for (let i = 0; i < nodes.length; i++) {
-        nodesMap[nodes[i].id()] = true;
-    }
-    let roots = nodes.filter(function (ele, i) {
-        if(typeof ele === "number") {
-          ele = i;
-        }
-        let parent = ele.parent()[0];
-        while(parent != null){
-          if(nodesMap[parent.id()]){
-            return false;
-          }
-          parent = parent.parent()[0];
-        }
-        return true;
-    });
-
-    return roots;
-  };  
-
-  // find disconnected components and create dummy nodes that connect them
-  let connectComponents = function(topMostNodes){      
-    let queue = new LinkedList();
-    let visited = new Set();
-    let visitedTopMostNodes = [];
-    let currentNeighbor;
-    let minDegreeNode;
-    let minDegree;
-
-    let isConnected = false;
-    let count = 1;
-    let nodesConnectedToDummy = [];
-
-    do{
-      let currentNode = topMostNodes[0];
-      let childrenOfCurrentNode = currentNode.union(currentNode.descendants());
-      visitedTopMostNodes.push(currentNode);
-
-      childrenOfCurrentNode.forEach(function(node) {
-        queue.push(node);
-        visited.add(node);
-      });
-
-      while(queue.length != 0){
-        currentNode = queue.shift();
-
-        // Traverse all neighbors of this node
-        let neighborNodes = currentNode.neighborhood().nodes();
-        for(let i = 0; i < neighborNodes.length; i++){
-          let neighborNode = neighborNodes[i];
-          currentNeighbor = topMostNodes.intersection(neighborNode.union(neighborNode.ancestors()));
-          if(currentNeighbor != null && !visited.has(currentNeighbor[0])){
-            let childrenOfNeighbor = currentNeighbor.union(currentNeighbor.descendants());
-
-            childrenOfNeighbor.forEach(function(node){
-              queue.push(node);
-              visited.add(node);
-              if(topMostNodes.has(node)){
-                visitedTopMostNodes.push(node);
-              }
-            });
-
-          }
-        }
-      }
-
-      if(visitedTopMostNodes.length == topMostNodes.length){
-        isConnected = true;
-      }
-
-      if(!isConnected || (isConnected && count > 1)){
-        minDegreeNode = visitedTopMostNodes[0];
-        minDegree = minDegreeNode.connectedEdges().length;
-        visitedTopMostNodes.forEach(function(node){
-          if(node.connectedEdges().length < minDegree){
-            minDegree = node.connectedEdges().length;
-            minDegreeNode = node;
-          }
-        });
-        nodesConnectedToDummy.push(minDegreeNode.id());
-        // TO DO: Check efficiency of this part
-        let temp = visitedTopMostNodes[0];
-        visitedTopMostNodes.forEach(function(node){
-          temp = temp.union(node);
-        });
-        visitedTopMostNodes = [];
-        topMostNodes = topMostNodes.difference(temp);
-        count++;
-      }
-
-    }
-    while(!isConnected);
-
-    if(nodesConnectedToDummy.length > 0 ){
-        dummyNodes.set('dummy'+(dummyNodes.size+1), nodesConnectedToDummy);
-    }
-  };
 
   /**** Spectral layout functions ****/
 
@@ -390,10 +289,10 @@ let spectralLayout = function(options){
   /**** Preparation for spectral layout (Preprocessing) ****/
 
   // connect disconnected components (first top level, then inside of each compound node)
-  connectComponents(getTopMostNodes(nodes));
+  aux.connectComponents(cy, eles, aux.getTopMostNodes(nodes), dummyNodes);
 
-  cy.nodes(":parent").forEach(function( ele ){
-    connectComponents(getTopMostNodes(ele.descendants()));
+  parentNodes.forEach(function( ele ){
+    aux.connectComponents(cy, eles, aux.getTopMostNodes(ele.descendants()), dummyNodes);
   });
 
   // assign indexes to nodes (first real, then dummy nodes)
@@ -414,29 +313,29 @@ let spectralLayout = function(options){
   } 
 
   // form a parent-child map to keep representative node of each compound node  
-  cy.nodes(":parent").forEach(function( ele ){
-    let children = ele.children();
+  parentNodes.forEach(function( ele ){
+      let children = ele.children();
 
-//      let random = 0;
-    while(children.nodes(":childless").length == 0){
-//        random = Math.floor(Math.random() * children.nodes().length); // if all children are compound then proceed randomly
-      children = children.nodes()[0].children();
-    }
-    //  select the representative node - we can apply different methods here
-//      random = Math.floor(Math.random() * children.nodes(":childless").length);
-    let index = 0;
-    let min = children.nodes(":childless")[0].connectedEdges().length;
-    children.nodes(":childless").forEach(function(ele2, i){
-      if(ele2.connectedEdges().length < min){
-        min = ele2.connectedEdges().length;
-        index = i;
+  //      let random = 0;
+      while(children.nodes(":childless").length == 0){
+  //        random = Math.floor(Math.random() * children.nodes().length); // if all children are compound then proceed randomly
+        children = children.nodes()[0].children();
       }
-    });
-    parentChildMap.set(ele.id(), children.nodes(":childless")[index].id());
+      //  select the representative node - we can apply different methods here
+  //      random = Math.floor(Math.random() * children.nodes(":childless").length);
+      let index = 0;
+      let min = children.nodes(":childless")[0].connectedEdges().length;
+      children.nodes(":childless").forEach(function(ele2, i){
+        if(ele2.connectedEdges().length < min){
+          min = ele2.connectedEdges().length;
+          index = i;
+        }
+      });
+      parentChildMap.set(ele.id(), children.nodes(":childless")[index].id());
   }); 
 
   // add neighborhood relations (first real, then dummy nodes)
-  cy.nodes().forEach(function( ele ){
+  nodes.forEach(function( ele ){
     let eleIndex;
 
     if(ele.isParent())
@@ -445,10 +344,12 @@ let spectralLayout = function(options){
       eleIndex = nodeIndexes.get(ele.id());
 
     ele.neighborhood().nodes().forEach(function(node){
-      if(node.isParent())
-        allNodesNeighborhood[eleIndex].push(parentChildMap.get(node.id()));       
-      else
-        allNodesNeighborhood[eleIndex].push(node.id());          
+      if(eles.contains(ele.edgesWith(node))){
+        if(node.isParent())
+          allNodesNeighborhood[eleIndex].push(parentChildMap.get(node.id()));       
+        else
+          allNodesNeighborhood[eleIndex].push(node.id()); 
+      }
     });
   });
 
@@ -468,26 +369,37 @@ let spectralLayout = function(options){
 
   // nodeSize now only considers the size of transformed graph
   nodeSize = nodeIndexes.size;
-  // if # of nodes in transformed graph is smaller than sample size,
-  // then use # of nodes as sample size
-  sampleSize = nodeSize < options.sampleSize ? nodeSize : options.sampleSize;
+  
+  let spectralResult;
+  
+  // If number of nodes in transformed graph is 1 or 2, either SVD or powerIteration causes problem
+  // So skip spectral and layout the graph with cose
+  if(nodeSize > 2) {
+    // if # of nodes in transformed graph is smaller than sample size,
+    // then use # of nodes as sample size
+    sampleSize = nodeSize < options.sampleSize ? nodeSize : options.sampleSize;
 
-  // instantiates the partial matrices that will be used in spectral layout
-  for(let i = 0; i < nodeSize; i++){
-    C[i] = [];
+    // instantiates the partial matrices that will be used in spectral layout
+    for(let i = 0; i < nodeSize; i++){
+      C[i] = [];
+    }
+    for(let i = 0; i < sampleSize; i++){
+      INV[i] = [];
+    } 
+
+    /**** Apply spectral layout ****/
+
+    allBFS(samplingType);  
+    sample();
+    powerIteration();
+
+    spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
+    return spectralResult;
   }
-  for(let i = 0; i < sampleSize; i++){
-    INV[i] = [];
-  } 
-
-  /**** Apply spectral layout ****/
-
-  allBFS(samplingType);  
-  sample();
-  powerIteration();
-
-  let spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
-  return spectralResult;
+  else {
+    spectralResult = false;
+    return spectralResult;
+  }
 };
 
 module.exports = { spectralLayout };

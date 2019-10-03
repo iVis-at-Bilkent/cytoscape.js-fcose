@@ -19,6 +19,7 @@ A. Civril, M. Magdon-Ismail, and E. Bocek-Rivele, "[SSDE: Fast Graph Drawing Usi
  * Cytoscape.js ^3.2.0
  * numeric.js ^1.2.6
  * cose-base ^1.0.0
+ * cytoscape-layout-utilities.js (optional for packing disconnected components) ^1.0.0
 
 
 ## Usage instructions
@@ -56,7 +57,14 @@ require(['cytoscape', 'cytoscape-fcose'], function( cytoscape, fcose ){
 });
 ```
 
-Plain HTML/JS has the extension registered for you automatically, because no `require()` is needed.
+Plain HTML/JS has the extension registered for you automatically, because no `require()` is needed. Just add the following files:
+
+```
+<script src="https://unpkg.com/numeric/numeric-1.2.6.js"></script>
+<script src="https://unpkg.com/layout-base/layout-base.js"></script>
+<script src="https://unpkg.com/cose-base/cose-base.js"></script>
+<script src="cytoscape-fcose.js"></script>
+```
 
 
 ## API
@@ -86,6 +94,8 @@ var defaultOptions = {
   padding: 10,
   // whether to include labels in node dimensions. Valid in "proof" quality
   nodeDimensionsIncludeLabels: false,
+  // whether to pack disconnected components - valid only if randomize: true
+  packComponents: true,
   
   /* spectral layout options */
   
@@ -113,7 +123,7 @@ var defaultOptions = {
   // Maximum number of iterations to perform
   numIter: 2500,
   // For enabling tiling
-  tile: false,  
+  tile: true,  
   // Represents the amount of the vertical space to put between the zero degree members during the tiling operation(can also be a function)
   tilingPaddingVertical: 10,
   // Represents the amount of the horizontal space to put between the zero degree members during the tiling operation(can also be a function)

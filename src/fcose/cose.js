@@ -2,6 +2,7 @@
   The implementation of the postprocessing part that applies CoSE layout over the spectral layout
 */
 
+const aux = require('./auxiliary');
 const CoSELayout = require('cose-base').CoSELayout;
 const CoSENode = require('cose-base').CoSENode;
 const PointD = require('cose-base').layoutBase.PointD;
@@ -22,36 +23,13 @@ let coseLayout = function(options, spectralResult){
   let yCoords;
   let idToLNode =  {};  
   
-  if(options.randomize && nodes.length > 2){
+  if(options.randomize && spectralResult){
     nodeIndexes = spectralResult["nodeIndexes"];
     xCoords = spectralResult["xCoords"];
     yCoords = spectralResult["yCoords"];
   }
 
   /**** Postprocessing functions ****/
-
-  // get the top most nodes
-  let getTopMostNodes = function(nodes) {
-    let nodesMap = {};
-    for (let i = 0; i < nodes.length; i++) {
-        nodesMap[nodes[i].id()] = true;
-    }
-    let roots = nodes.filter(function (ele, i) {
-        if(typeof ele === "number") {
-          ele = i;
-        }
-        let parent = ele.parent()[0];
-        while(parent != null){
-          if(nodesMap[parent.id()]){
-            return false;
-          }
-          parent = parent.parent()[0];
-        }
-        return true;
-    });
-
-    return roots;
-  };
 
   // transfer cytoscape nodes to cose nodes
   let processChildrenList = function (parent, children, layout, options) {
@@ -67,14 +45,14 @@ let coseLayout = function(options, spectralResult){
 
       if (theChild.outerWidth() != null
               && theChild.outerHeight() != null) {
-        if(options.randomize && nodes.length > 2){
+        if(options.randomize && spectralResult){
           if(!theChild.isParent()){
             theNode = parent.add(new CoSENode(layout.graphManager,
                     new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2),
                     new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
           }
           else{
-            let parentInfo = calcBoundingBox(theChild);
+            let parentInfo = aux.calcBoundingBox(theChild, xCoords, yCoords, nodeIndexes);
             theNode = parent.add(new CoSENode(layout.graphManager,
                     new PointD(parentInfo.topLeftX, parentInfo.topLeftY),
                     new DimensionD(parentInfo.width, parentInfo.height)));
@@ -125,56 +103,6 @@ let coseLayout = function(options, spectralResult){
         theNewGraph = layout.getGraphManager().add(layout.newGraph(), theNode);
         processChildrenList(theNewGraph, children_of_children, layout, options);
       }
-    }
-    function calcBoundingBox(parentNode){
-        // calculate bounds
-        let left = Number.MAX_VALUE;
-        let right = Number.MIN_VALUE;
-        let top = Number.MAX_VALUE;
-        let bottom = Number.MIN_VALUE;
-        let nodeLeft;
-        let nodeRight;
-        let nodeTop;
-        let nodeBottom;
-
-        let nodes = parentNode.descendants().not(":parent");
-        let s = nodes.length;
-        for (let i = 0; i < s; i++)
-        {
-          let node = nodes[i];
-
-          nodeLeft = xCoords[nodeIndexes.get(node.id())] - node.width()/2;
-          nodeRight = xCoords[nodeIndexes.get(node.id())] + node.width()/2;
-          nodeTop = yCoords[nodeIndexes.get(node.id())] - node.height()/2;
-          nodeBottom = yCoords[nodeIndexes.get(node.id())] + node.height()/2;
-
-          if (left > nodeLeft)
-          {
-            left = nodeLeft;
-          }
-
-          if (right < nodeRight)
-          {
-            right = nodeRight;
-          }
-
-          if (top > nodeTop)
-          {
-            top = nodeTop;
-          }
-
-          if (bottom < nodeBottom)
-          {
-            bottom = nodeBottom;
-          }
-        }
-
-        let boundingBox = {};
-        boundingBox.topLeftX = left;
-        boundingBox.topLeftY = top;
-        boundingBox.width = right - left;
-        boundingBox.height = top - bottom;
-        return boundingBox;
     }
   };   
 
@@ -234,7 +162,7 @@ let coseLayout = function(options, spectralResult){
   let coseLayout = new CoSELayout();
   let gm = coseLayout.newGraphManager(); 
 
-  processChildrenList(gm.addRoot(), getTopMostNodes(nodes), coseLayout, options);
+  processChildrenList(gm.addRoot(), aux.getTopMostNodes(nodes), coseLayout, options);
 
   processEdges(coseLayout, gm, edges);
 

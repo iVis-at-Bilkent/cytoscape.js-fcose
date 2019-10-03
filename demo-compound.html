@@ -11,6 +11,7 @@
       <script src="https://unpkg.com/numeric/numeric-1.2.6.js"></script>
       <script src="https://unpkg.com/layout-base/layout-base.js"></script>
       <script src="https://unpkg.com/cose-base/cose-base.js"></script>
+      <script src="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-layout-utilities/unstable/cytoscape-layout-utilities.js"></script>
 
       <!-- for testing with local version of cytoscape.js -->
       <!--<script src="../cytoscape.js/build/cytoscape.js"></script>-->
@@ -50,7 +51,7 @@
                 node.css("width", size);
                 node.css("height", size);
               });
-              this.layout({name: 'fcose', animationEasing: 'linear'}).run();
+              this.layout({name: 'fcose', animationEasing: 'linear', packComponents: document.getElementById("packing").checked}).run();
             },
             
             // demo your layout
@@ -79,7 +80,22 @@
                 style: {
                   'line-color': '#2B65EC'
                 }
-              }
+              },
+              
+              {
+                selector: 'node:selected',
+                style: {
+                  'background-color': '#F08080',
+                  'border-color': 'red'
+                }
+              },
+              
+              {
+                selector: 'edge:selected',
+                style: {
+                  'line-color': '#F08080'
+                }
+              }                 
             ],  
             
             elements: [{ group:'nodes', data:{ id: 'n0'}},
@@ -124,6 +140,9 @@
                     { group:'nodes', data:{ id: 'n41', parent: 'n42'}},
                     { group:'nodes', data:{ id: 'n42', parent: 'n43'}},
                     { group:'nodes', data:{ id: 'n43'}},
+                    { group:'nodes', data:{ id: 'n44'}},
+                    { group:'nodes', data:{ id: 'n45'}},
+                    { group:'nodes', data:{ id: 'n46'}},
                     { group:'edges', data:{ id: 'e0', source: 'n0', target: 'n1'} },
                     { group:'edges', data:{ id: 'e1', source: 'n1', target: 'n2'} },
                     { group:'edges', data:{ id: 'e2', source: 'n2', target: 'n3'} },
@@ -160,7 +179,10 @@
                     { group:'edges', data:{ id: 'e37', source: 'n33', target: 'n34'} },
                     { group:'edges', data:{ id: 'e38', source: 'n32', target: 'n35'} },
                     { group:'edges', data:{ id: 'e39', source: 'n32', target: 'n36'} },
-                    { group:'edges', data:{ id: 'e40', source: 'n16', target: 'n40'} }
+                    { group:'edges', data:{ id: 'e40', source: 'n16', target: 'n40'} },
+                    { group:'edges', data:{ id: 'e41', source: 'n44', target: 'n45'} },
+                    { group:'edges', data:{ id: 'e42', source: 'n44', target: 'n46'} },
+                    { group:'edges', data:{ id: 'e43', source: 'n45', target: 'n46'} }                 
                    ]
             
           });          
@@ -181,6 +203,7 @@
               quality: 'default',
               randomize: true,
               animationEasing: 'ease-out',
+              packComponents: document.getElementById("packing").checked
             });
             
             layout.run();        
@@ -194,8 +217,8 @@
           <h1>cytoscape-fcose demo</h1>
           
           <button id="randomize" type="button" style="margin-bottom: 5px">Randomize</button>&nbsp &nbsp
-          <button id="layoutButton" type="button" style="margin-bottom: 5px">fCoSE</button>
-      
+          <button id="layoutButton" type="button" style="margin-bottom: 5px">fCoSE</button>&nbsp &nbsp
+          <label style="vertical-align:middle;">Pack Components&nbsp<input type="checkbox" id="packing" style="vertical-align:middle;" checked></label>
           <div id="cy"></div>
 
   </body>
