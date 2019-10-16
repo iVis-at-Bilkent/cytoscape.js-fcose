@@ -14,33 +14,35 @@ const defaults = Object.freeze({
   // - 'default' improves the quality with subsequent CoSE layout (fast cooling rate)
   // - 'proof' improves the quality with subsequent CoSE layout (slow cooling rate) 
   quality: "default",
-  // use random node positions at beginning of layout
+  // Use random node positions at beginning of layout
   // if this is set to false, then quality option must be "proof"
   randomize: true, 
-  // whether or not to animate the layout
+  // Whether or not to animate the layout
   animate: true, 
-  // duration of animation in ms, if enabled
+  // Duration of animation in ms, if enabled
   animationDuration: 1000, 
-  // easing of animation, if enabled
+  // Easing of animation, if enabled
   animationEasing: undefined, 
-  // fit the viewport to the repositioned nodes
+  // Fit the viewport to the repositioned nodes
   fit: true, 
-  // padding around layout
+  // Padding around layout
   padding: 10,
-  // whether to include labels in node dimensions. Valid in "proof" quality
+  // Whether to include labels in node dimensions. Valid in "proof" quality
   nodeDimensionsIncludeLabels: false,
-  // whether to pack disconnected components - valid only if randomize: true
+  // Whether or not simple nodes (non-compound nodes) are of uniform dimensions
+  uniformNodeDimensions: false,
+  // Whether to pack disconnected components - valid only if randomize: true
   packComponents: true,
   
   /* spectral layout options */
   
-  // false for random, true for greedy
+  // False for random, true for greedy
   samplingType: true,
-  // sample size to construct distance matrix
+  // Sample size to construct distance matrix
   sampleSize: 25,
-  // separation amount between nodes
+  // Separation amount between nodes
   nodeSeparation: 75,
-  // power iteration tolerance
+  // Power iteration tolerance
   piTol: 0.0000001,
   
   /* CoSE layout options */
