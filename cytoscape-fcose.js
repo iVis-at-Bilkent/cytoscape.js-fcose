@@ -626,6 +626,35 @@ var Layout = function () {
               subgraph.nodes.push({ x: coseResult[index][node.id()].getLeft(), y: coseResult[index][node.id()].getTop(), width: coseResult[index][node.id()].getWidth(), height: coseResult[index][node.id()].getHeight() });
             }
           });
+          component.edges().forEach(function (node) {
+            var source = node.source();
+            var target = node.target();
+            if (options.quality == "draft") {
+              var sourceNodeIndex = nodeIndexes.get(source.id());
+              var targetNodeIndex = nodeIndexes.get(target.id());
+              var sourceCenter = [];
+              var targetCenter = [];
+              if (source.isParent()) {
+                var parentInfo = aux.calcBoundingBox(source, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                sourceCenter.push(parentInfo.topLeftX + parentInfo.width / 2);
+                sourceCenter.push(parentInfo.topLeftY + parentInfo.height / 2);
+              } else {
+                sourceCenter.push(spectralResult[index].xCoords[sourceNodeIndex]);
+                sourceCenter.push(spectralResult[index].yCoords[sourceNodeIndex]);
+              }
+              if (target.isParent()) {
+                var _parentInfo = aux.calcBoundingBox(target, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                targetCenter.push(_parentInfo.topLeftX + _parentInfo.width / 2);
+                targetCenter.push(_parentInfo.topLeftY + _parentInfo.height / 2);
+              } else {
+                targetCenter.push(spectralResult[index].xCoords[targetNodeIndex]);
+                targetCenter.push(spectralResult[index].yCoords[targetNodeIndex]);
+              }
+              subgraph.edges.push({ startX: sourceCenter[0], startY: sourceCenter[1], endX: targetCenter[0], endY: targetCenter[1] });
+            } else {
+              subgraph.edges.push({ startX: coseResult[index][source.id()].getCenterX(), startY: coseResult[index][source.id()].getCenterY(), endX: coseResult[index][target.id()].getCenterX(), endY: coseResult[index][target.id()].getCenterY() });
+            }
+          });
           subgraphs.push(subgraph);
         });
         var shiftResult = layUtil.packComponents(subgraphs).shifts;
