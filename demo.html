@@ -44,13 +44,13 @@
         /* The sidepanel menu */
         .sidepanel {
           height: auto; /* Specify a height */
-          width: 300px; /* 0 width - change this with JavaScript */
+          width: 310px; /* 0 width - change this with JavaScript */
           position: absolute; /* Stay in place */
           z-index: 1000; /* Stay on top */
           float: left;
           top: auto;
           left: 0;
-          background-color: #0ff; /* Black*/
+          background-color: #b7ffff; /* Black*/
           overflow-x: hidden; /* Disable horizontal scroll */
           padding-top: 10px; /* Place content 10px from the top */
           padding-bottom: 10px; /* Place content 10px from the bottom */
@@ -76,7 +76,7 @@
           font-size: 15px;
           color: #555;
           cursor: pointer;
-          background-color: #0ff;
+          background-color: #b7ffff;
           padding: 5px 10px;
           border: none;
           margin-bottom: 5px;
@@ -107,8 +107,7 @@
                 componentSpacing: 30
               });
               this.nodes().forEach(function(node){
-                let width = [30, 70, 110];
-                let size = width[Math.floor(Math.random()*3)];
+                let size = Math.random()*120+30;
                 node.css("width", size);
                 node.css("height", size);
               });
@@ -231,7 +230,7 @@
             //{"data":{"id":"e59","source":"glyph33","target":"glyph43","group":"edges"}},
             //{"data":{"id":"e60","source":"glyph33","target":"glyph29","group":"edges"}},
             {"data":{"id":"e61","source":"glyph29","target":"glyph34","group":"edges"}},
-            {"data":{"id":"e62","source":"glyph39","target":"glyph34","group":"edges"}},
+            //{"data":{"id":"e62","source":"glyph39","target":"glyph34","group":"edges"}},
             {"data":{"id":"e63","source":"glyph34","target":"glyph40","group":"edges"}},
             {"data":{"id":"e64","source":"glyph34","target":"glyph30","group":"edges"}},
             {"data":{"id":"e65","source":"glyph14","target":"glyph5","group":"edges"}},
@@ -314,7 +313,7 @@
                   <td><input id="uniformNodeDimensions" class = "checkbox" type="checkbox"></td>
                 </tr>
                 <tr>
-                  <td><span class="add-on layout-text" title="Whether to pack components"> Pack Components </span></td>
+                  <td><span class="add-on layout-text" title="Whether to pack components"> Pack Components to Window</span></td>
                   <td><input id="packComponents" class = "checkbox" type="checkbox" checked></td>
                 </tr>
                 <tr>
