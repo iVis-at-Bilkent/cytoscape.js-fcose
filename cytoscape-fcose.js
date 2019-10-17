@@ -432,7 +432,7 @@ var defaults = Object.freeze({
   // Fit the viewport to the repositioned nodes
   fit: true,
   // Padding around layout
-  padding: 10,
+  padding: 30,
   // Whether to include labels in node dimensions. Valid in "proof" quality
   nodeDimensionsIncludeLabels: false,
   // Whether or not simple nodes (non-compound nodes) are of uniform dimensions

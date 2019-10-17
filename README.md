@@ -91,7 +91,7 @@ var defaultOptions = {
   // Fit the viewport to the repositioned nodes
   fit: true, 
   // Padding around layout
-  padding: 10,
+  padding: 30,
   // Whether to include labels in node dimensions. Valid in "proof" quality
   nodeDimensionsIncludeLabels: false,
   // Whether or not simple nodes (non-compound nodes) are of uniform dimensions
@@ -120,8 +120,6 @@ var defaultOptions = {
   edgeElasticity: 0.45,
   // Nesting factor (multiplier) to compute ideal edge length for nested edges
   nestingFactor: 0.1,
-  // Gravity force (constant)
-  gravity: 0.25,
   // Maximum number of iterations to perform
   numIter: 2500,
   // For enabling tiling
@@ -130,6 +128,8 @@ var defaultOptions = {
   tilingPaddingVertical: 10,
   // Represents the amount of the horizontal space to put between the zero degree members during the tiling operation(can also be a function)
   tilingPaddingHorizontal: 10,
+  // Gravity force (constant)
+  gravity: 0.25,
   // Gravity range (constant) for compounds
   gravityRangeCompound: 1.5,
   // Gravity force (constant) for compounds
