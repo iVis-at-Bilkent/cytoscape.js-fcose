@@ -617,7 +617,7 @@ var Layout = function () {
             if (options.quality == "draft") {
               if (!node.isParent()) {
                 nodeIndex = nodeIndexes.get(node.id());
-                subgraph.nodes.push({ x: spectralResult[index].xCoords[nodeIndex] - node.bb().w / 2, y: spectralResult[index].yCoords[nodeIndex] - node.bb().h / 2, width: node.bb().w, height: node.bb().h });
+                subgraph.nodes.push({ x: spectralResult[index].xCoords[nodeIndex] - node.boundingbox().w / 2, y: spectralResult[index].yCoords[nodeIndex] - node.boundingbox().h / 2, width: node.boundingbox().w, height: node.boundingbox().h });
               } else {
                 var parentInfo = aux.calcBoundingBox(node, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
                 subgraph.nodes.push({ x: parentInfo.topLeftX, y: parentInfo.topLeftY, width: parentInfo.width, height: parentInfo.height });
@@ -702,8 +702,9 @@ var Layout = function () {
             var index = result.nodeIndexes.get(ele.id());
             if (index != undefined) {
               _pos = { x: result.xCoords[index], y: result.yCoords[index] };
-            };
+            }
           });
+          if (_pos == undefined) _pos = { x: ele.position("x"), y: ele.position("y") };
           return {
             x: _pos.x,
             y: _pos.y

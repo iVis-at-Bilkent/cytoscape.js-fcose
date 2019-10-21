@@ -207,7 +207,7 @@ class Layout {
           if(options.quality == "draft"){
             if(!node.isParent()){
               nodeIndex = nodeIndexes.get(node.id());
-              subgraph.nodes.push({x: spectralResult[index].xCoords[nodeIndex] - node.bb().w/2, y: spectralResult[index].yCoords[nodeIndex] - node.bb().h/2, width: node.bb().w, height: node.bb().h});              
+              subgraph.nodes.push({x: spectralResult[index].xCoords[nodeIndex] - node.boundingbox().w/2, y: spectralResult[index].yCoords[nodeIndex] - node.boundingbox().h/2, width: node.boundingbox().w, height: node.boundingbox().h});              
             }
             else{
               let parentInfo = aux.calcBoundingBox(node, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
@@ -296,8 +296,10 @@ class Layout {
           let index = result.nodeIndexes.get(ele.id());
           if(index != undefined){
             pos = {x: result.xCoords[index], y: result.yCoords[index]};
-          };
+          }
         });
+        if(pos == undefined)
+          pos = {x: ele.position("x"), y: ele.position("y")};
         return {
           x: pos.x,
           y: pos.y
