@@ -4,7 +4,7 @@ cytoscape-fcose
 
 ## Description
 
-fCoSE (fast Compound Spring Embedder) is a faster version of our earlier compound spring embedder algorithm named [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent), implemented as a Cytoscape.js extension by [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University ([demo](https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo.html), [compound demo](https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo-compound.html))
+fCoSE (fast Compound Spring Embedder) is a faster version of our earlier compound spring embedder algorithm named [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent), implemented as a Cytoscape.js extension by [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University ([demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo.html), [compound demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo-compound.html))
 
 fCoSE layout algorithm combines the speed of spectral layout with the aesthetics of force-directed layout. fCoSE runs up to 10 times as fast as CoSE while achieving similar aesthetics. In addition, fCoSE supports varying (non-uniform) node dimensions similar to its predecessor CoSE.
 
@@ -79,33 +79,35 @@ var defaultOptions = {
   // - "default" improves the quality with incremental layout (fast cooling rate)
   // - "proof" improves the quality with incremental layout (slow cooling rate) 
   quality: "default",
-  // use random node positions at beginning of layout
+  // Use random node positions at beginning of layout
   // if this is set to false, then quality option must be "proof"
   randomize: true, 
-  // whether or not to animate the layout
+  // Whether or not to animate the layout
   animate: true, 
-  // duration of animation in ms, if enabled
+  // Duration of animation in ms, if enabled
   animationDuration: 1000, 
-  // easing of animation, if enabled
+  // Easing of animation, if enabled
   animationEasing: undefined, 
-  // fit the viewport to the repositioned nodes
+  // Fit the viewport to the repositioned nodes
   fit: true, 
-  // padding around layout
-  padding: 10,
-  // whether to include labels in node dimensions. Valid in "proof" quality
+  // Padding around layout
+  padding: 30,
+  // Whether to include labels in node dimensions. Valid in "proof" quality
   nodeDimensionsIncludeLabels: false,
-  // whether to pack disconnected components - valid only if randomize: true
+  // Whether or not simple nodes (non-compound nodes) are of uniform dimensions
+  uniformNodeDimensions: false,
+  // Whether to pack disconnected components - valid only if randomize: true
   packComponents: true,
   
   /* spectral layout options */
   
-  // false for random, true for greedy sampling
+  // False for random, true for greedy sampling
   samplingType: true,
-  // sample size to construct distance matrix
+  // Sample size to construct distance matrix
   sampleSize: 25,
-  // separation amount between nodes
+  // Separation amount between nodes
   nodeSeparation: 75,
-  // power iteration tolerance
+  // Power iteration tolerance
   piTol: 0.0000001,
   
   /* incremental layout options */
@@ -118,8 +120,6 @@ var defaultOptions = {
   edgeElasticity: 0.45,
   // Nesting factor (multiplier) to compute ideal edge length for nested edges
   nestingFactor: 0.1,
-  // Gravity force (constant)
-  gravity: 0.25,
   // Maximum number of iterations to perform
   numIter: 2500,
   // For enabling tiling
@@ -128,6 +128,8 @@ var defaultOptions = {
   tilingPaddingVertical: 10,
   // Represents the amount of the horizontal space to put between the zero degree members during the tiling operation(can also be a function)
   tilingPaddingHorizontal: 10,
+  // Gravity force (constant)
+  gravity: 0.25,
   // Gravity range (constant) for compounds
   gravityRangeCompound: 1.5,
   // Gravity force (constant) for compounds

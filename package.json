@@ -54,6 +54,6 @@
   },
   "dependencies": {
     "numeric": "1.2.6",
-    "cose-base": "^1.0.0"
+    "cose-base": "https://github.com/iVis-at-Bilkent/cose-base#unstable"
   }
 }

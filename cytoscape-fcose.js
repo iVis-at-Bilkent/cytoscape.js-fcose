@@ -420,33 +420,35 @@ var defaults = Object.freeze({
   // - 'default' improves the quality with subsequent CoSE layout (fast cooling rate)
   // - 'proof' improves the quality with subsequent CoSE layout (slow cooling rate) 
   quality: "default",
-  // use random node positions at beginning of layout
+  // Use random node positions at beginning of layout
   // if this is set to false, then quality option must be "proof"
   randomize: true,
-  // whether or not to animate the layout
+  // Whether or not to animate the layout
   animate: true,
-  // duration of animation in ms, if enabled
+  // Duration of animation in ms, if enabled
   animationDuration: 1000,
-  // easing of animation, if enabled
+  // Easing of animation, if enabled
   animationEasing: undefined,
-  // fit the viewport to the repositioned nodes
+  // Fit the viewport to the repositioned nodes
   fit: true,
-  // padding around layout
-  padding: 10,
-  // whether to include labels in node dimensions. Valid in "proof" quality
+  // Padding around layout
+  padding: 30,
+  // Whether to include labels in node dimensions. Valid in "proof" quality
   nodeDimensionsIncludeLabels: false,
-  // whether to pack disconnected components - valid only if randomize: true
+  // Whether or not simple nodes (non-compound nodes) are of uniform dimensions
+  uniformNodeDimensions: false,
+  // Whether to pack disconnected components - valid only if randomize: true
   packComponents: true,
 
   /* spectral layout options */
 
-  // false for random, true for greedy
+  // False for random, true for greedy
   samplingType: true,
-  // sample size to construct distance matrix
+  // Sample size to construct distance matrix
   sampleSize: 25,
-  // separation amount between nodes
+  // Separation amount between nodes
   nodeSeparation: 75,
-  // power iteration tolerance
+  // Power iteration tolerance
   piTol: 0.0000001,
 
   /* CoSE layout options */
@@ -504,6 +506,10 @@ var Layout = function () {
       var coseResult = [];
       var components = void 0;
 
+      // if there is no elements, return
+      if (options.eles.length == 0) return;
+
+      // decide component packing is enabled or not
       var layUtil = void 0;
       var packingEnabled = false;
       if (cy.layoutUtilities && options.packComponents && options.randomize) {
@@ -512,8 +518,7 @@ var Layout = function () {
         packingEnabled = true;
       }
 
-      if (options.eles.length == 0) return;
-
+      // if partial layout, update options.eles
       if (options.eles.length != options.cy.elements().length) {
         var prevNodes = eles.nodes();
         eles = eles.union(eles.descendants());
@@ -532,89 +537,72 @@ var Layout = function () {
         options.eles = eles;
       }
 
-      if (packingEnabled) {
+      // if packing is not enabled, perform layout on the whole graph
+      if (!packingEnabled) {
+        if (options.randomize) {
+          // Apply spectral layout
+          spectralResult.push(spectralLayout(options));
+          xCoords = spectralResult[0]["xCoords"];
+          yCoords = spectralResult[0]["yCoords"];
+        }
+
+        // Apply cose layout as postprocessing
+        if (options.quality == "default" || options.quality == "proof") {
+          coseResult.push(coseLayout(options, spectralResult[0]));
+        }
+      } else {
+        // packing is enabled
         var topMostNodes = aux.getTopMostNodes(options.eles.nodes());
         components = aux.connectComponents(cy, options.eles, topMostNodes);
-      }
 
-      if (options.randomize) {
-        if (packingEnabled) {
+        //send each component to spectral layout
+        if (options.randomize) {
           components.forEach(function (component) {
             options.eles = component;
             spectralResult.push(spectralLayout(options));
           });
-        } else {
-          // Apply spectral layout
-          spectralResult.push(spectralLayout(options));
-          if (spectralResult[0]) {
-            xCoords = spectralResult[0]["xCoords"];
-            yCoords = spectralResult[0]["yCoords"];
-          }
         }
-      }
 
-      if (options.quality == "default" || options.quality == "proof" || spectralResult.includes(false)) {
-        if (packingEnabled) {
-          if (options.quality == "draft" && spectralResult.includes(false)) {
-            spectralResult.forEach(function (value, index) {
-              if (!value) {
-                options.eles = components[index];
-                var tempResult = coseLayout(options, spectralResult[index]);
-                var nodeIndexes = new Map();
-                var _xCoords = [];
-                var _yCoords = [];
-                var count = 0;
-                Object.keys(tempResult).forEach(function (item) {
-                  nodeIndexes.set(item, count++);
-                  _xCoords.push(tempResult[item].getCenterX());
-                  _yCoords.push(tempResult[item].getCenterY());
-                });
-                spectralResult[index] = { nodeIndexes: nodeIndexes, xCoords: _xCoords, yCoords: _yCoords };
-              }
-            });
-          } else {
-            var toBeTiledNodes = cy.collection();
-            if (options.tile) {
-              var nodeIndexes = new Map();
-              var _xCoords2 = [];
-              var _yCoords2 = [];
-              var count = 0;
-              var tempSpectralResult = { nodeIndexes: nodeIndexes, xCoords: _xCoords2, yCoords: _yCoords2 };
-              var indexesToBeDeleted = [];
-              components.forEach(function (component, index) {
-                if (component.edges().length == 0) {
-                  component.nodes().forEach(function (node, i) {
-                    toBeTiledNodes.merge(component.nodes()[i]);
-                    if (!node.isParent()) {
-                      tempSpectralResult.nodeIndexes.set(component.nodes()[i].id(), count++);
-                      tempSpectralResult.xCoords.push(component.nodes()[0].position().x);
-                      tempSpectralResult.yCoords.push(component.nodes()[0].position().y);
-                    }
-                  });
-                  indexesToBeDeleted.push(index);
-                }
-              });
-              if (toBeTiledNodes.length > 1) {
-                components.push(toBeTiledNodes);
-                for (var i = indexesToBeDeleted.length - 1; i >= 0; i--) {
-                  components.splice(indexesToBeDeleted[i], 1);
-                  spectralResult.splice(indexesToBeDeleted[i], 1);
-                };
-                spectralResult.push(tempSpectralResult);
-              }
-            }
+        if (options.quality == "default" || options.quality == "proof") {
+          var toBeTiledNodes = cy.collection();
+          if (options.tile) {
+            // behave nodes to be tiled as one component
+            var nodeIndexes = new Map();
+            var _xCoords = [];
+            var _yCoords = [];
+            var count = 0;
+            var tempSpectralResult = { nodeIndexes: nodeIndexes, xCoords: _xCoords, yCoords: _yCoords };
+            var indexesToBeDeleted = [];
             components.forEach(function (component, index) {
-              options.eles = component;
-              coseResult.push(coseLayout(options, spectralResult[index]));
+              if (component.edges().length == 0) {
+                component.nodes().forEach(function (node, i) {
+                  toBeTiledNodes.merge(component.nodes()[i]);
+                  if (!node.isParent()) {
+                    tempSpectralResult.nodeIndexes.set(component.nodes()[i].id(), count++);
+                    tempSpectralResult.xCoords.push(component.nodes()[0].position().x);
+                    tempSpectralResult.yCoords.push(component.nodes()[0].position().y);
+                  }
+                });
+                indexesToBeDeleted.push(index);
+              }
             });
+            if (toBeTiledNodes.length > 1) {
+              components.push(toBeTiledNodes);
+              spectralResult.push(tempSpectralResult);
+              for (var i = indexesToBeDeleted.length - 1; i >= 0; i--) {
+                components.splice(indexesToBeDeleted[i], 1);
+                spectralResult.splice(indexesToBeDeleted[i], 1);
+              };
+            }
           }
-        } else {
-          // Apply cose layout as postprocessing
-          coseResult.push(coseLayout(options, spectralResult[0]));
+          components.forEach(function (component, index) {
+            // send each component to cose layout
+            options.eles = component;
+            coseResult.push(coseLayout(options, spectralResult[index]));
+          });
         }
-      }
 
-      if (packingEnabled) {
+        // packing
         var subgraphs = [];
         components.forEach(function (component, index) {
           var nodeIndexes = void 0;
@@ -629,13 +617,42 @@ var Layout = function () {
             if (options.quality == "draft") {
               if (!node.isParent()) {
                 nodeIndex = nodeIndexes.get(node.id());
-                subgraph.nodes.push({ x: spectralResult[index].xCoords[nodeIndex] - node.bb().w / 2, y: spectralResult[index].yCoords[nodeIndex] - node.bb().h / 2, width: node.bb().w, height: node.bb().h });
+                subgraph.nodes.push({ x: spectralResult[index].xCoords[nodeIndex] - node.boundingbox().w / 2, y: spectralResult[index].yCoords[nodeIndex] - node.boundingbox().h / 2, width: node.boundingbox().w, height: node.boundingbox().h });
               } else {
                 var parentInfo = aux.calcBoundingBox(node, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
                 subgraph.nodes.push({ x: parentInfo.topLeftX, y: parentInfo.topLeftY, width: parentInfo.width, height: parentInfo.height });
               }
             } else {
               subgraph.nodes.push({ x: coseResult[index][node.id()].getLeft(), y: coseResult[index][node.id()].getTop(), width: coseResult[index][node.id()].getWidth(), height: coseResult[index][node.id()].getHeight() });
+            }
+          });
+          component.edges().forEach(function (node) {
+            var source = node.source();
+            var target = node.target();
+            if (options.quality == "draft") {
+              var sourceNodeIndex = nodeIndexes.get(source.id());
+              var targetNodeIndex = nodeIndexes.get(target.id());
+              var sourceCenter = [];
+              var targetCenter = [];
+              if (source.isParent()) {
+                var parentInfo = aux.calcBoundingBox(source, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                sourceCenter.push(parentInfo.topLeftX + parentInfo.width / 2);
+                sourceCenter.push(parentInfo.topLeftY + parentInfo.height / 2);
+              } else {
+                sourceCenter.push(spectralResult[index].xCoords[sourceNodeIndex]);
+                sourceCenter.push(spectralResult[index].yCoords[sourceNodeIndex]);
+              }
+              if (target.isParent()) {
+                var _parentInfo = aux.calcBoundingBox(target, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                targetCenter.push(_parentInfo.topLeftX + _parentInfo.width / 2);
+                targetCenter.push(_parentInfo.topLeftY + _parentInfo.height / 2);
+              } else {
+                targetCenter.push(spectralResult[index].xCoords[targetNodeIndex]);
+                targetCenter.push(spectralResult[index].yCoords[targetNodeIndex]);
+              }
+              subgraph.edges.push({ startX: sourceCenter[0], startY: sourceCenter[1], endX: targetCenter[0], endY: targetCenter[1] });
+            } else {
+              subgraph.edges.push({ startX: coseResult[index][source.id()].getCenterX(), startY: coseResult[index][source.id()].getCenterY(), endX: coseResult[index][target.id()].getCenterX(), endY: coseResult[index][target.id()].getCenterY() });
             }
           });
           subgraphs.push(subgraph);
@@ -664,7 +681,7 @@ var Layout = function () {
 
       // get each element's calculated position
       var getPositions = function getPositions(ele, i) {
-        if (options.quality == "default" || options.quality == "proof" || options.quality == "proof" && !packingEnabled && spectralResult.includes(false)) {
+        if (options.quality == "default" || options.quality == "proof") {
           if (typeof ele === "number") {
             ele = i;
           }
@@ -685,8 +702,9 @@ var Layout = function () {
             var index = result.nodeIndexes.get(ele.id());
             if (index != undefined) {
               _pos = { x: result.xCoords[index], y: result.yCoords[index] };
-            };
+            }
           });
+          if (_pos == undefined) _pos = { x: ele.position("x"), y: ele.position("y") };
           return {
             x: _pos.x,
             y: _pos.y
@@ -765,7 +783,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
   var yCoords = void 0;
   var idToLNode = {};
 
-  if (options.randomize && spectralResult) {
+  if (options.randomize) {
     nodeIndexes = spectralResult["nodeIndexes"];
     xCoords = spectralResult["xCoords"];
     yCoords = spectralResult["yCoords"];
@@ -786,7 +804,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
       });
 
       if (theChild.outerWidth() != null && theChild.outerHeight() != null) {
-        if (options.randomize && spectralResult) {
+        if (options.randomize) {
           if (!theChild.isParent()) {
             theNode = parent.add(new CoSENode(layout.graphManager, new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
           } else {
@@ -874,6 +892,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
   CoSEConstants.TILING_PADDING_HORIZONTAL = typeof options.tilingPaddingHorizontal === 'function' ? options.tilingPaddingHorizontal.call() : options.tilingPaddingHorizontal;
 
   CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
+  LayoutConstants.DEFAULT_UNIFORM_LEAF_NODE_SIZES = options.uniformNodeDimensions;
 
   var coseLayout = new CoSELayout();
   var gm = coseLayout.newGraphManager();
@@ -1326,7 +1345,20 @@ var spectralLayout = function spectralLayout(options) {
     spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
     return spectralResult;
   } else {
-    spectralResult = false;
+    var iterator = nodeIndexes.keys();
+    var firstNode = cy.getElementById(iterator.next().value);
+    var firstNodePos = firstNode.position();
+    var firstNodeWidth = firstNode.outerWidth();
+    xCoords.push(firstNodePos.x);
+    yCoords.push(firstNodePos.y);
+    if (nodeSize == 2) {
+      var secondNode = cy.getElementById(iterator.next().value);
+      var secondNodeWidth = secondNode.outerWidth();
+      xCoords.push(firstNodePos.x + firstNodeWidth / 2 + secondNodeWidth / 2 + options.idealEdgeLength);
+      yCoords.push(firstNodePos.y);
+    }
+
+    spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
     return spectralResult;
   }
 };

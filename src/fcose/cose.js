@@ -23,7 +23,7 @@ let coseLayout = function(options, spectralResult){
   let yCoords;
   let idToLNode =  {};  
   
-  if(options.randomize && spectralResult){
+  if(options.randomize){
     nodeIndexes = spectralResult["nodeIndexes"];
     xCoords = spectralResult["xCoords"];
     yCoords = spectralResult["yCoords"];
@@ -45,7 +45,7 @@ let coseLayout = function(options, spectralResult){
 
       if (theChild.outerWidth() != null
               && theChild.outerHeight() != null) {
-        if(options.randomize && spectralResult){
+        if(options.randomize){
           if(!theChild.isParent()){
             theNode = parent.add(new CoSENode(layout.graphManager,
                     new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2),
@@ -158,6 +158,7 @@ let coseLayout = function(options, spectralResult){
           typeof options.tilingPaddingHorizontal === 'function' ? options.tilingPaddingHorizontal.call() : options.tilingPaddingHorizontal;  
 
   CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
+  LayoutConstants.DEFAULT_UNIFORM_LEAF_NODE_SIZES = options.uniformNodeDimensions;
 
   let coseLayout = new CoSELayout();
   let gm = coseLayout.newGraphManager(); 

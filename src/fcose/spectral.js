@@ -397,7 +397,20 @@ let spectralLayout = function(options){
     return spectralResult;
   }
   else {
-    spectralResult = false;
+    let iterator = nodeIndexes.keys();
+    let firstNode = cy.getElementById(iterator.next().value);
+    let firstNodePos = firstNode.position();
+    let firstNodeWidth = firstNode.outerWidth();
+    xCoords.push(firstNodePos.x);
+    yCoords.push(firstNodePos.y);
+    if(nodeSize == 2){
+      let secondNode = cy.getElementById(iterator.next().value);
+      let secondNodeWidth = secondNode.outerWidth();
+      xCoords.push(firstNodePos.x + firstNodeWidth / 2 + secondNodeWidth / 2 + options.idealEdgeLength);
+      yCoords.push(firstNodePos.y);
+    }
+
+    spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
     return spectralResult;
   }
 };
