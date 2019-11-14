@@ -74,6 +74,9 @@ let coseLayout = function(options, spectralResult){
       theNode.paddingTop = parseInt( theChild.css('padding') );
       theNode.paddingRight = parseInt( theChild.css('padding') );
       theNode.paddingBottom = parseInt( theChild.css('padding') );
+      
+      if(theChild.scratch("constraint"))
+        theNode.constraint = theChild.scratch("constraint")["fixedAxes"];
 
       //Attach the label properties to compound if labels will be included in node dimensions  
       if(options.nodeDimensionsIncludeLabels){

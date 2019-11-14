@@ -5,6 +5,7 @@
 const assign = require('../assign');
 const aux = require('./auxiliary');
 const { spectralLayout } = require('./spectral');
+const { constraintHandler } = require('./constraintHandler');
 const { coseLayout } = require('./cose');
 
 const defaults = Object.freeze({
@@ -72,8 +73,13 @@ const defaults = Object.freeze({
   // Gravity range (constant)
   gravityRange: 3.8, 
   // Initial cooling factor for incremental layout  
-  initialEnergyOnIncremental: 0.3,  
-
+  initialEnergyOnIncremental: 0.3,
+  
+  /* Constraint options */
+  
+  // Fix required nodes to predefined positions 
+  fixedNodes: undefined, // function(node){ if(node.selected()){ return {x: node.position('x'), y: node.position('y')};}
+  
   /* layout event callbacks */
   ready: () => {}, // on layoutready
   stop: () => {} // on layoutstop
@@ -127,13 +133,35 @@ class Layout {
       });
 
       options.eles = eles;
+    }     
+    
+    let constraints = {};
+    let constrainedNodes = cy.collection();
+    let fixedNodesConstraint = [];
+    if(options.fixedNodes){
+      options.eles.not(":parent").forEach(function(node){
+        let fixedPosition = options.fixedNodes(node);
+        if(fixedPosition){
+          fixedNodesConstraint.push({
+            nodeId: node.id(),
+            position: fixedPosition
+          });
+          constrainedNodes = constrainedNodes.union(node);
+          node.scratch("constraint", {fixedAxes: 3});
+        }
+      });
     }
+    
+    constraints["fixedNodesConstraint"] = fixedNodesConstraint;
+    let unconstrainedEles = options.eles.difference(constrainedNodes.union(constrainedNodes.connectedEdges()));
     
     // if packing is not enabled, perform layout on the whole graph
     if(!packingEnabled){
       if(options.randomize){
         // Apply spectral layout
-        spectralResult.push(spectralLayout(options));
+        let result = spectralLayout(options);
+        constraintHandler(options, result, constraints, unconstrainedEles);
+        spectralResult.push(result);
         xCoords = spectralResult[0]["xCoords"];
         yCoords = spectralResult[0]["yCoords"];
       }
@@ -316,6 +344,12 @@ class Layout {
     else{
       console.log("If randomize option is set to false, then quality option must be 'default' or 'proof'.");
     }
+    
+    options.eles.forEach(function(node){
+      if(node.scratch("constraint")){
+        node.removeScratch("constraint");
+      }
+    });    
     
   }
 }

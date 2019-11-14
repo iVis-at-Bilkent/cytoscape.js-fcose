@@ -7,7 +7,7 @@
 		exports["cytoscapeFcose"] = factory(require("cose-base"), require("numeric"));
 	else
 		root["cytoscapeFcose"] = factory(root["coseBase"], root["numeric"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_0__, __WEBPACK_EXTERNAL_MODULE_7__) {
+})(this, function(__WEBPACK_EXTERNAL_MODULE_0__, __WEBPACK_EXTERNAL_MODULE_8__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 6);
+/******/ 	return __webpack_require__(__webpack_require__.s = 7);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -407,11 +407,14 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 var assign = __webpack_require__(3);
 var aux = __webpack_require__(1);
 
-var _require = __webpack_require__(5),
+var _require = __webpack_require__(6),
     spectralLayout = _require.spectralLayout;
 
 var _require2 = __webpack_require__(4),
-    coseLayout = _require2.coseLayout;
+    constraintHandler = _require2.constraintHandler;
+
+var _require3 = __webpack_require__(5),
+    coseLayout = _require3.coseLayout;
 
 var defaults = Object.freeze({
 
@@ -480,6 +483,11 @@ var defaults = Object.freeze({
   // Initial cooling factor for incremental layout  
   initialEnergyOnIncremental: 0.3,
 
+  /* Constraint options */
+
+  // Fix required nodes to predefined positions 
+  fixedNodes: undefined, // function(node){ if(node.selected()){ return {x: node.position('x'), y: node.position('y')};}
+
   /* layout event callbacks */
   ready: function ready() {}, // on layoutready
   stop: function stop() {} // on layoutstop
@@ -537,11 +545,33 @@ var Layout = function () {
         options.eles = eles;
       }
 
+      var constraints = {};
+      var constrainedNodes = cy.collection();
+      var fixedNodesConstraint = [];
+      if (options.fixedNodes) {
+        options.eles.not(":parent").forEach(function (node) {
+          var fixedPosition = options.fixedNodes(node);
+          if (fixedPosition) {
+            fixedNodesConstraint.push({
+              nodeId: node.id(),
+              position: fixedPosition
+            });
+            constrainedNodes = constrainedNodes.union(node);
+            node.scratch("constraint", { fixedAxes: 3 });
+          }
+        });
+      }
+
+      constraints["fixedNodesConstraint"] = fixedNodesConstraint;
+      var unconstrainedEles = options.eles.difference(constrainedNodes.union(constrainedNodes.connectedEdges()));
+
       // if packing is not enabled, perform layout on the whole graph
       if (!packingEnabled) {
         if (options.randomize) {
           // Apply spectral layout
-          spectralResult.push(spectralLayout(options));
+          var result = spectralLayout(options);
+          constraintHandler(options, result, constraints, unconstrainedEles);
+          spectralResult.push(result);
           xCoords = spectralResult[0]["xCoords"];
           yCoords = spectralResult[0]["yCoords"];
         }
@@ -720,6 +750,12 @@ var Layout = function () {
       } else {
         console.log("If randomize option is set to false, then quality option must be 'default' or 'proof'.");
       }
+
+      options.eles.forEach(function (node) {
+        if (node.scratch("constraint")) {
+          node.removeScratch("constraint");
+        }
+      });
     }
   }]);
 
@@ -753,6 +789,78 @@ module.exports = Object.assign != null ? Object.assign.bind(Object) : function (
 
 /***/ }),
 /* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+  The implementation of the constraints after spectral layout is applied
+*/
+
+var constraintHandler = function constraintHandler(options, spectralResult, constraints, unconstrainedEles) {
+  var cy = options.cy;
+  var eles = options.eles;
+  var nodes = eles.nodes();
+
+  var nodeIndexes = spectralResult.nodeIndexes;
+  var xCoords = spectralResult.xCoords;
+  var yCoords = spectralResult.yCoords;
+
+  var calculatePosition = function calculatePosition(node) {
+    var xPosSum = 0;
+    var yPosSum = 0;
+    var neighborCount = 0;
+
+    node.neighborhood().nodes().not(":parent").forEach(function (neighborNode) {
+      if (eles.contains(node.edgesWith(neighborNode)) && unconstrainedEles.contains(neighborNode)) {
+        xPosSum += xCoords[nodeIndexes.get(neighborNode.id())];
+        yPosSum += yCoords[nodeIndexes.get(neighborNode.id())];
+        neighborCount++;
+      }
+    });
+    if (neighborCount == 0) {
+      return { x: unconstrainedEles.nodes()[0].position('x'), y: unconstrainedEles.nodes()[0].position('y') }; // TO DO: think a better idea
+    }
+    return { x: xPosSum / neighborCount, y: yPosSum / neighborCount };
+  };
+
+  var calculatePositionDiff = function calculatePositionDiff(pos1, pos2) {
+    return { x: pos1["x"] - pos2["x"], y: pos1["y"] - pos2["y"] };
+  };
+
+  if (constraints["fixedNodesConstraint"].length > 0) {
+    var translationAmount = { x: 0, y: 0 };
+    constraints["fixedNodesConstraint"].forEach(function (nodeData, i) {
+      var node = cy.getElementById(nodeData.nodeId);
+      var posInTheory = { x: xCoords[nodeIndexes.get(nodeData.nodeId)], y: yCoords[nodeIndexes.get(nodeData.nodeId)] };
+      var posDesired = nodeData.position;
+      var posDiff = calculatePositionDiff(posDesired, posInTheory);
+      translationAmount.x += posDiff.x;
+      translationAmount.y += posDiff.y;
+    });
+    translationAmount.x /= constraints["fixedNodesConstraint"].length;
+    translationAmount.y /= constraints["fixedNodesConstraint"].length;
+
+    xCoords.forEach(function (value, i) {
+      xCoords[i] += translationAmount.x;
+    });
+
+    yCoords.forEach(function (value, i) {
+      yCoords[i] += translationAmount.y;
+    });
+
+    constraints["fixedNodesConstraint"].forEach(function (nodeData) {
+      xCoords[nodeIndexes.get(nodeData["nodeId"])] = nodeData["position"]["x"];
+      yCoords[nodeIndexes.get(nodeData["nodeId"])] = nodeData["position"]["y"];
+    });
+  }
+};
+
+module.exports = { constraintHandler: constraintHandler };
+
+/***/ }),
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -824,6 +932,8 @@ var coseLayout = function coseLayout(options, spectralResult) {
       theNode.paddingTop = parseInt(theChild.css('padding'));
       theNode.paddingRight = parseInt(theChild.css('padding'));
       theNode.paddingBottom = parseInt(theChild.css('padding'));
+
+      if (theChild.scratch("constraint")) theNode.constraint = theChild.scratch("constraint")["fixedAxes"];
 
       //Attach the label properties to compound if labels will be included in node dimensions  
       if (options.nodeDimensionsIncludeLabels) {
@@ -909,7 +1019,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
 module.exports = { coseLayout: coseLayout };
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -920,7 +1030,7 @@ module.exports = { coseLayout: coseLayout };
 */
 
 var aux = __webpack_require__(1);
-var numeric = __webpack_require__(7);
+var numeric = __webpack_require__(8);
 
 // main function that spectral layout is processed
 var spectralLayout = function spectralLayout(options) {
@@ -1366,7 +1476,7 @@ var spectralLayout = function spectralLayout(options) {
 module.exports = { spectralLayout: spectralLayout };
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1391,10 +1501,10 @@ if (typeof cytoscape !== 'undefined') {
 module.exports = register;
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports) {
 
-module.exports = __WEBPACK_EXTERNAL_MODULE_7__;
+module.exports = __WEBPACK_EXTERNAL_MODULE_8__;
 
 /***/ })
 /******/ ]);
