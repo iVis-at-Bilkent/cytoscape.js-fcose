@@ -79,6 +79,8 @@ const defaults = Object.freeze({
   
   // Fix required nodes to predefined positions 
   fixedNodes: undefined, // function(node){ if(node.selected()){ return {x: node.position('x'), y: node.position('y')};}
+  // Align required nodes in x/y direction
+  alignment: undefined, // {x: [[cy.$('#n1'), cy.$('#n2')], [cy.$('#n3'), cy.$('#n4')]]}
   
   /* layout event callbacks */
   ready: () => {}, // on layoutready
@@ -136,31 +138,62 @@ class Layout {
     }     
     
     let constraints = {};
-    let constrainedNodes = cy.collection();
+    let fixedNodes = cy.collection();
+    
+    // get nodes to be fixed
     let fixedNodesConstraint = [];
     if(options.fixedNodes){
-      options.eles.not(":parent").forEach(function(node){
+      options.eles.nodes().not(":parent").forEach(function(node){
         let fixedPosition = options.fixedNodes(node);
         if(fixedPosition){
           fixedNodesConstraint.push({
             nodeId: node.id(),
             position: fixedPosition
           });
-          constrainedNodes = constrainedNodes.union(node);
+          fixedNodes = fixedNodes.union(node);
           node.scratch("constraint", {fixedAxes: 3});
         }
       });
+    }    
+    
+    // get nodes to be aligned
+    if(options.alignment){
+      if(options.alignment["x"]){
+        let xAlign = options.alignment['x'];      
+        for(let i = 0; i < xAlign.length; i++){
+          let alignmentSet = xAlign[i];
+          for(let j = 0; j < alignmentSet.length; j++){
+            let scratch = alignmentSet[j].scratch("constraint");
+            if(scratch == undefined)
+              alignmentSet[j].scratch("constraint", {fixedAxes: 1});
+          }
+        }
+      }
+      if(options.alignment["y"]){
+        let yAlign = options.alignment['y'];
+        for(let i = 0; i < yAlign.length; i++){
+          let alignmentSet = yAlign[i];
+          for(let j = 0; j < alignmentSet.length; j++){
+            let scratch = alignmentSet[j].scratch("constraint");
+            if(scratch == undefined)
+              alignmentSet[j].scratch("constraint", {fixedAxes: 2});
+            else if(scratch["fixedAxes"] == 1)
+              alignmentSet[j].scratch("constraint", {fixedAxes: 3});
+          }
+        }
+      }
     }
     
     constraints["fixedNodesConstraint"] = fixedNodesConstraint;
-    let unconstrainedEles = options.eles.difference(constrainedNodes.union(constrainedNodes.connectedEdges()));
+    constraints["alignmentConstraint"] = options.alignment;
+    let unconstrainedEles = options.eles.difference(fixedNodes.union(fixedNodes.connectedEdges()));
     
     // if packing is not enabled, perform layout on the whole graph
     if(!packingEnabled){
       if(options.randomize){
         // Apply spectral layout
         let result = spectralLayout(options);
-        constraintHandler(options, result, constraints, unconstrainedEles);
+        constraintHandler(options, result, constraints, fixedNodes);
         spectralResult.push(result);
         xCoords = spectralResult[0]["xCoords"];
         yCoords = spectralResult[0]["yCoords"];

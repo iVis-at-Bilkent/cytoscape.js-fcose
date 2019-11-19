@@ -487,6 +487,8 @@ var defaults = Object.freeze({
 
   // Fix required nodes to predefined positions 
   fixedNodes: undefined, // function(node){ if(node.selected()){ return {x: node.position('x'), y: node.position('y')};}
+  // Align required nodes in x/y direction
+  alignment: undefined, // {x: [[cy.$('#n1'), cy.$('#n2')], [cy.$('#n3'), cy.$('#n4')]]}
 
   /* layout event callbacks */
   ready: function ready() {}, // on layoutready
@@ -546,31 +548,58 @@ var Layout = function () {
       }
 
       var constraints = {};
-      var constrainedNodes = cy.collection();
+      var fixedNodes = cy.collection();
+
+      // get nodes to be fixed
       var fixedNodesConstraint = [];
       if (options.fixedNodes) {
-        options.eles.not(":parent").forEach(function (node) {
+        options.eles.nodes().not(":parent").forEach(function (node) {
           var fixedPosition = options.fixedNodes(node);
           if (fixedPosition) {
             fixedNodesConstraint.push({
               nodeId: node.id(),
               position: fixedPosition
             });
-            constrainedNodes = constrainedNodes.union(node);
+            fixedNodes = fixedNodes.union(node);
             node.scratch("constraint", { fixedAxes: 3 });
           }
         });
       }
 
+      // get nodes to be aligned
+      if (options.alignment) {
+        if (options.alignment["x"]) {
+          var xAlign = options.alignment['x'];
+          for (var i = 0; i < xAlign.length; i++) {
+            var alignmentSet = xAlign[i];
+            for (var j = 0; j < alignmentSet.length; j++) {
+              var scratch = alignmentSet[j].scratch("constraint");
+              if (scratch == undefined) alignmentSet[j].scratch("constraint", { fixedAxes: 1 });
+            }
+          }
+        }
+        if (options.alignment["y"]) {
+          var yAlign = options.alignment['y'];
+          for (var _i = 0; _i < yAlign.length; _i++) {
+            var _alignmentSet = yAlign[_i];
+            for (var _j = 0; _j < _alignmentSet.length; _j++) {
+              var _scratch = _alignmentSet[_j].scratch("constraint");
+              if (_scratch == undefined) _alignmentSet[_j].scratch("constraint", { fixedAxes: 2 });else if (_scratch["fixedAxes"] == 1) _alignmentSet[_j].scratch("constraint", { fixedAxes: 3 });
+            }
+          }
+        }
+      }
+
       constraints["fixedNodesConstraint"] = fixedNodesConstraint;
-      var unconstrainedEles = options.eles.difference(constrainedNodes.union(constrainedNodes.connectedEdges()));
+      constraints["alignmentConstraint"] = options.alignment;
+      var unconstrainedEles = options.eles.difference(fixedNodes.union(fixedNodes.connectedEdges()));
 
       // if packing is not enabled, perform layout on the whole graph
       if (!packingEnabled) {
         if (options.randomize) {
           // Apply spectral layout
           var result = spectralLayout(options);
-          constraintHandler(options, result, constraints, unconstrainedEles);
+          constraintHandler(options, result, constraints, fixedNodes);
           spectralResult.push(result);
           xCoords = spectralResult[0]["xCoords"];
           yCoords = spectralResult[0]["yCoords"];
@@ -619,9 +648,9 @@ var Layout = function () {
             if (toBeTiledNodes.length > 1) {
               components.push(toBeTiledNodes);
               spectralResult.push(tempSpectralResult);
-              for (var i = indexesToBeDeleted.length - 1; i >= 0; i--) {
-                components.splice(indexesToBeDeleted[i], 1);
-                spectralResult.splice(indexesToBeDeleted[i], 1);
+              for (var _i2 = indexesToBeDeleted.length - 1; _i2 >= 0; _i2--) {
+                components.splice(indexesToBeDeleted[_i2], 1);
+                spectralResult.splice(indexesToBeDeleted[_i2], 1);
               };
             }
           }
@@ -798,7 +827,7 @@ module.exports = Object.assign != null ? Object.assign.bind(Object) : function (
   The implementation of the constraints after spectral layout is applied
 */
 
-var constraintHandler = function constraintHandler(options, spectralResult, constraints, unconstrainedEles) {
+var constraintHandler = function constraintHandler(options, spectralResult, constraints, fixedNodes) {
   var cy = options.cy;
   var eles = options.eles;
   var nodes = eles.nodes();
@@ -807,28 +836,40 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
   var xCoords = spectralResult.xCoords;
   var yCoords = spectralResult.yCoords;
 
-  var calculatePosition = function calculatePosition(node) {
-    var xPosSum = 0;
-    var yPosSum = 0;
-    var neighborCount = 0;
-
-    node.neighborhood().nodes().not(":parent").forEach(function (neighborNode) {
-      if (eles.contains(node.edgesWith(neighborNode)) && unconstrainedEles.contains(neighborNode)) {
-        xPosSum += xCoords[nodeIndexes.get(neighborNode.id())];
-        yPosSum += yCoords[nodeIndexes.get(neighborNode.id())];
-        neighborCount++;
-      }
-    });
-    if (neighborCount == 0) {
-      return { x: unconstrainedEles.nodes()[0].position('x'), y: unconstrainedEles.nodes()[0].position('y') }; // TO DO: think a better idea
-    }
-    return { x: xPosSum / neighborCount, y: yPosSum / neighborCount };
-  };
+  //  let calculatePosition = function(node){
+  //    let xPosSum = 0;
+  //    let yPosSum = 0;
+  //    let neighborCount = 0;
+  //
+  //    node.neighborhood().nodes().not(":parent").forEach(function(neighborNode){
+  //      if(eles.contains(node.edgesWith(neighborNode)) && unconstrainedEles.contains(neighborNode)){
+  //        xPosSum += xCoords[nodeIndexes.get(neighborNode.id())];
+  //        yPosSum += yCoords[nodeIndexes.get(neighborNode.id())];
+  //        neighborCount++;
+  //      }
+  //    });
+  //    if(neighborCount == 0){
+  //      return {x: unconstrainedEles.nodes()[0].position('x'), y: unconstrainedEles.nodes()[0].position('y')}; // TO DO: think a better idea
+  //    }
+  //    return {x: xPosSum/neighborCount, y: yPosSum/neighborCount};
+  //  };
 
   var calculatePositionDiff = function calculatePositionDiff(pos1, pos2) {
     return { x: pos1["x"] - pos2["x"], y: pos1["y"] - pos2["y"] };
   };
 
+  var calculateAvgPosition = function calculateAvgPosition(nodes) {
+    var xPosSum = 0;
+    var yPosSum = 0;
+    nodes.forEach(function (node) {
+      xPosSum += xCoords[nodeIndexes.get(node.id())];
+      yPosSum += yCoords[nodeIndexes.get(node.id())];
+    });
+
+    return { x: xPosSum / nodes.length, y: yPosSum / nodes.length };
+  };
+
+  // handle fixedNodes contraints
   if (constraints["fixedNodesConstraint"].length > 0) {
     var translationAmount = { x: 0, y: 0 };
     constraints["fixedNodesConstraint"].forEach(function (nodeData, i) {
@@ -854,6 +895,54 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
       xCoords[nodeIndexes.get(nodeData["nodeId"])] = nodeData["position"]["x"];
       yCoords[nodeIndexes.get(nodeData["nodeId"])] = nodeData["position"]["y"];
     });
+  }
+
+  // handle alignment constraints
+  if (constraints["alignmentConstraint"]) {
+    if (constraints["alignmentConstraint"]["x"]) {
+      var xAlign = constraints["alignmentConstraint"]["x"];
+
+      var _loop = function _loop(i) {
+        var alignmentSet = cy.collection();
+        xAlign[i].forEach(function (node) {
+          alignmentSet = alignmentSet.union(node);
+        });
+        var intersection = alignmentSet.diff(fixedNodes).both;
+        var xPos = void 0;
+        if (intersection.length > 0) xPos = xCoords[nodeIndexes.get(intersection[0].id())];else xPos = calculateAvgPosition(alignmentSet)['x'];
+
+        for (var j = 0; j < alignmentSet.length; j++) {
+          var node = alignmentSet[j];
+          if (!fixedNodes.contains(node)) xCoords[nodeIndexes.get(node.id())] = xPos;
+        }
+      };
+
+      for (var i = 0; i < xAlign.length; i++) {
+        _loop(i);
+      }
+    }
+    if (constraints["alignmentConstraint"]["y"]) {
+      var yAlign = constraints["alignmentConstraint"]["y"];
+
+      var _loop2 = function _loop2(i) {
+        var alignmentSet = cy.collection();
+        yAlign[i].forEach(function (node) {
+          alignmentSet = alignmentSet.union(node);
+        });
+        var intersection = alignmentSet.diff(fixedNodes).both;
+        var yPos = void 0;
+        if (intersection.length > 0) yPos = yCoords[nodeIndexes.get(intersection[0].id())];else yPos = calculateAvgPosition(alignmentSet)['y'];
+
+        for (var j = 0; j < alignmentSet.length; j++) {
+          var node = alignmentSet[j];
+          if (!fixedNodes.contains(node)) yCoords[nodeIndexes.get(node.id())] = yPos;
+        }
+      };
+
+      for (var i = 0; i < yAlign.length; i++) {
+        _loop2(i);
+      }
+    }
   }
 };
 
