@@ -68,7 +68,7 @@ let constraintHandler = function(options, spectralResult, constraints, fixedNode
     foundMatrixTranspose = numeric.transpose(foundMatrix);
     
     // centralize transpose matrices
-    for(let i = 0; i < fixedNodesLength; i++){
+    for(let i = 0; i < fixedMatrixTranspose.length; i++){
       fixedMatrixTranspose[i] = aux.multGamma(fixedMatrixTranspose[i]);
       foundMatrixTranspose[i] = aux.multGamma(foundMatrixTranspose[i]);
     }

@@ -899,7 +899,7 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
     foundMatrixTranspose = numeric.transpose(foundMatrix);
 
     // centralize transpose matrices
-    for (var i = 0; i < fixedNodesLength; i++) {
+    for (var i = 0; i < fixedMatrixTranspose.length; i++) {
       fixedMatrixTranspose[i] = aux.multGamma(fixedMatrixTranspose[i]);
       foundMatrixTranspose[i] = aux.multGamma(foundMatrixTranspose[i]);
     }
