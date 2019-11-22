@@ -2,6 +2,9 @@
   The implementation of the constraints after spectral layout is applied
 */
 
+const aux = require('./auxiliary');
+const numeric = require('numeric');
+
 let constraintHandler = function(options, spectralResult, constraints, fixedNodes){
   let cy = options.cy;
   let eles = options.eles;
@@ -45,10 +48,47 @@ let constraintHandler = function(options, spectralResult, constraints, fixedNode
   };
   
   // handle fixedNodes contraints
-  if(constraints["fixedNodesConstraint"].length > 0){ 
+  if(constraints["fixedNodesConstraint"].length > 0){
+    /****  apply transformation to the draft graph to better align with fixed nodes ****/
+
+    // first, solve the Orthogonal Procrustean Problem to rotate/reflect draft graph
+    // here we follow the solution in Chapter 20.2 of Borg, I. & Groenen, P. (2005) Modern Multidimensional Scaling: Theory and Applications
+    let fixedMatrix = []; // A
+    let foundMatrix = []; // B
+    let fixedMatrixTranspose = []; // A'
+    let foundMatrixTranspose = []; // B'   
+    let fixedNodesLength = constraints["fixedNodesConstraint"].length;
+    
+    constraints["fixedNodesConstraint"].forEach(function(nodeData, i){
+      fixedMatrix[i] = [nodeData["position"]["x"], nodeData["position"]["y"]];
+      foundMatrix[i] = [xCoords[nodeIndexes.get(nodeData.nodeId)], yCoords[nodeIndexes.get(nodeData.nodeId)]];           
+    });
+    
+    fixedMatrixTranspose = numeric.transpose(fixedMatrix);
+    foundMatrixTranspose = numeric.transpose(foundMatrix);
+    
+    // centralize transpose matrices
+    for(let i = 0; i < fixedNodesLength; i++){
+      fixedMatrixTranspose[i] = aux.multGamma(fixedMatrixTranspose[i]);
+      foundMatrixTranspose[i] = aux.multGamma(foundMatrixTranspose[i]);
+    }
+    
+    let tempMatrix = aux.multMat(fixedMatrixTranspose, numeric.transpose(foundMatrixTranspose)); // tempMatrix = A'B
+    let SVDResult = numeric.svd(tempMatrix);
+    let transformationMatrix = aux.multMat(numeric.transpose(SVDResult.V), numeric.transpose(SVDResult.U)); // transformationMatrix = T
+
+    // apply found transformation matrix
+    for(let i = 0; i < nodeIndexes.size; i++){
+      let temp1 = [xCoords[i], yCoords[i]];
+      let temp2 = [transformationMatrix[0][0], transformationMatrix[1][0]];
+      let temp3 = [transformationMatrix[0][1], transformationMatrix[1][1]];
+      xCoords[i] = aux.dotProduct(temp1, temp2);
+      yCoords[i] = aux.dotProduct(temp1, temp3);
+    }  
+
+    // second, translate the draft graph towards the fixed nodes 
     let translationAmount = {x:0, y:0};
     constraints["fixedNodesConstraint"].forEach(function(nodeData, i){
-      let node = cy.getElementById(nodeData.nodeId);
       let posInTheory = {x: xCoords[nodeIndexes.get(nodeData.nodeId)], y: yCoords[nodeIndexes.get(nodeData.nodeId)]};
       let posDesired = nodeData.position;
       let posDiff = calculatePositionDiff(posDesired, posInTheory);

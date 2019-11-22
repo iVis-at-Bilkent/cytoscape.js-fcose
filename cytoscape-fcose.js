@@ -7,7 +7,7 @@
 		exports["cytoscapeFcose"] = factory(require("cose-base"), require("numeric"));
 	else
 		root["cytoscapeFcose"] = factory(root["coseBase"], root["numeric"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_0__, __WEBPACK_EXTERNAL_MODULE_8__) {
+})(this, function(__WEBPACK_EXTERNAL_MODULE_0__, __WEBPACK_EXTERNAL_MODULE_2__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 7);
+/******/ 	return __webpack_require__(__webpack_require__.s = 8);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -391,6 +391,12 @@ module.exports = auxiliary;
 
 /***/ }),
 /* 2 */
+/***/ (function(module, exports) {
+
+module.exports = __WEBPACK_EXTERNAL_MODULE_2__;
+
+/***/ }),
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -404,16 +410,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
   The implementation of the fcose layout algorithm
 */
 
-var assign = __webpack_require__(3);
+var assign = __webpack_require__(4);
 var aux = __webpack_require__(1);
 
-var _require = __webpack_require__(6),
+var _require = __webpack_require__(7),
     spectralLayout = _require.spectralLayout;
 
-var _require2 = __webpack_require__(4),
+var _require2 = __webpack_require__(5),
     constraintHandler = _require2.constraintHandler;
 
-var _require3 = __webpack_require__(5),
+var _require3 = __webpack_require__(6),
     coseLayout = _require3.coseLayout;
 
 var defaults = Object.freeze({
@@ -794,7 +800,7 @@ var Layout = function () {
 module.exports = Layout;
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -817,7 +823,7 @@ module.exports = Object.assign != null ? Object.assign.bind(Object) : function (
 };
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -826,6 +832,9 @@ module.exports = Object.assign != null ? Object.assign.bind(Object) : function (
 /**
   The implementation of the constraints after spectral layout is applied
 */
+
+var aux = __webpack_require__(1);
+var numeric = __webpack_require__(2);
 
 var constraintHandler = function constraintHandler(options, spectralResult, constraints, fixedNodes) {
   var cy = options.cy;
@@ -871,9 +880,46 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
 
   // handle fixedNodes contraints
   if (constraints["fixedNodesConstraint"].length > 0) {
+    /****  apply transformation to the draft graph to better align with fixed nodes ****/
+
+    // first, solve the Orthogonal Procrustean Problem to rotate/reflect draft graph
+    // here we follow the solution in Chapter 20.2 of Borg, I. & Groenen, P. (2005) Modern Multidimensional Scaling: Theory and Applications
+    var fixedMatrix = []; // A
+    var foundMatrix = []; // B
+    var fixedMatrixTranspose = []; // A'
+    var foundMatrixTranspose = []; // B'   
+    var fixedNodesLength = constraints["fixedNodesConstraint"].length;
+
+    constraints["fixedNodesConstraint"].forEach(function (nodeData, i) {
+      fixedMatrix[i] = [nodeData["position"]["x"], nodeData["position"]["y"]];
+      foundMatrix[i] = [xCoords[nodeIndexes.get(nodeData.nodeId)], yCoords[nodeIndexes.get(nodeData.nodeId)]];
+    });
+
+    fixedMatrixTranspose = numeric.transpose(fixedMatrix);
+    foundMatrixTranspose = numeric.transpose(foundMatrix);
+
+    // centralize transpose matrices
+    for (var i = 0; i < fixedNodesLength; i++) {
+      fixedMatrixTranspose[i] = aux.multGamma(fixedMatrixTranspose[i]);
+      foundMatrixTranspose[i] = aux.multGamma(foundMatrixTranspose[i]);
+    }
+
+    var tempMatrix = aux.multMat(fixedMatrixTranspose, numeric.transpose(foundMatrixTranspose)); // tempMatrix = A'B
+    var SVDResult = numeric.svd(tempMatrix);
+    var transformationMatrix = aux.multMat(numeric.transpose(SVDResult.V), numeric.transpose(SVDResult.U)); // transformationMatrix = T
+
+    // apply found transformation matrix
+    for (var _i = 0; _i < nodeIndexes.size; _i++) {
+      var temp1 = [xCoords[_i], yCoords[_i]];
+      var temp2 = [transformationMatrix[0][0], transformationMatrix[1][0]];
+      var temp3 = [transformationMatrix[0][1], transformationMatrix[1][1]];
+      xCoords[_i] = aux.dotProduct(temp1, temp2);
+      yCoords[_i] = aux.dotProduct(temp1, temp3);
+    }
+
+    // second, translate the draft graph towards the fixed nodes 
     var translationAmount = { x: 0, y: 0 };
     constraints["fixedNodesConstraint"].forEach(function (nodeData, i) {
-      var node = cy.getElementById(nodeData.nodeId);
       var posInTheory = { x: xCoords[nodeIndexes.get(nodeData.nodeId)], y: yCoords[nodeIndexes.get(nodeData.nodeId)] };
       var posDesired = nodeData.position;
       var posDiff = calculatePositionDiff(posDesired, posInTheory);
@@ -902,9 +948,9 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
     if (constraints["alignmentConstraint"]["x"]) {
       var xAlign = constraints["alignmentConstraint"]["x"];
 
-      var _loop = function _loop(i) {
+      var _loop = function _loop(_i2) {
         var alignmentSet = cy.collection();
-        xAlign[i].forEach(function (node) {
+        xAlign[_i2].forEach(function (node) {
           alignmentSet = alignmentSet.union(node);
         });
         var intersection = alignmentSet.diff(fixedNodes).both;
@@ -917,16 +963,16 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
         }
       };
 
-      for (var i = 0; i < xAlign.length; i++) {
-        _loop(i);
+      for (var _i2 = 0; _i2 < xAlign.length; _i2++) {
+        _loop(_i2);
       }
     }
     if (constraints["alignmentConstraint"]["y"]) {
       var yAlign = constraints["alignmentConstraint"]["y"];
 
-      var _loop2 = function _loop2(i) {
+      var _loop2 = function _loop2(_i3) {
         var alignmentSet = cy.collection();
-        yAlign[i].forEach(function (node) {
+        yAlign[_i3].forEach(function (node) {
           alignmentSet = alignmentSet.union(node);
         });
         var intersection = alignmentSet.diff(fixedNodes).both;
@@ -939,8 +985,8 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
         }
       };
 
-      for (var i = 0; i < yAlign.length; i++) {
-        _loop2(i);
+      for (var _i3 = 0; _i3 < yAlign.length; _i3++) {
+        _loop2(_i3);
       }
     }
   }
@@ -949,7 +995,7 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
 module.exports = { constraintHandler: constraintHandler };
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1108,7 +1154,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
 module.exports = { coseLayout: coseLayout };
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1119,7 +1165,7 @@ module.exports = { coseLayout: coseLayout };
 */
 
 var aux = __webpack_require__(1);
-var numeric = __webpack_require__(8);
+var numeric = __webpack_require__(2);
 
 // main function that spectral layout is processed
 var spectralLayout = function spectralLayout(options) {
@@ -1565,13 +1611,13 @@ var spectralLayout = function spectralLayout(options) {
 module.exports = { spectralLayout: spectralLayout };
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var impl = __webpack_require__(2);
+var impl = __webpack_require__(3);
 
 // registers the extension on a cytoscape lib ref
 var register = function register(cytoscape) {
@@ -1588,12 +1634,6 @@ if (typeof cytoscape !== 'undefined') {
 }
 
 module.exports = register;
-
-/***/ }),
-/* 8 */
-/***/ (function(module, exports) {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE_8__;
 
 /***/ })
 /******/ ]);
