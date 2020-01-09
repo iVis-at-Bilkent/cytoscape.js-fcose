@@ -7,7 +7,7 @@
 const aux = require('./auxiliary');
 const numeric = require('numeric');
 
-let constraintHandler = function(options, spectralResult, constraints, fixedNodes){
+let constraintHandler = function(options, spectralResult, constraints){
   let cy = options.cy;
   let eles = options.eles;
   let nodes = eles.nodes();
@@ -60,12 +60,20 @@ let constraintHandler = function(options, spectralResult, constraints, fixedNode
   let targetMatrix = []; // A - target configuration
   let sourceMatrix = []; // B - source configuration 
   let isTransformationRequired = false;
+  let fixedNodes = cy.collection();
+  
+  // fill fixedNodes collection to use later
+  if(constraints["fixedNodeConstraint"]) {
+    constraints["fixedNodeConstraint"].forEach(function(nodeData){
+      fixedNodes.merge(nodeData["node"]);
+    });
+  }
   
   // first check fixed node constraint
   if(constraints["fixedNodeConstraint"] && constraints["fixedNodeConstraint"].length > 1){  
     constraints["fixedNodeConstraint"].forEach(function(nodeData, i){
       targetMatrix[i] = [nodeData["position"]["x"], nodeData["position"]["y"]];
-      sourceMatrix[i] = [xCoords[nodeIndexes.get(nodeData["node"].id())], yCoords[nodeIndexes.get(nodeData["node"].id())]];           
+      sourceMatrix[i] = [xCoords[nodeIndexes.get(nodeData["node"].id())], yCoords[nodeIndexes.get(nodeData["node"].id())]];      
     });
     isTransformationRequired = true;
   }
@@ -76,7 +84,7 @@ let constraintHandler = function(options, spectralResult, constraints, fixedNode
       for(let i = 0; i < verticalAlign.length; i++){
         let alignmentSet = cy.collection();
         verticalAlign[i].forEach(function(node){
-          alignmentSet = alignmentSet.union(node);
+          alignmentSet = alignmentSet.merge(node);
         });
         let intersection = alignmentSet.diff(fixedNodes).both;
         let xPos;
@@ -98,7 +106,7 @@ let constraintHandler = function(options, spectralResult, constraints, fixedNode
       for(let i = 0; i < horizontalAlign.length; i++){
         let alignmentSet = cy.collection();
         horizontalAlign[i].forEach(function(node){
-          alignmentSet = alignmentSet.union(node);
+          alignmentSet = alignmentSet.merge(node);
         });
         let intersection = alignmentSet.diff(fixedNodes).both;
         let yPos;
@@ -186,7 +194,7 @@ let constraintHandler = function(options, spectralResult, constraints, fixedNode
       for(let i = 0; i < xAlign.length; i++){
         let alignmentSet = cy.collection();
         xAlign[i].forEach(function(node){
-          alignmentSet = alignmentSet.union(node);
+          alignmentSet = alignmentSet.merge(node);
         });
         let intersection = alignmentSet.diff(fixedNodes).both;
         let xPos;
@@ -207,7 +215,7 @@ let constraintHandler = function(options, spectralResult, constraints, fixedNode
       for(let i = 0; i < yAlign.length; i++){
         let alignmentSet = cy.collection();
         yAlign[i].forEach(function(node){
-          alignmentSet = alignmentSet.union(node);
+          alignmentSet = alignmentSet.merge(node);
         });
         let intersection = alignmentSet.diff(fixedNodes).both;
         let yPos;

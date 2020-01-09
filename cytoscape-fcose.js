@@ -492,7 +492,7 @@ var defaults = Object.freeze({
   /* Constraint options */
 
   // Fix required nodes to predefined positions 
-  fixedNodeConstraint: undefined, // function(node){ if(node.selected()){ return {x: node.position('x'), y: node.position('y')};}
+  fixedNodeConstraint: undefined, // [{node: cy.$('#n1'), position: {x: 100, y: 200}]
   // Align required nodes in x/y direction
   alignmentConstraint: undefined, // {vertical: [[cy.$('#n1'), cy.$('#n2')], [cy.$('#n3'), cy.$('#n4')]]}
   // Place two nodes relatively in vertical/horizontal direction 
@@ -556,7 +556,6 @@ var Layout = function () {
       }
 
       var constraints = {};
-      var fixedNodes = cy.collection();
 
       var constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;
 
@@ -618,7 +617,7 @@ var Layout = function () {
           if (constraintExist) {
             constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
             constraints["alignmentConstraint"] = options.alignmentConstraint;
-            constraintHandler(options, result, constraints, fixedNodes);
+            constraintHandler(options, result, constraints);
           }
           spectralResult.push(result);
           xCoords = spectralResult[0]["xCoords"];
@@ -851,7 +850,7 @@ module.exports = Object.assign != null ? Object.assign.bind(Object) : function (
 var aux = __webpack_require__(1);
 var numeric = __webpack_require__(2);
 
-var constraintHandler = function constraintHandler(options, spectralResult, constraints, fixedNodes) {
+var constraintHandler = function constraintHandler(options, spectralResult, constraints) {
   var cy = options.cy;
   var eles = options.eles;
   var nodes = eles.nodes();
@@ -904,6 +903,14 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
   var targetMatrix = []; // A - target configuration
   var sourceMatrix = []; // B - source configuration 
   var isTransformationRequired = false;
+  var fixedNodes = cy.collection();
+
+  // fill fixedNodes collection to use later
+  if (constraints["fixedNodeConstraint"]) {
+    constraints["fixedNodeConstraint"].forEach(function (nodeData) {
+      fixedNodes.merge(nodeData["node"]);
+    });
+  }
 
   // first check fixed node constraint
   if (constraints["fixedNodeConstraint"] && constraints["fixedNodeConstraint"].length > 1) {
@@ -922,7 +929,7 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
         var _loop = function _loop(i) {
           var alignmentSet = cy.collection();
           verticalAlign[i].forEach(function (node) {
-            alignmentSet = alignmentSet.union(node);
+            alignmentSet = alignmentSet.merge(node);
           });
           var intersection = alignmentSet.diff(fixedNodes).both;
           var xPos = void 0;
@@ -946,7 +953,7 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
         var _loop2 = function _loop2(i) {
           var alignmentSet = cy.collection();
           horizontalAlign[i].forEach(function (node) {
-            alignmentSet = alignmentSet.union(node);
+            alignmentSet = alignmentSet.merge(node);
           });
           var intersection = alignmentSet.diff(fixedNodes).both;
           var yPos = void 0;
@@ -1037,7 +1044,7 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
       var _loop3 = function _loop3(_i2) {
         var alignmentSet = cy.collection();
         xAlign[_i2].forEach(function (node) {
-          alignmentSet = alignmentSet.union(node);
+          alignmentSet = alignmentSet.merge(node);
         });
         var intersection = alignmentSet.diff(fixedNodes).both;
         var xPos = void 0;
@@ -1059,7 +1066,7 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
       var _loop4 = function _loop4(_i3) {
         var alignmentSet = cy.collection();
         yAlign[_i3].forEach(function (node) {
-          alignmentSet = alignmentSet.union(node);
+          alignmentSet = alignmentSet.merge(node);
         });
         var intersection = alignmentSet.diff(fixedNodes).both;
         var yPos = void 0;

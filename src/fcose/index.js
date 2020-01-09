@@ -78,7 +78,7 @@ const defaults = Object.freeze({
   /* Constraint options */
   
   // Fix required nodes to predefined positions 
-  fixedNodeConstraint: undefined, // function(node){ if(node.selected()){ return {x: node.position('x'), y: node.position('y')};}
+  fixedNodeConstraint: undefined, // [{node: cy.$('#n1'), position: {x: 100, y: 200}]
   // Align required nodes in x/y direction
   alignmentConstraint: undefined, // {vertical: [[cy.$('#n1'), cy.$('#n2')], [cy.$('#n3'), cy.$('#n4')]]}
   // Place two nodes relatively in vertical/horizontal direction 
@@ -140,7 +140,6 @@ class Layout {
     }     
     
     let constraints = {};
-    let fixedNodes = cy.collection();
 
     let constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;
     
@@ -202,7 +201,7 @@ class Layout {
         if(constraintExist){
           constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
           constraints["alignmentConstraint"] = options.alignmentConstraint;
-          constraintHandler(options, result, constraints, fixedNodes);
+          constraintHandler(options, result, constraints);
         }
         spectralResult.push(result);
         xCoords = spectralResult[0]["xCoords"];
