@@ -78,9 +78,11 @@ const defaults = Object.freeze({
   /* Constraint options */
   
   // Fix required nodes to predefined positions 
-  fixedNodes: undefined, // function(node){ if(node.selected()){ return {x: node.position('x'), y: node.position('y')};}
+  fixedNodeConstraint: undefined, // function(node){ if(node.selected()){ return {x: node.position('x'), y: node.position('y')};}
   // Align required nodes in x/y direction
-  alignment: undefined, // {x: [[cy.$('#n1'), cy.$('#n2')], [cy.$('#n3'), cy.$('#n4')]]}
+  alignmentConstraint: undefined, // {vertical: [[cy.$('#n1'), cy.$('#n2')], [cy.$('#n3'), cy.$('#n4')]]}
+  // Place two nodes relatively in vertical/horizontal direction 
+  relativePlacementConstraint: undefined, //  [{top: cy.$('#n1'), bottom: cy.$('#n2'), gap: 25}]
   
   /* layout event callbacks */
   ready: () => {}, // on layoutready
@@ -139,67 +141,74 @@ class Layout {
     
     let constraints = {};
     let fixedNodes = cy.collection();
+
+    let constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;
     
-    // get nodes to be fixed
-    let fixedNodesConstraint = [];
-    if(options.fixedNodes){
-      options.eles.nodes().not(":parent").forEach(function(node){
-        let fixedPosition = options.fixedNodes(node);
-        if(fixedPosition){
-          fixedNodesConstraint.push({
-            nodeId: node.id(),
-            position: fixedPosition
-          });
-          fixedNodes = fixedNodes.union(node);
-          node.scratch("constraint", {fixedAxes: 3});
-        }
-      });
-    }    
-    
-    // get nodes to be aligned
-    if(options.alignment){
-      if(options.alignment["x"]){
-        let xAlign = options.alignment['x'];      
-        for(let i = 0; i < xAlign.length; i++){
-          let alignmentSet = xAlign[i];
-          for(let j = 0; j < alignmentSet.length; j++){
-            let scratch = alignmentSet[j].scratch("constraint");
-            if(scratch == undefined)
-              alignmentSet[j].scratch("constraint", {fixedAxes: 1});
-          }
-        }
-      }
-      if(options.alignment["y"]){
-        let yAlign = options.alignment['y'];
-        for(let i = 0; i < yAlign.length; i++){
-          let alignmentSet = yAlign[i];
-          for(let j = 0; j < alignmentSet.length; j++){
-            let scratch = alignmentSet[j].scratch("constraint");
-            if(scratch == undefined)
-              alignmentSet[j].scratch("constraint", {fixedAxes: 2});
-            else if(scratch["fixedAxes"] == 1)
-              alignmentSet[j].scratch("constraint", {fixedAxes: 3});
-          }
-        }
-      }
-    }
-    
-    constraints["fixedNodesConstraint"] = fixedNodesConstraint;
-    constraints["alignmentConstraint"] = options.alignment;
-    let unconstrainedEles = options.eles.difference(fixedNodes.union(fixedNodes.connectedEdges()));
+    // get constraint data from options, if any exists
+//    if(constraintExist){
+//      // get nodes to be fixed
+//      if(options.fixedNodeConstraint){
+//        options.eles.nodes().not(":parent").forEach(function(node){
+//          let fixedPosition = options.fixedNodeConstraint(node);
+//          if(fixedPosition){
+//            fixedNodesConstraint.push({
+//              nodeId: node.id(),
+//              position: fixedPosition
+//            });
+//            fixedNodes = fixedNodes.union(node);
+//            node.scratch("constraint", {fixedAxes: 3});
+//          }
+//        });
+//      }
+//      
+//      // get nodes to be aligned
+//      if(options.alignmentConstraint){
+//        if(options.alignmentConstraint["vertical"]){
+//          let xAlign = options.alignmentConstraint['vertical'];      
+//          for(let i = 0; i < xAlign.length; i++){
+//            let alignmentSet = xAlign[i];
+//            for(let j = 0; j < alignmentSet.length; j++){
+//              let scratch = alignmentSet[j].scratch("constraint");
+//              if(scratch == undefined)
+//                alignmentSet[j].scratch("constraint", {fixedAxes: 1});
+//            }
+//          }
+//        }
+//        if(options.alignmentConstraint["y"]){
+//          let yAlign = options.alignmentConstraint['y'];
+//          for(let i = 0; i < yAlign.length; i++){
+//            let alignmentSet = yAlign[i];
+//            for(let j = 0; j < alignmentSet.length; j++){
+//              let scratch = alignmentSet[j].scratch("constraint");
+//              if(scratch == undefined)
+//                alignmentSet[j].scratch("constraint", {fixedAxes: 2});
+//              else if(scratch["fixedAxes"] == 1)
+//                alignmentSet[j].scratch("constraint", {fixedAxes: 3});
+//            }
+//          }
+//        }
+//      }
+//      constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
+//      constraints["alignmentConstraint"] = options.alignmentConstraint;
+////    let unconstrainedEles = options.eles.difference(fixedNodes.union(fixedNodes.connectedEdges()));
+//    }
     
     // if packing is not enabled, perform layout on the whole graph
     if(!packingEnabled){
-      if(options.randomize){
-        // Apply spectral layout
-        let result = spectralLayout(options);
-        constraintHandler(options, result, constraints, fixedNodes);
+      if(options.randomize){                
+        let result = spectralLayout(options);  // apply spectral layout
+      
+        // enforce constraints if any exists
+        if(constraintExist){
+          constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
+          constraints["alignmentConstraint"] = options.alignmentConstraint;
+          constraintHandler(options, result, constraints, fixedNodes);
+        }
         spectralResult.push(result);
         xCoords = spectralResult[0]["xCoords"];
         yCoords = spectralResult[0]["yCoords"];
       }
-      
-      // Apply cose layout as postprocessing
+      // apply cose layout as postprocessing
       if(options.quality == "default" || options.quality == "proof"){  
         coseResult.push(coseLayout(options, spectralResult[0]));
       }      

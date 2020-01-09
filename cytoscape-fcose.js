@@ -492,9 +492,11 @@ var defaults = Object.freeze({
   /* Constraint options */
 
   // Fix required nodes to predefined positions 
-  fixedNodes: undefined, // function(node){ if(node.selected()){ return {x: node.position('x'), y: node.position('y')};}
+  fixedNodeConstraint: undefined, // function(node){ if(node.selected()){ return {x: node.position('x'), y: node.position('y')};}
   // Align required nodes in x/y direction
-  alignment: undefined, // {x: [[cy.$('#n1'), cy.$('#n2')], [cy.$('#n3'), cy.$('#n4')]]}
+  alignmentConstraint: undefined, // {vertical: [[cy.$('#n1'), cy.$('#n2')], [cy.$('#n3'), cy.$('#n4')]]}
+  // Place two nodes relatively in vertical/horizontal direction 
+  relativePlacementConstraint: undefined, //  [{top: cy.$('#n1'), bottom: cy.$('#n2'), gap: 25}]
 
   /* layout event callbacks */
   ready: function ready() {}, // on layoutready
@@ -556,62 +558,73 @@ var Layout = function () {
       var constraints = {};
       var fixedNodes = cy.collection();
 
-      // get nodes to be fixed
-      var fixedNodesConstraint = [];
-      if (options.fixedNodes) {
-        options.eles.nodes().not(":parent").forEach(function (node) {
-          var fixedPosition = options.fixedNodes(node);
-          if (fixedPosition) {
-            fixedNodesConstraint.push({
-              nodeId: node.id(),
-              position: fixedPosition
-            });
-            fixedNodes = fixedNodes.union(node);
-            node.scratch("constraint", { fixedAxes: 3 });
-          }
-        });
-      }
+      var constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;
 
-      // get nodes to be aligned
-      if (options.alignment) {
-        if (options.alignment["x"]) {
-          var xAlign = options.alignment['x'];
-          for (var i = 0; i < xAlign.length; i++) {
-            var alignmentSet = xAlign[i];
-            for (var j = 0; j < alignmentSet.length; j++) {
-              var scratch = alignmentSet[j].scratch("constraint");
-              if (scratch == undefined) alignmentSet[j].scratch("constraint", { fixedAxes: 1 });
-            }
-          }
-        }
-        if (options.alignment["y"]) {
-          var yAlign = options.alignment['y'];
-          for (var _i = 0; _i < yAlign.length; _i++) {
-            var _alignmentSet = yAlign[_i];
-            for (var _j = 0; _j < _alignmentSet.length; _j++) {
-              var _scratch = _alignmentSet[_j].scratch("constraint");
-              if (_scratch == undefined) _alignmentSet[_j].scratch("constraint", { fixedAxes: 2 });else if (_scratch["fixedAxes"] == 1) _alignmentSet[_j].scratch("constraint", { fixedAxes: 3 });
-            }
-          }
-        }
-      }
-
-      constraints["fixedNodesConstraint"] = fixedNodesConstraint;
-      constraints["alignmentConstraint"] = options.alignment;
-      var unconstrainedEles = options.eles.difference(fixedNodes.union(fixedNodes.connectedEdges()));
+      // get constraint data from options, if any exists
+      //    if(constraintExist){
+      //      // get nodes to be fixed
+      //      if(options.fixedNodeConstraint){
+      //        options.eles.nodes().not(":parent").forEach(function(node){
+      //          let fixedPosition = options.fixedNodeConstraint(node);
+      //          if(fixedPosition){
+      //            fixedNodesConstraint.push({
+      //              nodeId: node.id(),
+      //              position: fixedPosition
+      //            });
+      //            fixedNodes = fixedNodes.union(node);
+      //            node.scratch("constraint", {fixedAxes: 3});
+      //          }
+      //        });
+      //      }
+      //      
+      //      // get nodes to be aligned
+      //      if(options.alignmentConstraint){
+      //        if(options.alignmentConstraint["vertical"]){
+      //          let xAlign = options.alignmentConstraint['vertical'];      
+      //          for(let i = 0; i < xAlign.length; i++){
+      //            let alignmentSet = xAlign[i];
+      //            for(let j = 0; j < alignmentSet.length; j++){
+      //              let scratch = alignmentSet[j].scratch("constraint");
+      //              if(scratch == undefined)
+      //                alignmentSet[j].scratch("constraint", {fixedAxes: 1});
+      //            }
+      //          }
+      //        }
+      //        if(options.alignmentConstraint["y"]){
+      //          let yAlign = options.alignmentConstraint['y'];
+      //          for(let i = 0; i < yAlign.length; i++){
+      //            let alignmentSet = yAlign[i];
+      //            for(let j = 0; j < alignmentSet.length; j++){
+      //              let scratch = alignmentSet[j].scratch("constraint");
+      //              if(scratch == undefined)
+      //                alignmentSet[j].scratch("constraint", {fixedAxes: 2});
+      //              else if(scratch["fixedAxes"] == 1)
+      //                alignmentSet[j].scratch("constraint", {fixedAxes: 3});
+      //            }
+      //          }
+      //        }
+      //      }
+      //      constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
+      //      constraints["alignmentConstraint"] = options.alignmentConstraint;
+      ////    let unconstrainedEles = options.eles.difference(fixedNodes.union(fixedNodes.connectedEdges()));
+      //    }
 
       // if packing is not enabled, perform layout on the whole graph
       if (!packingEnabled) {
         if (options.randomize) {
-          // Apply spectral layout
-          var result = spectralLayout(options);
-          constraintHandler(options, result, constraints, fixedNodes);
+          var result = spectralLayout(options); // apply spectral layout
+
+          // enforce constraints if any exists
+          if (constraintExist) {
+            constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
+            constraints["alignmentConstraint"] = options.alignmentConstraint;
+            constraintHandler(options, result, constraints, fixedNodes);
+          }
           spectralResult.push(result);
           xCoords = spectralResult[0]["xCoords"];
           yCoords = spectralResult[0]["yCoords"];
         }
-
-        // Apply cose layout as postprocessing
+        // apply cose layout as postprocessing
         if (options.quality == "default" || options.quality == "proof") {
           coseResult.push(coseLayout(options, spectralResult[0]));
         }
@@ -654,9 +667,9 @@ var Layout = function () {
             if (toBeTiledNodes.length > 1) {
               components.push(toBeTiledNodes);
               spectralResult.push(tempSpectralResult);
-              for (var _i2 = indexesToBeDeleted.length - 1; _i2 >= 0; _i2--) {
-                components.splice(indexesToBeDeleted[_i2], 1);
-                spectralResult.splice(indexesToBeDeleted[_i2], 1);
+              for (var i = indexesToBeDeleted.length - 1; i >= 0; i--) {
+                components.splice(indexesToBeDeleted[i], 1);
+                spectralResult.splice(indexesToBeDeleted[i], 1);
               };
             }
           }
@@ -830,7 +843,9 @@ module.exports = Object.assign != null ? Object.assign.bind(Object) : function (
 
 
 /**
-  The implementation of the constraints after spectral layout is applied
+  The implementation of the constraints on the initial draft layout obtained by the spectral layout algorithm
+  First calculate transformed draft layout and then final draft layout that satisfies the constraints
+  initial draft layout -> transformed draft layout -> final draft layout
 */
 
 var aux = __webpack_require__(1);
@@ -863,6 +878,8 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
   //    return {x: xPosSum/neighborCount, y: yPosSum/neighborCount};
   //  };
 
+  /* auxiliary functions */
+
   var calculatePositionDiff = function calculatePositionDiff(pos1, pos2) {
     return { x: pos1["x"] - pos2["x"], y: pos1["y"] - pos2["y"] };
   };
@@ -878,37 +895,101 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
     return { x: xPosSum / nodes.length, y: yPosSum / nodes.length };
   };
 
-  // handle fixedNodes contraints
-  if (constraints["fixedNodesConstraint"].length > 0) {
-    /****  apply transformation to the draft graph to better align with fixed nodes ****/
+  /****  apply transformation to the initial draft layout to better align with constrained nodes ****/
+  // solve the Orthogonal Procrustean Problem to rotate and/or reflect initial draft layout
+  // here we follow the solution in Chapter 20.2 of Borg, I. & Groenen, P. (2005) Modern Multidimensional Scaling: Theory and Applications 
 
-    // first, solve the Orthogonal Procrustean Problem to rotate/reflect draft graph
-    // here we follow the solution in Chapter 20.2 of Borg, I. & Groenen, P. (2005) Modern Multidimensional Scaling: Theory and Applications
-    var fixedMatrix = []; // A
-    var foundMatrix = []; // B
-    var fixedMatrixTranspose = []; // A'
-    var foundMatrixTranspose = []; // B'   
-    var fixedNodesLength = constraints["fixedNodesConstraint"].length;
+  /* construct source and target configurations */
 
-    constraints["fixedNodesConstraint"].forEach(function (nodeData, i) {
-      fixedMatrix[i] = [nodeData["position"]["x"], nodeData["position"]["y"]];
-      foundMatrix[i] = [xCoords[nodeIndexes.get(nodeData.nodeId)], yCoords[nodeIndexes.get(nodeData.nodeId)]];
+  var targetMatrix = []; // A - target configuration
+  var sourceMatrix = []; // B - source configuration 
+  var isTransformationRequired = false;
+
+  // first check fixed node constraint
+  if (constraints["fixedNodeConstraint"] && constraints["fixedNodeConstraint"].length > 1) {
+    constraints["fixedNodeConstraint"].forEach(function (nodeData, i) {
+      targetMatrix[i] = [nodeData["position"]["x"], nodeData["position"]["y"]];
+      sourceMatrix[i] = [xCoords[nodeIndexes.get(nodeData["node"].id())], yCoords[nodeIndexes.get(nodeData["node"].id())]];
     });
+    isTransformationRequired = true;
+  } else if (constraints["alignmentConstraint"]) {
+    (function () {
+      // then check alignment constraint  
+      var count = 0;
+      if (constraints["alignmentConstraint"]["vertical"]) {
+        var verticalAlign = constraints["alignmentConstraint"]["vertical"];
 
-    fixedMatrixTranspose = numeric.transpose(fixedMatrix);
-    foundMatrixTranspose = numeric.transpose(foundMatrix);
+        var _loop = function _loop(i) {
+          var alignmentSet = cy.collection();
+          verticalAlign[i].forEach(function (node) {
+            alignmentSet = alignmentSet.union(node);
+          });
+          var intersection = alignmentSet.diff(fixedNodes).both;
+          var xPos = void 0;
+          if (intersection.length > 0) xPos = xCoords[nodeIndexes.get(intersection[0].id())];else xPos = calculateAvgPosition(alignmentSet)['x'];
+
+          verticalAlign[i].forEach(function (node) {
+            targetMatrix[count] = [xPos, yCoords[nodeIndexes.get(node.id())]];
+            sourceMatrix[count] = [xCoords[nodeIndexes.get(node.id())], yCoords[nodeIndexes.get(node.id())]];
+            count++;
+          });
+        };
+
+        for (var i = 0; i < verticalAlign.length; i++) {
+          _loop(i);
+        }
+        isTransformationRequired = true;
+      }
+      if (constraints["alignmentConstraint"]["horizontal"]) {
+        var horizontalAlign = constraints["alignmentConstraint"]["horizontal"];
+
+        var _loop2 = function _loop2(i) {
+          var alignmentSet = cy.collection();
+          horizontalAlign[i].forEach(function (node) {
+            alignmentSet = alignmentSet.union(node);
+          });
+          var intersection = alignmentSet.diff(fixedNodes).both;
+          var yPos = void 0;
+          if (intersection.length > 0) yPos = xCoords[nodeIndexes.get(intersection[0].id())];else yPos = calculateAvgPosition(alignmentSet)['y'];
+
+          horizontalAlign[i].forEach(function (node) {
+            targetMatrix[count] = [xCoords[nodeIndexes.get(node.id())], yPos];
+            sourceMatrix[count] = [xCoords[nodeIndexes.get(node.id())], yCoords[nodeIndexes.get(node.id())]];
+            count++;
+          });
+        };
+
+        for (var i = 0; i < horizontalAlign.length; i++) {
+          _loop2(i);
+        }
+        isTransformationRequired = true;
+      }
+    })();
+  }
+  //  else if(){  // finally check relative placement constraint 
+  //    
+  //  }
+
+  // if transformation is required, then calculate and apply transformation matrix
+  if (isTransformationRequired) {
+    /* calculate transformation matrix */
+
+    var targetMatrixTranspose = numeric.transpose(targetMatrix); // A'
+    var sourceMatrixTranspose = numeric.transpose(sourceMatrix); // B'
 
     // centralize transpose matrices
-    for (var i = 0; i < fixedMatrixTranspose.length; i++) {
-      fixedMatrixTranspose[i] = aux.multGamma(fixedMatrixTranspose[i]);
-      foundMatrixTranspose[i] = aux.multGamma(foundMatrixTranspose[i]);
+    for (var i = 0; i < targetMatrixTranspose.length; i++) {
+      targetMatrixTranspose[i] = aux.multGamma(targetMatrixTranspose[i]);
+      sourceMatrixTranspose[i] = aux.multGamma(sourceMatrixTranspose[i]);
     }
 
-    var tempMatrix = aux.multMat(fixedMatrixTranspose, numeric.transpose(foundMatrixTranspose)); // tempMatrix = A'B
+    // do actual calculation for transformation matrix
+    var tempMatrix = aux.multMat(targetMatrixTranspose, numeric.transpose(sourceMatrixTranspose)); // tempMatrix = A'B
     var SVDResult = numeric.svd(tempMatrix);
     var transformationMatrix = aux.multMat(numeric.transpose(SVDResult.V), numeric.transpose(SVDResult.U)); // transformationMatrix = T
 
-    // apply found transformation matrix
+    /* apply found transformation matrix to obtain final draft layout */
+
     for (var _i = 0; _i < nodeIndexes.size; _i++) {
       var temp1 = [xCoords[_i], yCoords[_i]];
       var temp2 = [transformationMatrix[0][0], transformationMatrix[1][0]];
@@ -916,18 +997,22 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
       xCoords[_i] = aux.dotProduct(temp1, temp2);
       yCoords[_i] = aux.dotProduct(temp1, temp3);
     }
+  }
 
-    // second, translate the draft graph towards the fixed nodes 
+  /****  enforce constraints on the transformed draft layout ****/
+
+  /* first enforce fixed node constraint */
+  if (constraints["fixedNodeConstraint"] && constraints["fixedNodeConstraint"].length > 0) {
     var translationAmount = { x: 0, y: 0 };
-    constraints["fixedNodesConstraint"].forEach(function (nodeData, i) {
-      var posInTheory = { x: xCoords[nodeIndexes.get(nodeData.nodeId)], y: yCoords[nodeIndexes.get(nodeData.nodeId)] };
+    constraints["fixedNodeConstraint"].forEach(function (nodeData, i) {
+      var posInTheory = { x: xCoords[nodeIndexes.get(nodeData["node"].id())], y: yCoords[nodeIndexes.get(nodeData["node"].id())] };
       var posDesired = nodeData.position;
       var posDiff = calculatePositionDiff(posDesired, posInTheory);
       translationAmount.x += posDiff.x;
       translationAmount.y += posDiff.y;
     });
-    translationAmount.x /= constraints["fixedNodesConstraint"].length;
-    translationAmount.y /= constraints["fixedNodesConstraint"].length;
+    translationAmount.x /= constraints["fixedNodeConstraint"].length;
+    translationAmount.y /= constraints["fixedNodeConstraint"].length;
 
     xCoords.forEach(function (value, i) {
       xCoords[i] += translationAmount.x;
@@ -937,18 +1022,19 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
       yCoords[i] += translationAmount.y;
     });
 
-    constraints["fixedNodesConstraint"].forEach(function (nodeData) {
-      xCoords[nodeIndexes.get(nodeData["nodeId"])] = nodeData["position"]["x"];
-      yCoords[nodeIndexes.get(nodeData["nodeId"])] = nodeData["position"]["y"];
+    constraints["fixedNodeConstraint"].forEach(function (nodeData) {
+      xCoords[nodeIndexes.get(nodeData["node"].id())] = nodeData["position"]["x"];
+      yCoords[nodeIndexes.get(nodeData["node"].id())] = nodeData["position"]["y"];
     });
   }
 
-  // handle alignment constraints
-  if (constraints["alignmentConstraint"]) {
-    if (constraints["alignmentConstraint"]["x"]) {
-      var xAlign = constraints["alignmentConstraint"]["x"];
+  /* then enforce alignment constraint */
 
-      var _loop = function _loop(_i2) {
+  if (constraints["alignmentConstraint"]) {
+    if (constraints["alignmentConstraint"]["vertical"]) {
+      var xAlign = constraints["alignmentConstraint"]["vertical"];
+
+      var _loop3 = function _loop3(_i2) {
         var alignmentSet = cy.collection();
         xAlign[_i2].forEach(function (node) {
           alignmentSet = alignmentSet.union(node);
@@ -964,13 +1050,13 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
       };
 
       for (var _i2 = 0; _i2 < xAlign.length; _i2++) {
-        _loop(_i2);
+        _loop3(_i2);
       }
     }
-    if (constraints["alignmentConstraint"]["y"]) {
-      var yAlign = constraints["alignmentConstraint"]["y"];
+    if (constraints["alignmentConstraint"]["horizontal"]) {
+      var yAlign = constraints["alignmentConstraint"]["horizontal"];
 
-      var _loop2 = function _loop2(_i3) {
+      var _loop4 = function _loop4(_i3) {
         var alignmentSet = cy.collection();
         yAlign[_i3].forEach(function (node) {
           alignmentSet = alignmentSet.union(node);
@@ -986,10 +1072,12 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
       };
 
       for (var _i3 = 0; _i3 < yAlign.length; _i3++) {
-        _loop2(_i3);
+        _loop4(_i3);
       }
     }
   }
+
+  /* finally enforce relative placement constraint */
 };
 
 module.exports = { constraintHandler: constraintHandler };
