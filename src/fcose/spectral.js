@@ -168,7 +168,7 @@ let spectralLayout = function(options){
   let sample = function(){
 
     let SVDResult = numeric.svd(PHI);
-
+    
     let a_w = SVDResult.S;
     let a_u = SVDResult.U;
     let a_v = SVDResult.V;        
@@ -389,11 +389,20 @@ let spectralLayout = function(options){
 
     /**** Apply spectral layout ****/
 
-    allBFS(samplingType);  
-    sample();
-    powerIteration();
+    if(options.step == "initial"){
+      allBFS(samplingType);  
+      sample();
+      powerIteration();      
 
-    spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
+      spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
+    }
+    else{
+      nodeIndexes.forEach(function(value, key){
+        xCoords.push(cy.getElementById(key).position("x"));
+        yCoords.push(cy.getElementById(key).position("y"));
+      });
+      spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
+    }
     return spectralResult;
   }
   else {
