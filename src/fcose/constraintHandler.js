@@ -5,7 +5,6 @@
 */
 
 const aux = require('./auxiliary');
-const numeric = require('numeric');
 
 let constraintHandler = function(options, spectralResult, constraints){
   let cy = options.cy;
@@ -132,8 +131,8 @@ let constraintHandler = function(options, spectralResult, constraints){
   if(isTransformationRequired && options.step == "transformed"){
     /* calculate transformation matrix */
 
-    let targetMatrixTranspose = numeric.transpose(targetMatrix);  // A'
-    let sourceMatrixTranspose = numeric.transpose(sourceMatrix);  // B'
+    let targetMatrixTranspose = aux.transpose(targetMatrix);  // A'
+    let sourceMatrixTranspose = aux.transpose(sourceMatrix);  // B'
 
     // centralize transpose matrices
     for(let i = 0; i < targetMatrixTranspose.length; i++){
@@ -142,9 +141,10 @@ let constraintHandler = function(options, spectralResult, constraints){
     }
 
     // do actual calculation for transformation matrix
-    let tempMatrix = aux.multMat(targetMatrixTranspose, numeric.transpose(sourceMatrixTranspose)); // tempMatrix = A'B
-    let SVDResult = numeric.svd(numeric.transpose(tempMatrix));  // SVD = USV' but numeric.svd operation returns U, S and V
-    let transformationMatrix = aux.multMat(SVDResult.U, numeric.transpose(SVDResult.V)); // transformationMatrix = T = VU'  
+    // normally SVD(A'B) = USV' but transpose works better so compute SVD(B'A) = VSU' 
+    let tempMatrix = aux.multMat(sourceMatrixTranspose, aux.transpose(targetMatrixTranspose)); // tempMatrix = B'A
+    let SVDResult = aux.svd(tempMatrix); // SVD(B'A) = VSU'
+    let transformationMatrix = aux.multMat(SVDResult.u, aux.transpose(SVDResult.v)); // transformationMatrix = T = UV'
     
     /* apply found transformation matrix to obtain final draft layout */
 

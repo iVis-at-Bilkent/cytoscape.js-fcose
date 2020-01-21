@@ -1,13 +1,13 @@
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory(require("cose-base"), require("numeric"));
+		module.exports = factory(require("cose-base"));
 	else if(typeof define === 'function' && define.amd)
-		define(["cose-base", "numeric"], factory);
+		define(["cose-base"], factory);
 	else if(typeof exports === 'object')
-		exports["cytoscapeFcose"] = factory(require("cose-base"), require("numeric"));
+		exports["cytoscapeFcose"] = factory(require("cose-base"));
 	else
-		root["cytoscapeFcose"] = factory(root["coseBase"], root["numeric"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_0__, __WEBPACK_EXTERNAL_MODULE_2__) {
+		root["cytoscapeFcose"] = factory(root["coseBase"]);
+})(this, function(__WEBPACK_EXTERNAL_MODULE_0__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 8);
+/******/ 	return __webpack_require__(__webpack_require__.s = 7);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -203,6 +203,19 @@ auxiliary.normalize = function (array) {
 
   for (var i = 0; i < array.length; i++) {
     result[i] = array[i] / magnitude;
+  }
+
+  return result;
+};
+
+auxiliary.transpose = function (array) {
+  var result = [];
+
+  for (var i = 0; i < array[0].length; i++) {
+    result[i] = [];
+    for (var j = 0; j < array.length; j++) {
+      result[i][j] = array[j][i];
+    }
   }
 
   return result;
@@ -712,12 +725,6 @@ module.exports = auxiliary;
 
 /***/ }),
 /* 2 */
-/***/ (function(module, exports) {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE_2__;
-
-/***/ }),
-/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -731,16 +738,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
   The implementation of the fcose layout algorithm
 */
 
-var assign = __webpack_require__(4);
+var assign = __webpack_require__(3);
 var aux = __webpack_require__(1);
 
-var _require = __webpack_require__(7),
+var _require = __webpack_require__(6),
     spectralLayout = _require.spectralLayout;
 
-var _require2 = __webpack_require__(5),
+var _require2 = __webpack_require__(4),
     constraintHandler = _require2.constraintHandler;
 
-var _require3 = __webpack_require__(6),
+var _require3 = __webpack_require__(5),
     coseLayout = _require3.coseLayout;
 
 var defaults = Object.freeze({
@@ -1123,7 +1130,7 @@ var Layout = function () {
 module.exports = Layout;
 
 /***/ }),
-/* 4 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1146,7 +1153,7 @@ module.exports = Object.assign != null ? Object.assign.bind(Object) : function (
 };
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1159,7 +1166,6 @@ module.exports = Object.assign != null ? Object.assign.bind(Object) : function (
 */
 
 var aux = __webpack_require__(1);
-var numeric = __webpack_require__(2);
 
 var constraintHandler = function constraintHandler(options, spectralResult, constraints) {
   var cy = options.cy;
@@ -1292,8 +1298,8 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
   if (isTransformationRequired && options.step == "transformed") {
     /* calculate transformation matrix */
 
-    var targetMatrixTranspose = numeric.transpose(targetMatrix); // A'
-    var sourceMatrixTranspose = numeric.transpose(sourceMatrix); // B'
+    var targetMatrixTranspose = aux.transpose(targetMatrix); // A'
+    var sourceMatrixTranspose = aux.transpose(sourceMatrix); // B'
 
     // centralize transpose matrices
     for (var i = 0; i < targetMatrixTranspose.length; i++) {
@@ -1302,9 +1308,10 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
     }
 
     // do actual calculation for transformation matrix
-    var tempMatrix = aux.multMat(targetMatrixTranspose, numeric.transpose(sourceMatrixTranspose)); // tempMatrix = A'B
-    var SVDResult = numeric.svd(numeric.transpose(tempMatrix)); // SVD = USV' but numeric.svd operation returns U, S and V
-    var transformationMatrix = aux.multMat(SVDResult.U, numeric.transpose(SVDResult.V)); // transformationMatrix = T = VU'  
+    // normally SVD(A'B) = USV' but transpose works better so compute SVD(B'A) = VSU' 
+    var tempMatrix = aux.multMat(sourceMatrixTranspose, aux.transpose(targetMatrixTranspose)); // tempMatrix = B'A
+    var SVDResult = aux.svd(tempMatrix); // SVD(B'A) = VSU'
+    var transformationMatrix = aux.multMat(SVDResult.u, aux.transpose(SVDResult.v)); // transformationMatrix = T = UV'
 
     /* apply found transformation matrix to obtain final draft layout */
 
@@ -1404,7 +1411,7 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
 module.exports = { constraintHandler: constraintHandler };
 
 /***/ }),
-/* 6 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1563,7 +1570,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
 module.exports = { coseLayout: coseLayout };
 
 /***/ }),
-/* 7 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1574,7 +1581,6 @@ module.exports = { coseLayout: coseLayout };
 */
 
 var aux = __webpack_require__(1);
-var numeric = __webpack_require__(2);
 
 // main function that spectral layout is processed
 var spectralLayout = function spectralLayout(options) {
@@ -1733,13 +1739,13 @@ var spectralLayout = function spectralLayout(options) {
   // perform the SVD algorithm and apply a regularization step
   var sample = function sample() {
 
-    var SVDResult = numeric.svd(PHI);
+    var SVDResult = aux.svd(PHI);
 
-    var a_w = SVDResult.S;
-    var a_u = SVDResult.U;
-    var a_v = SVDResult.V;
+    var a_q = SVDResult.q;
+    var a_u = SVDResult.u;
+    var a_v = SVDResult.v;
 
-    var max_s = a_w[0] * a_w[0] * a_w[0];
+    var max_s = a_q[0] * a_q[0] * a_q[0];
 
     var a_Sig = [];
 
@@ -1749,12 +1755,12 @@ var spectralLayout = function spectralLayout(options) {
       for (var j = 0; j < sampleSize; j++) {
         a_Sig[i][j] = 0;
         if (i == j) {
-          a_Sig[i][j] = a_w[i] / (a_w[i] * a_w[i] + max_s / (a_w[i] * a_w[i]));
+          a_Sig[i][j] = a_q[i] / (a_q[i] * a_q[i] + max_s / (a_q[i] * a_q[i]));
         }
       }
     }
 
-    INV = aux.multMat(aux.multMat(a_v, a_Sig), numeric.transpose(a_u));
+    INV = aux.multMat(aux.multMat(a_v, a_Sig), aux.transpose(a_u));
   };
 
   // calculate final coordinates 
@@ -2028,13 +2034,13 @@ var spectralLayout = function spectralLayout(options) {
 module.exports = { spectralLayout: spectralLayout };
 
 /***/ }),
-/* 8 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var impl = __webpack_require__(3);
+var impl = __webpack_require__(2);
 
 // registers the extension on a cytoscape lib ref
 var register = function register(cytoscape) {

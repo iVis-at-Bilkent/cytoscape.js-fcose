@@ -17,7 +17,6 @@ A. Civril, M. Magdon-Ismail, and E. Bocek-Rivele, "[SSDE: Fast Graph Drawing Usi
 ## Dependencies
 
  * Cytoscape.js ^3.2.0
- * numeric.js ^1.2.6
  * cose-base ^1.0.0
  * cytoscape-layout-utilities.js (optional for packing disconnected components) ^1.0.0
 
@@ -60,7 +59,6 @@ require(['cytoscape', 'cytoscape-fcose'], function( cytoscape, fcose ){
 Plain HTML/JS has the extension registered for you automatically, because no `require()` is needed. Just add the following files:
 
 ```
-<script src="https://unpkg.com/numeric/numeric-1.2.6.js"></script>
 <script src="https://unpkg.com/layout-base/layout-base.js"></script>
 <script src="https://unpkg.com/cose-base/cose-base.js"></script>
 <script src="cytoscape-fcose.js"></script>
