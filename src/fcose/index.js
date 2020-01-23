@@ -105,20 +105,11 @@ class Layout {
     let yCoords;
     let coseResult = [];
     let components;
+    let constraints = {};
     
     // if there is no elements, return
     if(options.eles.length == 0)
-      return;
-    
-    // decide component packing is enabled or not
-    let layUtil;
-    let packingEnabled = false;
-    if(cy.layoutUtilities && options.packComponents && options.randomize){
-      layUtil = cy.layoutUtilities("get");
-      if(!layUtil)
-        layUtil = cy.layoutUtilities();
-      packingEnabled = true;
-    }    
+      return;   
 
     // if partial layout, update options.eles
     if(options.eles.length != options.cy.elements().length){
@@ -138,13 +129,17 @@ class Layout {
 
       options.eles = eles;
     }     
-    
-    let constraints = {};
 
     let constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;
     
-    // get constraint data from options, if any exists
+    // get constraint data from options, if any exists and set some options
     if(constraintExist){
+      
+      // constraints work with these options
+      options.randomize = true;
+      options.tile = false;
+      options.packComponents = false;
+      
       // get nodes to be fixed
       if(options.fixedNodeConstraint){
         options.fixedNodeConstraint.forEach(function(item){
@@ -184,12 +179,22 @@ class Layout {
 ////    let unconstrainedEles = options.eles.difference(fixedNodes.union(fixedNodes.connectedEdges()));
     }
     
+    // decide component packing is enabled or not
+    let layUtil;
+    let packingEnabled = false;
+    if(cy.layoutUtilities && options.packComponents && options.randomize){
+      layUtil = cy.layoutUtilities("get");
+      if(!layUtil)
+        layUtil = cy.layoutUtilities();
+      packingEnabled = true;
+    } 
+    
     // if packing is not enabled, perform layout on the whole graph
     if(!packingEnabled){
       if(options.randomize){
         let result = spectralLayout(options);  // apply spectral layout
         
-        if(options.step == "transformed" || options.step == "enforced"){      
+        if(options.step == "transformed" || options.step == "enforced" || options.step == "all"){      
           // enforce constraints if any exists
           if(constraintExist){
             constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;

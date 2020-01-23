@@ -388,7 +388,7 @@ let spectralLayout = function(options){
 
     /**** Apply spectral layout ****/
 
-    if(options.step == "initial"){
+    if(options.step == "initial" || options.step == "all"){
       allBFS(samplingType);  
       sample();
       powerIteration();      

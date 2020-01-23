@@ -8,8 +8,8 @@
       <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
       <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
-      <script src="https://raw.githack.com/iVis-at-Bilkent/layout-base/unstable/layout-base.js"></script>
-      <script src="https://raw.githack.com/iVis-at-Bilkent/cose-base/unstable/cose-base.js"></script>
+      <script src="layout-base.js"></script>
+      <script src="cose-base.js"></script>
       <script src="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-layout-utilities/unstable/cytoscape-layout-utilities.js"></script>
 
       <!-- for testing with local version of cytoscape.js -->
@@ -28,7 +28,7 @@
           width: auto;
           height: 90%;
           z-index: 999;
-          margin-left: 300px;
+          margin-left: 350px;
           right: 0px;
         }
 
@@ -43,7 +43,7 @@
         /* The sidepanel menu */
         .sidepanel {
           height: auto; /* Specify a height */
-          width: 310px; /* 0 width - change this with JavaScript */
+          width: 250px; /* 0 width - change this with JavaScript */
           position: absolute; /* Stay in place */
           z-index: 1000; /* Stay on top */
           float: left;
@@ -63,7 +63,7 @@
         
         /* The sidepanel links */
         table td {
-          padding: 0px 8px 8px 8px;
+          padding: 4px 8px 4px 8px;
           text-decoration: none;
           font-size: 15px;
           color: #555;
@@ -101,16 +101,19 @@
             container: document.getElementById('cy'),
             
             ready: function(){
+              
               let layoutUtilities = this.layoutUtilities({
                 desiredAspectRatio: this.width()/this.height(),
                 componentSpacing: 30
-              });              
+              });
+              /*
               this.nodes().forEach(function(node){
                 let size = Math.random()*120+30;
                 node.css("width", size);
                 node.css("height", size);
               });
-              this.layout({name: 'fcose', animationEasing: 'ease-out'}).run();
+              */
+              this.layout({name: 'fcose', animationEasing: 'ease-out', packComponents: false}).run();
             },
             
             // demo your layout
@@ -122,9 +125,41 @@
               {
                 selector: 'node',
                 style: {
-                  'background-color': '#2B65EC'                 
+                  'background-color': '#2B65EC',
+                  'label': 'data(id)'
                 }
               },
+              
+              {
+                selector: 'node.fixed',
+                style: {
+                  'background-color': 'red',
+                  'label': 'data(id)'
+                }
+              },
+              
+              {
+                selector: 'node.verticalAlignment',
+                style: {
+                  'background-color': 'lightgreen',
+                  'label': 'data(id)'
+                }
+              },  
+
+              {
+                selector: 'node.horizontalAlignment',
+                style: {
+                  'background-color': 'darkgreen',
+                  'label': 'data(id)'
+                }
+              },         
+              {
+                selector: 'node.relative',
+                style: {
+                  'background-color': 'green',
+                  'label': 'data(id)'
+                }
+              },               
               
               {
               selector: ':parent',
@@ -156,7 +191,7 @@
                 }
               }                 
             ],  
-            
+            /*
             elements: [{ group:'nodes', data:{ id: 'n0'}},
                     { group:'nodes', data:{ id: 'n1'}},
                     { group:'nodes', data:{ id: 'n2'}},
@@ -244,9 +279,210 @@
                     { group:'edges', data:{ id: 'e42', source: 'n44', target: 'n46'} },
                     { group:'edges', data:{ id: 'e43', source: 'n45', target: 'n46'} }                 
                    ]
+            */
+            /*
+            elements: {
+              nodes: [
+                { data: { id: 'n0', parent: 'n17'} },
+                { data: { id: 'n1', parent: 'n17'} },
+                { data: { id: 'n2'} },
+                { data: { id: 'n3'} },
+                { data: { id: 'n4', parent: 'n17'} },
+                { data: { id: 'n5', parent: 'n17'} },
+                { data: { id: 'n6'} },
+                { data: { id: 'n7'} },
+                { data: { id: 'n8'} },
+                { data: { id: 'n9', parent: 'n18'}},
+                { data: { id: 'n10', parent: 'n16'} },
+                { data: { id: 'n11', parent: 'n16'} },
+                { data: { id: 'n12'} },
+                { data: { id: 'n13', parent: 'n18'}},
+                { data: { id: 'n14', parent: 'n16'} },
+                { data: { id: 'n15', parent: 'n16'} },
+                { data: { id: 'n16'} },
+                { data: { id: 'n17'} },
+                { data: { id: 'n18'} }                
+              ],
+              edges: [
+                { data: { source: 'n0', target: 'n1' } },
+                { data: { source: 'n0', target: 'n4' } },
+                { data: { source: 'n17', target: 'n2' } },
+                { data: { source: 'n1', target: 'n5' } },
+                { data: { source: 'n2', target: 'n3' } },
+                { data: { source: 'n2', target: 'n6' } },
+                { data: { source: 'n3', target: 'n7' } },
+                { data: { source: 'n4', target: 'n5' } },
+                { data: { source: 'n17', target: 'n8' } },
+                { data: { source: 'n5', target: 'n6' } },
+                { data: { source: 'n5', target: 'n9' } },
+                { data: { source: 'n6', target: 'n7' } },
+                { data: { source: 'n6', target: 'n10' } },
+                { data: { source: 'n7', target: 'n16' } },
+                { data: { source: 'n8', target: 'n9' } },
+                { data: { source: 'n8', target: 'n12' } },
+                { data: { source: 'n9', target: 'n16' } },
+                { data: { source: 'n9', target: 'n13' } },
+                { data: { source: 'n10', target: 'n11' } },
+                { data: { source: 'n10', target: 'n14' } },
+                { data: { source: 'n11', target: 'n15' } },
+                { data: { source: 'n12', target: 'n13' } },
+                { data: { source: 'n13', target: 'n14' } },
+                { data: { source: 'n14', target: 'n15' } }                
+              ]
+            }    
+            */
             
-          });          
+            elements: {
+              nodes: [
+              //  { data: { id: 'n0'} },
+                { data: { id: 'n1'} },
+                { data: { id: 'n2'} },
+                { data: { id: 'n3'} },
+                { data: { id: 'n4', parent: 'n10'} },
+                { data: { id: 'n5'} },
+                { data: { id: 'n6'} },
+                { data: { id: 'n7', parent: 'n10'} },
+                { data: { id: 'n8', parent: 'n10'} },
+                { data: { id: 'n9', parent: 'n10'}},
+                { data: { id: 'n10'} }               
+              ],
+              edges: [
+              //  { data: { source: 'n0', target: 'n1' } },
+              //  { data: { source: 'n0', target: 'n3' } },
+                { data: { source: 'n1', target: 'n2' } },
+                { data: { source: 'n1', target: 'n4' } },
+                { data: { source: 'n2', target: 'n3' } },
+                { data: { source: 'n2', target: 'n4' } },
+                { data: { source: 'n4', target: 'n5' } },
+                { data: { source: 'n5', target: 'n6' } },
+                { data: { source: 'n6', target: 'n10' } },
+                { data: { source: 'n7', target: 'n4' } },
+                { data: { source: 'n7', target: 'n8' } },
+                { data: { source: 'n7', target: 'n9' } }               
+              ]
+            }  
+            
+           /*
+            elements: {
+              nodes: [
+                { data: { id: 'n0'} },
+                { data: { id: 'n1'} },
+                { data: { id: 'n2'} },
+                { data: { id: 'n3'} },
+                { data: { id: 'n4'} },
+                { data: { id: 'n5'} },
+                { data: { id: 'n6'} },
+                { data: { id: 'n7'} },
+                { data: { id: 'n8'} },
+                { data: { id: 'n9'}},
+                //{ data: { id: 'n10'} }               
+              ],
+              edges: [
+                { data: { source: 'n0', target: 'n1' } },
+                { data: { source: 'n0', target: 'n3' } },
+                { data: { source: 'n0', target: 'n5' } },
+                { data: { source: 'n1', target: 'n2' } },
+                { data: { source: 'n1', target: 'n4' } },
+                { data: { source: 'n2', target: 'n3' } },
+                { data: { source: 'n2', target: 'n4' } },
+                { data: { source: 'n4', target: 'n5' } },
+                { data: { source: 'n5', target: 'n6' } },
+                { data: { source: 'n6', target: 'n7' } },
+                { data: { source: 'n7', target: 'n4' } },
+                { data: { source: 'n7', target: 'n8' } },
+                { data: { source: 'n7', target: 'n9' } }               
+              ]
+            }             
+         */
+          });                  
           
+          var fixedNodes = [];
+          var verticalAlignment = [];
+          var horizontalAlignment = [];
+          document.getElementById("fixedNode").addEventListener("click", function(){
+            var paragraph = document.getElementById("fixedNodeText");
+            cy.nodes(":selected").forEach(function(node){
+              let fixedNode = {node: node, position: Object.assign({}, node.position())};
+              fixedNodes.push(fixedNode);
+              node.addClass("fixed");
+              var text = document.createTextNode(node.id() + " ");
+              paragraph.appendChild(text);
+              cy.elements().unselect();
+            });           
+          });
+          document.getElementById("verticalAlignment").addEventListener("click", function(){
+            var paragraph = document.getElementById("verticalAlignmentText");
+            let tempArray = [];
+            if(paragraph.innerHTML != ""){
+              let text = document.createTextNode(" --- ");
+              paragraph.appendChild(text);
+            }
+            cy.nodes(":selected").forEach(function(node){
+              tempArray.push(node);
+              var text = document.createTextNode(node.id() + " ");
+              paragraph.appendChild(text);
+              node.addClass("verticalAlignment");
+            })
+            verticalAlignment.push(tempArray);
+            cy.elements().unselect();
+          }); 
+          document.getElementById("horizontalAlignment").addEventListener("click", function(){
+            var paragraph = document.getElementById("horizontalAlignmentText");
+            var tempArray = [];
+            if(paragraph.innerHTML != ""){
+              let text = document.createTextNode(" --- ");
+              paragraph.appendChild(text);
+            }            
+            cy.nodes(":selected").forEach(function(node){
+              tempArray.push(node);
+              var text = document.createTextNode(node.id() + " ");
+              paragraph.appendChild(text);
+              node.addClass("horizontalAlignment");
+            })
+            horizontalAlignment.push(tempArray); 
+            cy.elements().unselect();
+          });           
+          document.getElementById("reset").addEventListener("click", function(){
+            fixedNodes = [];
+            verticalAlignment = [];
+            horizontalAlignment = [];
+            document.getElementById("fixedNodeText").innerHTML = "";
+            document.getElementById("verticalAlignmentText").innerHTML = "";
+            document.getElementById("horizontalAlignmentText").innerHTML = "";
+            cy.nodes().classes('');
+          });                    
+          
+          var options = {
+            name: 'fcose',            
+            quality: "draft",
+            randomize: true,
+            packComponents: false,
+            tile: false,
+            /*
+            animate: document.getElementById("animate").checked,
+            animationEasing: 'ease-out',
+            fit: true,
+            uniformNodeDimensions: document.getElementById("uniformNodeDimensions").checked,
+            nodeDimensionsIncludeLabels: true,                        
+            nodeRepulsion: parseFloat(document.getElementById("nodeRepulsion").value),
+            idealEdgeLength: parseFloat(document.getElementById("idealEdgeLength").value),
+            edgeElasticity: parseFloat(document.getElementById("edgeElasticity").value),
+            nestingFactor: parseFloat(document.getElementById("nestingFactor").value),
+            gravity: parseFloat(document.getElementById("gravity").value),
+            gravityRange: parseFloat(document.getElementById("gravityRange").value),
+            gravityCompound: parseFloat(document.getElementById("gravityCompound").value),
+            gravityRangeCompound: parseFloat(document.getElementById("gravityRangeCompound").value),
+            numIter: parseFloat(document.getElementById("numIter").value),
+            tilingPaddingVertical: parseFloat(document.getElementById("tilingPaddingVertical").value),
+            tilingPaddingHorizontal: parseFloat(document.getElementById("tilingPaddingHorizontal").value),
+            initialEnergyOnIncremental: document.getElementById("initialEnergyOnIncremental").value,
+            */
+            fixedNodeConstraint: fixedNodes.length > 0 ? fixedNodes : undefined,
+            //alignment: {x: [[cy.$('#n26'), cy.$('#n28')], [cy.$('#n34'), cy.$('#n18'), cy.$('#n36')]], y: [[cy.$('#n19'), cy.$('#n18'), cy.$('#n17'), cy.$('#n13')], [cy.$('#n4'), cy.$('#n46'), cy.$('#n9')], [cy.$('#n25'), cy.$('#n26'), cy.$('#n27')]]}
+            //alignment: {x: [[cy.$('#n0'), cy.$('#n3')],[cy.$('#n8'), cy.$('#n9')]], y: [[cy.$('#n0'), cy.$('#n4'), cy.$('#n8')]]}
+            alignmentConstraint: verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined,
+            step: undefined
+          };
           document.getElementById("randomizeButton").addEventListener("click", function(){
             var layout = cy.layout({
               name: 'random',
@@ -255,35 +491,41 @@
             });
             
             layout.run();        
-          });          
-          
-          document.getElementById("fcoseButton").addEventListener("click", function(){
-            let qualityItem = document.getElementById("quality");
-            var layout = cy.layout({
-              name: 'fcose',
-              quality: qualityItem.options[qualityItem.selectedIndex].value,
-              randomize: !(document.getElementById("randomize").checked),
-              animate: document.getElementById("animate").checked,
-              animationEasing: 'ease-out',
-              uniformNodeDimensions: document.getElementById("uniformNodeDimensions").checked,
-              packComponents: document.getElementById("packComponents").checked,
-              tile: document.getElementById("tile").checked,
-              nodeRepulsion: parseFloat(document.getElementById("nodeRepulsion").value),
-              idealEdgeLength: parseFloat(document.getElementById("idealEdgeLength").value),
-              edgeElasticity: parseFloat(document.getElementById("edgeElasticity").value),
-              nestingFactor: parseFloat(document.getElementById("nestingFactor").value),
-              gravity: parseFloat(document.getElementById("gravity").value),
-              gravityRange: parseFloat(document.getElementById("gravityRange").value),
-              gravityCompound: parseFloat(document.getElementById("gravityCompound").value),
-              gravityRangeCompound: parseFloat(document.getElementById("gravityRangeCompound").value),
-              numIter: parseFloat(document.getElementById("numIter").value),
-              tilingPaddingVertical: parseFloat(document.getElementById("tilingPaddingVertical").value),
-              tilingPaddingHorizontal: parseFloat(document.getElementById("tilingPaddingHorizontal").value),
-              initialEnergyOnIncremental: document.getElementById("initialEnergyOnIncremental").value
-            });
-            
-            layout.run();        
           });
+          document.getElementById("fcoseButton").addEventListener("click", function(){
+            let optionsDraft = Object.assign({}, options);
+            optionsDraft.step = "all";
+            optionsDraft.quality = "default";
+            optionsDraft.fixedNodeConstraint = fixedNodes.length > 0 ? fixedNodes : undefined;
+            optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;             
+            cy.layout(optionsDraft).run();        
+          });           
+          document.getElementById("fcoseButton1").addEventListener("click", function(){
+            let optionsDraft = Object.assign({}, options);
+            optionsDraft.step = "initial";
+            cy.layout(optionsDraft).run();
+          });
+          document.getElementById("fcoseButton2").addEventListener("click", function(){
+            let optionsDraft = Object.assign({}, options);
+            optionsDraft.step = "transformed";
+            optionsDraft.fixedNodeConstraint = fixedNodes.length > 0 ? fixedNodes : undefined;
+            optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;            
+            cy.layout(optionsDraft).run();  
+          });
+          document.getElementById("fcoseButton3").addEventListener("click", function(){
+            let optionsDraft = Object.assign({}, options);
+            optionsDraft.step = "enforced";
+            optionsDraft.fixedNodeConstraint = fixedNodes.length > 0 ? fixedNodes : undefined;
+            optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;            
+            cy.layout(optionsDraft).run();
+          });
+          document.getElementById("coseButton").addEventListener("click", function(){
+            let optionsDraft = Object.assign({}, options);
+            optionsDraft.fixedNodeConstraint = fixedNodes.length > 0 ? fixedNodes : undefined;
+            optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;             
+            optionsDraft.quality = "default";            
+            cy.layout(optionsDraft).run();
+          });           
           
         });
       </script>
@@ -291,18 +533,23 @@
 
   <body>
           <h1>cytoscape-fcose demo (compound)</h1>
-          <div style='width: 300px; position: absolute;'>
-            <button id="randomizeButton" class="button">Randomize</button>&nbsp &nbsp
-            <button id="fcoseButton" class="button">fCoSE</button>
-          
+          <div style='width: 500px; position: absolute;'>
+            <button id="randomizeButton" class="button">Randomize</button>&nbsp
+            <button id="fcoseButton" class="button">fCoSE</button><br>
+            <button id="fcoseButton1" class="button">Draft</button>&nbsp
+            <button id="fcoseButton2" class="button">Transform</button>&nbsp
+            <button id="fcoseButton3" class="button">Enforce</button>&nbsp
+            <button id="coseButton" class="button">Cose</button>
+            
             <div id="mySidepanel" class="sidepanel">
               <table>
+              <!--
                 <tr>
                   <td><span class="add-on layout-text" title="Quality of the layout"> Quality </span></td>
                   <td>            
                     <select id="quality">
-                      <option value="draft">draft</option>
-                      <option value="default" selected="">default</option>
+                      <option value="draft" selected="">draft</option>
+                      <option value="default" >default</option>
                       <option value="proof">proof</option>
                     </select>
                   </td>
@@ -321,7 +568,7 @@
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Whether to pack components"> Pack Components to Window </span></td>
-                  <td><input id="packComponents" class = "checkbox" type="checkbox" checked></td>
+                  <td><input id="packComponents" class = "checkbox" type="checkbox"></td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Whether to tile disconnected nodes"> Tile Disconnected </span></td>
@@ -374,10 +621,32 @@
                 <tr>
                   <td><span class="add-on layout-text" title="Initial cooling factor for incremental layout"> Incremental Cooling Factor </span></td>
                   <td><input id="initialEnergyOnIncremental" class="textField" type="text" value="0.3" maxlength=5 size="5"></td>
-                </tr>               
+                </tr>
+              -->
+                <tr>
+                  <td><button id="fixedNode" class="button" style= "padding: 5px 0px;" >Add selected to fixed node</button></td><td></td>                  
+                </tr>  
+                <tr>
+                  <td><p style= "margin-left: auto" id="fixedNodeText"></p></td><td></td>                  
+                </tr>
+                <tr>
+                  <td><button id="verticalAlignment" class="button" style= "padding: 5px 0px" >Add selected to ver. alignment</button></td><td></td>                  
+                </tr>  
+                <tr>
+                  <td><p style= "margin-left: auto" id="verticalAlignmentText"></p></td><td></td>                  
+                </tr>
+                <tr>
+                  <td><button id="horizontalAlignment" class="button" style= "padding: 5px 0px" >Add selected to hor. alignment</button></td><td></td>                  
+                </tr>  
+                <tr>
+                  <td><p style= "margin-left: auto" id="horizontalAlignmentText"></p></td><td></td>                  
+                </tr>  
+                <tr>
+                  <td><button id="reset" class="button" style= "padding: 5px 0px">Reset</button></td>                  
+                </tr>                 
               </table>
-
             </div>
+
           </div>
           <div id="cy"></div>
 

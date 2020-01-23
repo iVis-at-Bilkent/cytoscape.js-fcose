@@ -851,18 +851,10 @@ var Layout = function () {
       var yCoords = void 0;
       var coseResult = [];
       var components = void 0;
+      var constraints = {};
 
       // if there is no elements, return
       if (options.eles.length == 0) return;
-
-      // decide component packing is enabled or not
-      var layUtil = void 0;
-      var packingEnabled = false;
-      if (cy.layoutUtilities && options.packComponents && options.randomize) {
-        layUtil = cy.layoutUtilities("get");
-        if (!layUtil) layUtil = cy.layoutUtilities();
-        packingEnabled = true;
-      }
 
       // if partial layout, update options.eles
       if (options.eles.length != options.cy.elements().length) {
@@ -883,12 +875,16 @@ var Layout = function () {
         options.eles = eles;
       }
 
-      var constraints = {};
-
       var constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;
 
-      // get constraint data from options, if any exists
+      // get constraint data from options, if any exists and set some options
       if (constraintExist) {
+
+        // constraints work with these options
+        options.randomize = true;
+        options.tile = false;
+        options.packComponents = false;
+
         // get nodes to be fixed
         if (options.fixedNodeConstraint) {
           options.fixedNodeConstraint.forEach(function (item) {
@@ -924,12 +920,21 @@ var Layout = function () {
         ////    let unconstrainedEles = options.eles.difference(fixedNodes.union(fixedNodes.connectedEdges()));
       }
 
+      // decide component packing is enabled or not
+      var layUtil = void 0;
+      var packingEnabled = false;
+      if (cy.layoutUtilities && options.packComponents && options.randomize) {
+        layUtil = cy.layoutUtilities("get");
+        if (!layUtil) layUtil = cy.layoutUtilities();
+        packingEnabled = true;
+      }
+
       // if packing is not enabled, perform layout on the whole graph
       if (!packingEnabled) {
         if (options.randomize) {
           var result = spectralLayout(options); // apply spectral layout
 
-          if (options.step == "transformed" || options.step == "enforced") {
+          if (options.step == "transformed" || options.step == "enforced" || options.step == "all") {
             // enforce constraints if any exists
             if (constraintExist) {
               constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
@@ -1295,7 +1300,7 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
   //  }
 
   // if transformation is required, then calculate and apply transformation matrix
-  if (isTransformationRequired && options.step == "transformed") {
+  if (isTransformationRequired && (options.step == "transformed" || options.step == "all")) {
     /* calculate transformation matrix */
 
     var targetMatrixTranspose = aux.transpose(targetMatrix); // A'
@@ -1310,21 +1315,27 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
     // do actual calculation for transformation matrix
     // normally SVD(A'B) = USV' but transpose works better so compute SVD(B'A) = VSU' 
     var tempMatrix = aux.multMat(sourceMatrixTranspose, aux.transpose(targetMatrixTranspose)); // tempMatrix = B'A
+    // this is required because sometimes svd cannot be calculated for long decimal values
+    for (var _i = 0; _i < tempMatrix.length; _i++) {
+      for (var j = 0; j < tempMatrix[0].length; j++) {
+        tempMatrix[_i][j] = Math.round(tempMatrix[_i][j] * 10) / 10;
+      }
+    }
     var SVDResult = aux.svd(tempMatrix); // SVD(B'A) = VSU'
     var transformationMatrix = aux.multMat(SVDResult.u, aux.transpose(SVDResult.v)); // transformationMatrix = T = UV'
 
     /* apply found transformation matrix to obtain final draft layout */
 
-    for (var _i = 0; _i < nodeIndexes.size; _i++) {
-      var temp1 = [xCoords[_i], yCoords[_i]];
+    for (var _i2 = 0; _i2 < nodeIndexes.size; _i2++) {
+      var temp1 = [xCoords[_i2], yCoords[_i2]];
       var temp2 = [transformationMatrix[0][0], transformationMatrix[1][0]];
       var temp3 = [transformationMatrix[0][1], transformationMatrix[1][1]];
-      xCoords[_i] = aux.dotProduct(temp1, temp2);
-      yCoords[_i] = aux.dotProduct(temp1, temp3);
+      xCoords[_i2] = aux.dotProduct(temp1, temp2);
+      yCoords[_i2] = aux.dotProduct(temp1, temp3);
     }
   }
 
-  if (options.step == "enforced") {
+  if (options.step == "enforced" || options.step == "all") {
 
     /****  enforce constraints on the transformed draft layout ****/
 
@@ -1361,45 +1372,45 @@ var constraintHandler = function constraintHandler(options, spectralResult, cons
       if (constraints["alignmentConstraint"]["vertical"]) {
         var xAlign = constraints["alignmentConstraint"]["vertical"];
 
-        var _loop3 = function _loop3(_i2) {
+        var _loop3 = function _loop3(_i3) {
           var alignmentSet = cy.collection();
-          xAlign[_i2].forEach(function (node) {
+          xAlign[_i3].forEach(function (node) {
             alignmentSet = alignmentSet.merge(node);
           });
           var intersection = alignmentSet.diff(fixedNodes).both;
           var xPos = void 0;
           if (intersection.length > 0) xPos = xCoords[nodeIndexes.get(intersection[0].id())];else xPos = calculateAvgPosition(alignmentSet)['x'];
 
-          for (var j = 0; j < alignmentSet.length; j++) {
-            var node = alignmentSet[j];
+          for (var _j = 0; _j < alignmentSet.length; _j++) {
+            var node = alignmentSet[_j];
             if (!fixedNodes.contains(node)) xCoords[nodeIndexes.get(node.id())] = xPos;
           }
         };
 
-        for (var _i2 = 0; _i2 < xAlign.length; _i2++) {
-          _loop3(_i2);
+        for (var _i3 = 0; _i3 < xAlign.length; _i3++) {
+          _loop3(_i3);
         }
       }
       if (constraints["alignmentConstraint"]["horizontal"]) {
         var yAlign = constraints["alignmentConstraint"]["horizontal"];
 
-        var _loop4 = function _loop4(_i3) {
+        var _loop4 = function _loop4(_i4) {
           var alignmentSet = cy.collection();
-          yAlign[_i3].forEach(function (node) {
+          yAlign[_i4].forEach(function (node) {
             alignmentSet = alignmentSet.merge(node);
           });
           var intersection = alignmentSet.diff(fixedNodes).both;
           var yPos = void 0;
           if (intersection.length > 0) yPos = yCoords[nodeIndexes.get(intersection[0].id())];else yPos = calculateAvgPosition(alignmentSet)['y'];
 
-          for (var j = 0; j < alignmentSet.length; j++) {
-            var node = alignmentSet[j];
+          for (var _j2 = 0; _j2 < alignmentSet.length; _j2++) {
+            var node = alignmentSet[_j2];
             if (!fixedNodes.contains(node)) yCoords[nodeIndexes.get(node.id())] = yPos;
           }
         };
 
-        for (var _i3 = 0; _i3 < yAlign.length; _i3++) {
-          _loop4(_i3);
+        for (var _i4 = 0; _i4 < yAlign.length; _i4++) {
+          _loop4(_i4);
         }
       }
     }
@@ -1998,7 +2009,7 @@ var spectralLayout = function spectralLayout(options) {
 
     /**** Apply spectral layout ****/
 
-    if (options.step == "initial") {
+    if (options.step == "initial" || options.step == "all") {
       allBFS(samplingType);
       sample();
       powerIteration();

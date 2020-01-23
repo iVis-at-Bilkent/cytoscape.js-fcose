@@ -128,7 +128,7 @@ let constraintHandler = function(options, spectralResult, constraints){
 //  }
 
   // if transformation is required, then calculate and apply transformation matrix
-  if(isTransformationRequired && options.step == "transformed"){
+  if(isTransformationRequired && (options.step == "transformed" || options.step == "all")){
     /* calculate transformation matrix */
 
     let targetMatrixTranspose = aux.transpose(targetMatrix);  // A'
@@ -143,6 +143,12 @@ let constraintHandler = function(options, spectralResult, constraints){
     // do actual calculation for transformation matrix
     // normally SVD(A'B) = USV' but transpose works better so compute SVD(B'A) = VSU' 
     let tempMatrix = aux.multMat(sourceMatrixTranspose, aux.transpose(targetMatrixTranspose)); // tempMatrix = B'A
+    // this is required because sometimes svd cannot be calculated for long decimal values
+    for(let i = 0; i < tempMatrix.length; i++){
+      for(let j = 0; j < tempMatrix[0].length; j++){
+        tempMatrix[i][j] = Math.round( tempMatrix[i][j] * 10 ) / 10;
+      }
+    }
     let SVDResult = aux.svd(tempMatrix); // SVD(B'A) = VSU'
     let transformationMatrix = aux.multMat(SVDResult.u, aux.transpose(SVDResult.v)); // transformationMatrix = T = UV'
     
@@ -157,7 +163,7 @@ let constraintHandler = function(options, spectralResult, constraints){
     }
   }
   
-  if(options.step == "enforced") {
+  if(options.step == "enforced" || options.step == "all") {
   
     /****  enforce constraints on the transformed draft layout ****/
 
