@@ -361,7 +361,7 @@
                 { data: { source: 'n7', target: 'n9' } }               
               ]
             }  
-            
+           
            /*
             elements: {
               nodes: [
@@ -481,6 +481,7 @@
             //alignment: {x: [[cy.$('#n26'), cy.$('#n28')], [cy.$('#n34'), cy.$('#n18'), cy.$('#n36')]], y: [[cy.$('#n19'), cy.$('#n18'), cy.$('#n17'), cy.$('#n13')], [cy.$('#n4'), cy.$('#n46'), cy.$('#n9')], [cy.$('#n25'), cy.$('#n26'), cy.$('#n27')]]}
             //alignment: {x: [[cy.$('#n0'), cy.$('#n3')],[cy.$('#n8'), cy.$('#n9')]], y: [[cy.$('#n0'), cy.$('#n4'), cy.$('#n8')]]}
             alignmentConstraint: verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined,
+            relativePlacementConstraint: [{left: cy.$('#n1'), right: cy.$('#n2')}, {left: cy.$('#n1'), right: cy.$('#n5'), gap: 100}, {top: cy.$('#n7'), bottom: cy.$('#n9')}],
             step: undefined
           };
           document.getElementById("randomizeButton").addEventListener("click", function(){
@@ -497,7 +498,8 @@
             optionsDraft.step = "all";
             optionsDraft.quality = "default";
             optionsDraft.fixedNodeConstraint = fixedNodes.length > 0 ? fixedNodes : undefined;
-            optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;             
+            optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;
+            relativePlacementConstraint: [{left: cy.$('#n1'), right: cy.$('#n2')}, {left: cy.$('#n6'), right: cy.$('#n5')}],
             cy.layout(optionsDraft).run();        
           });           
           document.getElementById("fcoseButton1").addEventListener("click", function(){
@@ -509,20 +511,23 @@
             let optionsDraft = Object.assign({}, options);
             optionsDraft.step = "transformed";
             optionsDraft.fixedNodeConstraint = fixedNodes.length > 0 ? fixedNodes : undefined;
-            optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;            
+            optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined; 
+            relativePlacementConstraint: [{left: cy.$('#n1'), right: cy.$('#n2')}, {left: cy.$('#n6'), right: cy.$('#n5')}],
             cy.layout(optionsDraft).run();  
           });
           document.getElementById("fcoseButton3").addEventListener("click", function(){
             let optionsDraft = Object.assign({}, options);
             optionsDraft.step = "enforced";
             optionsDraft.fixedNodeConstraint = fixedNodes.length > 0 ? fixedNodes : undefined;
-            optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;            
+            optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;
+            relativePlacementConstraint: [{left: cy.$('#n1'), right: cy.$('#n2')}, {left: cy.$('#n6'), right: cy.$('#n5')}],
             cy.layout(optionsDraft).run();
           });
           document.getElementById("coseButton").addEventListener("click", function(){
             let optionsDraft = Object.assign({}, options);
             optionsDraft.fixedNodeConstraint = fixedNodes.length > 0 ? fixedNodes : undefined;
-            optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;             
+            optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;
+            relativePlacementConstraint: [{left: cy.$('#n1'), right: cy.$('#n2')}, {left: cy.$('#n6'), right: cy.$('#n5')}],
             optionsDraft.quality = "default";            
             cy.layout(optionsDraft).run();
           });           

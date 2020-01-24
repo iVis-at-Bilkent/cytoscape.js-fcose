@@ -104,8 +104,7 @@ class Layout {
     let xCoords;
     let yCoords;
     let coseResult = [];
-    let components;
-    let constraints = {};
+    let components;    
     
     // if there is no elements, return
     if(options.eles.length == 0)
@@ -174,9 +173,6 @@ class Layout {
           }
         }
       }
-//      constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
-//      constraints["alignmentConstraint"] = options.alignmentConstraint;
-////    let unconstrainedEles = options.eles.difference(fixedNodes.union(fixedNodes.connectedEdges()));
     }
     
     // decide component packing is enabled or not
@@ -197,9 +193,7 @@ class Layout {
         if(options.step == "transformed" || options.step == "enforced" || options.step == "all"){      
           // enforce constraints if any exists
           if(constraintExist){
-            constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
-            constraints["alignmentConstraint"] = options.alignmentConstraint;
-            constraintHandler(options, result, constraints);
+            constraintHandler(options, result);
           }
         }
         spectralResult.push(result);

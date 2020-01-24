@@ -6,7 +6,7 @@
 
 const aux = require('./auxiliary');
 
-let constraintHandler = function(options, spectralResult, constraints){
+let constraintHandler = function(options, spectralResult){
   let cy = options.cy;
   let eles = options.eles;
   let nodes = eles.nodes();
@@ -15,23 +15,10 @@ let constraintHandler = function(options, spectralResult, constraints){
   let xCoords = spectralResult.xCoords;
   let yCoords = spectralResult.yCoords;
   
-//  let calculatePosition = function(node){
-//    let xPosSum = 0;
-//    let yPosSum = 0;
-//    let neighborCount = 0;
-//
-//    node.neighborhood().nodes().not(":parent").forEach(function(neighborNode){
-//      if(eles.contains(node.edgesWith(neighborNode)) && unconstrainedEles.contains(neighborNode)){
-//        xPosSum += xCoords[nodeIndexes.get(neighborNode.id())];
-//        yPosSum += yCoords[nodeIndexes.get(neighborNode.id())];
-//        neighborCount++;
-//      }
-//    });
-//    if(neighborCount == 0){
-//      return {x: unconstrainedEles.nodes()[0].position('x'), y: unconstrainedEles.nodes()[0].position('y')}; // TO DO: think a better idea
-//    }
-//    return {x: xPosSum/neighborCount, y: yPosSum/neighborCount};
-//  };
+  let constraints = {};
+  constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
+  constraints["alignmentConstraint"] = options.alignmentConstraint;
+  constraints["relativePlacementConstraint"] = options.relativePlacementConstraint;  
   
   /* auxiliary functions */
  
@@ -58,13 +45,36 @@ let constraintHandler = function(options, spectralResult, constraints){
   
   let targetMatrix = []; // A - target configuration
   let sourceMatrix = []; // B - source configuration 
-  let isTransformationRequired = false;
+  let transformationType = false; // false for no transformation, 'full' for rotation and/or reflection, 'reflectOnX' or 'reflectOnY' or 'reflectOnBoth' for only reflection
   let fixedNodes = cy.collection();
+  let dag = new Map(); // adjacency list to keep directed acyclic graph (dag) that consists of relative placement constraints
   
   // fill fixedNodes collection to use later
   if(constraints["fixedNodeConstraint"]) {
     constraints["fixedNodeConstraint"].forEach(function(nodeData){
       fixedNodes.merge(nodeData["node"]);
+    });
+  }
+  
+  // construct dag from relative placement constraints 
+  if(constraints["relativePlacementConstraint"]) {
+    constraints["relativePlacementConstraint"].forEach(function(constraint){
+      if(constraint["left"]){
+        if(dag.has(constraint["left"].id())){
+          dag.get(constraint["left"].id()).push({id: constraint["right"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["left"].width()/2 + constraint["right"].width()/2), direction: "horizontal"});
+        }
+        else{
+          dag.set(constraint["left"].id(), [{id: constraint["right"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["left"].width()/2 + constraint["right"].width()/2), direction: "horizontal"}]);
+        }
+      }
+      else{
+        if(dag.has(constraint["top"].id())){
+          dag.get(constraint["top"].id()).push({id: constraint["bottom"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["top"].height()/2 + constraint["bottom"].height()/2), direction: "vertical"});
+        }
+        else {
+          dag.set(constraint["top"].id(), [{id: constraint["bottom"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["top"].height()/2 + constraint["bottom"].height()/2), direction: "vertical"}]);
+        }
+      }      
     });
   }
   
@@ -74,7 +84,7 @@ let constraintHandler = function(options, spectralResult, constraints){
       targetMatrix[i] = [nodeData["position"]["x"], nodeData["position"]["y"]];
       sourceMatrix[i] = [xCoords[nodeIndexes.get(nodeData["node"].id())], yCoords[nodeIndexes.get(nodeData["node"].id())]];      
     });
-    isTransformationRequired = true;
+    transformationType = "full";
   }
   else if(constraints["alignmentConstraint"]){  // then check alignment constraint  
     let count = 0; 
@@ -98,7 +108,7 @@ let constraintHandler = function(options, spectralResult, constraints){
           count++;
         });
       }
-      isTransformationRequired = true;
+      transformationType = "full";
     }
     if(constraints["alignmentConstraint"]["horizontal"]){
       let horizontalAlign = constraints["alignmentConstraint"]["horizontal"];
@@ -120,38 +130,67 @@ let constraintHandler = function(options, spectralResult, constraints){
           count++;
         });
       }
-      isTransformationRequired = true;
+      transformationType = "full";
     }     
   }
-//  else if(){  // finally check relative placement constraint 
-//    
-//  }
+  else if(constraints["relativePlacementConstraint"]){  // finally check relative placement constraint 
+    let reflectOnY = 0, notReflectOnY = 0;
+    let reflectOnX = 0, notReflectOnX = 0;
+    
+    constraints["relativePlacementConstraint"].forEach(function(constraint){
+      if(constraint["left"]){
+        (xCoords[nodeIndexes.get(constraint["left"].id())] - xCoords[nodeIndexes.get(constraint["right"].id())] > 0) ? reflectOnY++ : notReflectOnY++;
+      }
+      else{
+        (yCoords[nodeIndexes.get(constraint["top"].id())] - yCoords[nodeIndexes.get(constraint["bottom"].id())] > 0) ? reflectOnX++ : notReflectOnX++;
+      }
+    });
+    if(reflectOnY > notReflectOnY && reflectOnX > notReflectOnX){
+      transformationType = "reflectOnBoth";
+    }
+    else if(reflectOnY > notReflectOnY){
+      transformationType = "reflectOnY";
+    }
+    else if(reflectOnX > notReflectOnX){
+      transformationType = "reflectOnX";
+    }    
+  }
 
   // if transformation is required, then calculate and apply transformation matrix
-  if(isTransformationRequired && (options.step == "transformed" || options.step == "all")){
+  if(transformationType && (options.step == "transformed" || options.step == "all")){
     /* calculate transformation matrix */
+    let transformationMatrix;
+    if(transformationType == "full"){
+      let targetMatrixTranspose = aux.transpose(targetMatrix);  // A'
+      let sourceMatrixTranspose = aux.transpose(sourceMatrix);  // B'
 
-    let targetMatrixTranspose = aux.transpose(targetMatrix);  // A'
-    let sourceMatrixTranspose = aux.transpose(sourceMatrix);  // B'
-
-    // centralize transpose matrices
-    for(let i = 0; i < targetMatrixTranspose.length; i++){
-      targetMatrixTranspose[i] = aux.multGamma(targetMatrixTranspose[i]);
-      sourceMatrixTranspose[i] = aux.multGamma(sourceMatrixTranspose[i]);
-    }
-
-    // do actual calculation for transformation matrix
-    // normally SVD(A'B) = USV' but transpose works better so compute SVD(B'A) = VSU' 
-    let tempMatrix = aux.multMat(sourceMatrixTranspose, aux.transpose(targetMatrixTranspose)); // tempMatrix = B'A
-    // this is required because sometimes svd cannot be calculated for long decimal values
-    for(let i = 0; i < tempMatrix.length; i++){
-      for(let j = 0; j < tempMatrix[0].length; j++){
-        tempMatrix[i][j] = Math.round( tempMatrix[i][j] * 10 ) / 10;
+      // centralize transpose matrices
+      for(let i = 0; i < targetMatrixTranspose.length; i++){
+        targetMatrixTranspose[i] = aux.multGamma(targetMatrixTranspose[i]);
+        sourceMatrixTranspose[i] = aux.multGamma(sourceMatrixTranspose[i]);
       }
+
+      // do actual calculation for transformation matrix
+      // normally SVD(A'B) = USV' but transpose works better so compute SVD(B'A) = VSU' 
+      let tempMatrix = aux.multMat(sourceMatrixTranspose, aux.transpose(targetMatrixTranspose)); // tempMatrix = B'A
+      // this is required because sometimes svd cannot be calculated for long decimal values
+      for(let i = 0; i < tempMatrix.length; i++){
+        for(let j = 0; j < tempMatrix[0].length; j++){
+          tempMatrix[i][j] = Math.round( tempMatrix[i][j] * 10 ) / 10;
+        }
+      }
+      let SVDResult = aux.svd(tempMatrix); // SVD(B'A) = VSU'
+      transformationMatrix = aux.multMat(SVDResult.u, aux.transpose(SVDResult.v)); // transformationMatrix = T = UV'
     }
-    let SVDResult = aux.svd(tempMatrix); // SVD(B'A) = VSU'
-    let transformationMatrix = aux.multMat(SVDResult.u, aux.transpose(SVDResult.v)); // transformationMatrix = T = UV'
-    
+    else if(transformationType == "reflectOnBoth"){
+      transformationMatrix = [[-1, 0], [0, -1]];
+    }
+    else if(transformationType == "reflectOnX"){
+      transformationMatrix = [[1, 0], [0, -1]];
+    }
+    else if(transformationType == "reflectOnY"){
+      transformationMatrix = [[-1, 0], [0, 1]];
+    }    
     /* apply found transformation matrix to obtain final draft layout */
 
     for(let i = 0; i < nodeIndexes.size; i++){
