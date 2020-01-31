@@ -5,6 +5,7 @@
 */
 
 const aux = require('./auxiliary');
+const LinkedList = require('cose-base').layoutBase.LinkedList;
 
 let constraintHandler = function(options, spectralResult){
   let cy = options.cy;
@@ -14,7 +15,7 @@ let constraintHandler = function(options, spectralResult){
   let nodeIndexes = spectralResult.nodeIndexes;
   let xCoords = spectralResult.xCoords;
   let yCoords = spectralResult.yCoords;
-  
+
   let constraints = {};
   constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
   constraints["alignmentConstraint"] = options.alignmentConstraint;
@@ -37,6 +38,51 @@ let constraintHandler = function(options, spectralResult){
     return {x: xPosSum / nodes.length, y: yPosSum / nodes.length};
   };
   
+  let findAppropriatePositionForRelativePlacement = function(graph, direction){
+    let inDegrees = new Map();
+
+    graph.forEach(function(value, key){
+      inDegrees.set(key, 0);
+    });      
+    graph.forEach(function(value, key){
+      value.forEach(function(adjacent){
+        inDegrees.set(adjacent["id"], inDegrees.get(adjacent["id"]) + 1);  
+      });       
+    });
+
+    let distanceMap = new Map();
+    let queue = new LinkedList();
+    inDegrees.forEach(function(value, key){
+      if(value == 0){
+        queue.push(key);
+        if(direction == "horizontal"){
+          distanceMap.set(key, xCoords[nodeIndexes.get(key)]);
+        }
+        else{
+          distanceMap.set(key, yCoords[nodeIndexes.get(key)]);
+        }
+      }
+      else{
+        distanceMap.set(key, Number.NEGATIVE_INFINITY);
+      }
+    });
+
+    while(queue.length != 0){
+      let currentNode = queue.shift();
+      let neighbors = graph.get(currentNode);
+      neighbors.forEach(function(neighbor){
+        if(distanceMap.get(neighbor["id"]) < (distanceMap.get(currentNode) + neighbor["gap"])){
+          distanceMap.set(neighbor["id"], distanceMap.get(currentNode) + neighbor["gap"]);
+        }
+        inDegrees.set(neighbor["id"], inDegrees.get(neighbor["id"]) - 1);
+        if(inDegrees.get(neighbor["id"]) == 0){
+          queue.push(neighbor["id"]);
+        }
+      });
+    }
+    return distanceMap;
+  };
+  
   /****  apply transformation to the initial draft layout to better align with constrained nodes ****/
   // solve the Orthogonal Procrustean Problem to rotate and/or reflect initial draft layout
   // here we follow the solution in Chapter 20.2 of Borg, I. & Groenen, P. (2005) Modern Multidimensional Scaling: Theory and Applications 
@@ -48,6 +94,8 @@ let constraintHandler = function(options, spectralResult){
   let transformationType = false; // false for no transformation, 'full' for rotation and/or reflection, 'reflectOnX' or 'reflectOnY' or 'reflectOnBoth' for only reflection
   let fixedNodes = cy.collection();
   let dag = new Map(); // adjacency list to keep directed acyclic graph (dag) that consists of relative placement constraints
+  let dagUndirected = new Map(); // undirected version of the dag
+  let components = []; // weakly connected components 
   
   // fill fixedNodes collection to use later
   if(constraints["fixedNodeConstraint"]) {
@@ -58,24 +106,71 @@ let constraintHandler = function(options, spectralResult){
   
   // construct dag from relative placement constraints 
   if(constraints["relativePlacementConstraint"]) {
+    // construct both directed and undirected version of the dag
     constraints["relativePlacementConstraint"].forEach(function(constraint){
       if(constraint["left"]){
         if(dag.has(constraint["left"].id())){
           dag.get(constraint["left"].id()).push({id: constraint["right"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["left"].width()/2 + constraint["right"].width()/2), direction: "horizontal"});
+          dagUndirected.get(constraint["left"].id()).push({id: constraint["right"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["left"].width()/2 + constraint["right"].width()/2), direction: "horizontal"});
         }
         else{
           dag.set(constraint["left"].id(), [{id: constraint["right"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["left"].width()/2 + constraint["right"].width()/2), direction: "horizontal"}]);
+          dagUndirected.set(constraint["left"].id(), [{id: constraint["right"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["left"].width()/2 + constraint["right"].width()/2), direction: "horizontal"}]); 
+        }
+        if(dag.has(constraint["right"].id())){
+          dagUndirected.get(constraint["right"].id()).push({id: constraint["left"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["left"].width()/2 + constraint["right"].width()/2), direction: "horizontal"});          
+        }
+        else{
+          dag.set(constraint["right"].id(), []);
+          dagUndirected.set(constraint["right"].id(), [{id: constraint["left"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["left"].width()/2 + constraint["right"].width()/2), direction: "horizontal"}]);           
         }
       }
       else{
         if(dag.has(constraint["top"].id())){
           dag.get(constraint["top"].id()).push({id: constraint["bottom"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["top"].height()/2 + constraint["bottom"].height()/2), direction: "vertical"});
+          dagUndirected.get(constraint["top"].id()).push({id: constraint["bottom"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["top"].height()/2 + constraint["bottom"].height()/2), direction: "vertical"});
         }
         else {
           dag.set(constraint["top"].id(), [{id: constraint["bottom"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["top"].height()/2 + constraint["bottom"].height()/2), direction: "vertical"}]);
+          dagUndirected.set(constraint["top"].id(), [{id: constraint["bottom"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["top"].height()/2 + constraint["bottom"].height()/2), direction: "vertical"}]);          
+        }        
+        if(dag.has(constraint["bottom"].id())){
+          dagUndirected.get(constraint["bottom"].id()).push({id: constraint["top"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["top"].width()/2 + constraint["bottom"].width()/2), direction: "vertical"});          
         }
+        else{
+          dag.set(constraint["bottom"].id(), []);
+          dagUndirected.set(constraint["bottom"].id(), [{id: constraint["top"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["top"].width()/2 + constraint["bottom"].width()/2), direction: "vertical"}]);           
+        }        
       }      
     });
+    
+    // find weakly connected components in dag
+    let queue = new LinkedList();
+    let visited = new Set();
+    let count = 0;
+    
+    dagUndirected.forEach(function(value, key){
+      if(!visited.has(key)){
+        components[count] = [];
+        let currentNode = key;
+        queue.push(currentNode);
+        visited.add(currentNode);
+        components[count].push(currentNode);
+
+        while(queue.length != 0){
+          currentNode = queue.shift();
+          let neighbors = dagUndirected.get(currentNode);
+          neighbors.forEach(function(neighbor){
+            if(!visited.has(neighbor["id"])){
+              queue.push(neighbor["id"]);
+              visited.add(neighbor["id"]);
+              components[count].push(neighbor["id"]);
+            }
+          });
+        }
+        count++;
+      }
+    });   
   }
   
   // first check fixed node constraint
@@ -134,26 +229,95 @@ let constraintHandler = function(options, spectralResult){
     }     
   }
   else if(constraints["relativePlacementConstraint"]){  // finally check relative placement constraint 
-    let reflectOnY = 0, notReflectOnY = 0;
-    let reflectOnX = 0, notReflectOnX = 0;
-    
-    constraints["relativePlacementConstraint"].forEach(function(constraint){
-      if(constraint["left"]){
-        (xCoords[nodeIndexes.get(constraint["left"].id())] - xCoords[nodeIndexes.get(constraint["right"].id())] > 0) ? reflectOnY++ : notReflectOnY++;
+    // find largest component in dag
+    let largestComponentSize = 0;
+    let largestComponentIndex = 0;
+    for(let i = 0; i < components.length; i++){
+      if(components[i].length > largestComponentSize){
+        largestComponentSize = components[i].length;
+        largestComponentIndex = i;
       }
-      else{
-        (yCoords[nodeIndexes.get(constraint["top"].id())] - yCoords[nodeIndexes.get(constraint["bottom"].id())] > 0) ? reflectOnX++ : notReflectOnX++;
+    }
+    // if largest component isn't dominant, then take the votes for reflection
+    if(largestComponentSize < (dagUndirected.size / 2)){
+      // variables to count votes
+      let reflectOnY = 0, notReflectOnY = 0;
+      let reflectOnX = 0, notReflectOnX = 0;
+
+      constraints["relativePlacementConstraint"].forEach(function(constraint){
+        if(constraint["left"]){
+          (xCoords[nodeIndexes.get(constraint["left"].id())] - xCoords[nodeIndexes.get(constraint["right"].id())] >= 0) ? reflectOnY++ : notReflectOnY++;
+        }
+        else{
+          (yCoords[nodeIndexes.get(constraint["top"].id())] - yCoords[nodeIndexes.get(constraint["bottom"].id())] >= 0) ? reflectOnX++ : notReflectOnX++;
+        }
+      });
+
+      if(reflectOnY > notReflectOnY && reflectOnX > notReflectOnX){
+        transformationType = "reflectOnBoth";
       }
-    });
-    if(reflectOnY > notReflectOnY && reflectOnX > notReflectOnX){
-      transformationType = "reflectOnBoth";
+      else if(reflectOnY > notReflectOnY){
+        transformationType = "reflectOnY";
+      }
+      else if(reflectOnX > notReflectOnX){
+        transformationType = "reflectOnX";
+      } 
     }
-    else if(reflectOnY > notReflectOnY){
-      transformationType = "reflectOnY";
+    else{ // use largest component for transformation 
+      // construct horizontal and vertical subgraphs in the largest component
+      let subGraphOnHorizontal = new Map();
+      let subGraphOnVertical = new Map();
+      
+      components[largestComponentIndex].forEach(function(nodeId){
+          dag.get(nodeId).forEach(function(adjacent){
+            if(adjacent["direction"] == "horizontal"){
+              if(subGraphOnHorizontal.has(nodeId)){
+                subGraphOnHorizontal.get(nodeId).push(adjacent);
+              }
+              else{
+                subGraphOnHorizontal.set(nodeId, [adjacent]);
+              }
+              if(!subGraphOnHorizontal.has(adjacent["id"])){
+                subGraphOnHorizontal.set(adjacent["id"], []);
+              }
+            }
+            else{
+              if(subGraphOnVertical.has(nodeId)){
+                subGraphOnVertical.get(nodeId).push(adjacent);
+              }
+              else{
+                subGraphOnVertical.set(nodeId, [adjacent]);
+              }
+              if(!subGraphOnVertical.has(adjacent["id"])){
+                subGraphOnVertical.set(adjacent["id"], []);
+              }              
+            }
+          });
+      });
+      // calculate appropriate positioning for subgraphs
+      let distanceMapHorizontal = findAppropriatePositionForRelativePlacement(subGraphOnHorizontal, "horizontal");
+      let distanceMapVertical = findAppropriatePositionForRelativePlacement(subGraphOnVertical, "vertical");
+      
+      // construct source and target configuration
+      components[largestComponentIndex].forEach(function(nodeId, i){
+        sourceMatrix[i] = [xCoords[nodeIndexes.get(nodeId)], yCoords[nodeIndexes.get(nodeId)]];
+        targetMatrix[i] = [];
+        if(distanceMapHorizontal.has(nodeId)){
+          targetMatrix[i][0] = distanceMapHorizontal.get(nodeId);          
+        }
+        else{
+          targetMatrix[i][0] = xCoords[nodeIndexes.get(nodeId)];                    
+        }
+        if(distanceMapVertical.has(nodeId)){
+          targetMatrix[i][1] = distanceMapVertical.get(nodeId);
+        }
+        else{
+          targetMatrix[i][1] = yCoords[nodeIndexes.get(nodeId)];
+        }
+      });
+
+      transformationType = "full";
     }
-    else if(reflectOnX > notReflectOnX){
-      transformationType = "reflectOnX";
-    }    
   }
 
   // if transformation is required, then calculate and apply transformation matrix
@@ -176,10 +340,13 @@ let constraintHandler = function(options, spectralResult){
       // this is required because sometimes svd cannot be calculated for long decimal values
       for(let i = 0; i < tempMatrix.length; i++){
         for(let j = 0; j < tempMatrix[0].length; j++){
-          tempMatrix[i][j] = Math.round( tempMatrix[i][j] * 10 ) / 10;
+          tempMatrix[i][j] = Math.round( tempMatrix[i][j]);
         }
       }
       let SVDResult = aux.svd(tempMatrix); // SVD(B'A) = VSU'
+//      console.log(tempMatrix);
+//      console.log(SVDResult);
+//      console.log(aux.svd([[-4406, -4406],[-331, -331]]));
       transformationMatrix = aux.multMat(SVDResult.u, aux.transpose(SVDResult.v)); // transformationMatrix = T = UV'
     }
     else if(transformationType == "reflectOnBoth"){
