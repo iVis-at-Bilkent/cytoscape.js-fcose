@@ -26,9 +26,9 @@
         #cy {
           position: relative;
           width: auto;
-          height: 90%;
+          height: 95%;
           z-index: 999;
-          margin-left: 350px;
+          margin-left: 375px;
           right: 0px;
         }
 
@@ -43,7 +43,7 @@
         /* The sidepanel menu */
         .sidepanel {
           height: auto; /* Specify a height */
-          width: 250px; /* 0 width - change this with JavaScript */
+          width: 400px; /* 0 width - change this with JavaScript */
           position: absolute; /* Stay in place */
           z-index: 1000; /* Stay on top */
           float: left;
@@ -57,21 +57,22 @@
         }
 
         table{
-          margin-left:auto;
-          margin-right:auto;
+          margin-left:10;
+          margin-right:10;
+          width: 376px;
         }       
         
         /* The sidepanel links */
         table td {
-          padding: 4px 8px 4px 8px;
+          padding: 4px 4px 4px 8px;
           text-decoration: none;
           font-size: 15px;
           color: #555;
           transition: 0.3s;
+          text-align: left;
         }
 
-        /* Style the button that is used to open the sidepanel */
-        .button {
+        .layoutButton {
           font-size: 15px;
           color: #555;
           cursor: pointer;
@@ -79,6 +80,22 @@
           padding: 5px 10px;
           border: none;
           margin-bottom: 5px;
+        }
+
+        .constraintButton {
+          cursor: pointer;
+          padding: 2px 5px;
+          background-color: #64ffee;
+          border-radius: 3px;
+          border-width: 1px;
+        }
+        
+        .constraintButtonLarge {
+          cursor: pointer;
+          padding: 5px;
+          background-color: #64ffee;
+          border-radius: 3px;
+          border-width: 1px;         
         }
         
         .textField {
@@ -100,8 +117,7 @@
           var cy = window.cy = cytoscape({
             container: document.getElementById('cy'),
             
-            ready: function(){
-              
+            ready: function(){              
               let layoutUtilities = this.layoutUtilities({
                 desiredAspectRatio: this.width()/this.height(),
                 componentSpacing: 30
@@ -113,7 +129,7 @@
                 node.css("height", size);
               });
               */
-              this.layout({name: 'fcose', animationEasing: 'ease-out', packComponents: false}).run();
+              this.layout({name: 'fcose', animationEasing: 'ease-out'}).run();
             },
             
             // demo your layout
@@ -396,62 +412,235 @@
          */
           });                  
           
-          var fixedNodes = [];
-          var verticalAlignment = [];
-          var horizontalAlignment = [];
-          document.getElementById("fixedNode").addEventListener("click", function(){
-            var paragraph = document.getElementById("fixedNodeText");
-            cy.nodes(":selected").forEach(function(node){
-              let fixedNode = {node: node, position: Object.assign({}, node.position())};
-              fixedNodes.push(fixedNode);
-              node.addClass("fixed");
-              var text = document.createTextNode(node.id() + " ");
-              paragraph.appendChild(text);
-              cy.elements().unselect();
-            });           
-          });
-          document.getElementById("verticalAlignment").addEventListener("click", function(){
-            var paragraph = document.getElementById("verticalAlignmentText");
-            let tempArray = [];
-            if(paragraph.innerHTML != ""){
-              let text = document.createTextNode(" --- ");
-              paragraph.appendChild(text);
+          cy.ready( function(event){
+            let nodeList = "<select style='background-color: #64ffee;' id='nodeList'>";
+            for(let i = 0; i < cy.nodes().not(":parent").length; i++){
+              nodeList += "<option value=" + cy.nodes().not(":parent")[i].id() + ">" + cy.nodes().not(":parent")[i].id() + "</option>";
             }
-            cy.nodes(":selected").forEach(function(node){
-              tempArray.push(node);
-              var text = document.createTextNode(node.id() + " ");
-              paragraph.appendChild(text);
-              node.addClass("verticalAlignment");
-            })
-            verticalAlignment.push(tempArray);
-            cy.elements().unselect();
+            let listComponentForFixed = document.getElementById("nodeListColumn");
+            listComponentForFixed.innerHTML = nodeList;
+            document.getElementById("fixedNodeX").value = Math.round(cy.nodes().not(":parent")[0].position("x"));
+            document.getElementById("fixedNodeY").value = Math.round(cy.nodes().not(":parent")[0].position("y"));
+            
+            let nodeListRP1 = "<select style='background-color: #64ffee;' id='nodeListRP1'>";
+            for(let i = 0; i < cy.nodes().not(":parent").length; i++){
+              nodeListRP1 += "<option value=" + cy.nodes().not(":parent")[i].id() + ">" + cy.nodes().not(":parent")[i].id() + "</option>";
+            }
+            
+            let nodeListRP2 = "<select style='background-color: #64ffee;' id='nodeListRP2'>";
+            for(let i = 0; i < cy.nodes().not(":parent").length; i++){
+              nodeListRP2 += "<option value=" + cy.nodes().not(":parent")[i].id() + ">" + cy.nodes().not(":parent")[i].id() + "</option>";
+            }            
+            
+            let listComponentForRP1 = document.getElementById("nodeListColumnRP1");
+            listComponentForRP1.innerHTML = nodeListRP1;
+            
+            let listComponentForRP2 = document.getElementById("nodeListColumnRP2");
+            listComponentForRP2.innerHTML = nodeListRP2;            
+          });
+          
+          const debounce = (func, delay) => { 
+            let debounceTimer; 
+            return function() { 
+              const context = this;
+              const args = arguments; 
+              clearTimeout(debounceTimer); 
+              debounceTimer = setTimeout(() => func.apply(context, args), delay) ;
+            }; 
+          };
+          
+          document.getElementById("nodeList").addEventListener("change", function(){
+            document.getElementById("fixedNodeX").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("x"));
+            document.getElementById("fixedNodeY").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("y"));
+          });
+          
+          let fixedNodes = [];
+          let verticalAlignment = [];
+          let horizontalAlignment = [];
+          let relativePlacement = [];
+          let rpIds = [];                   
+          document.addEventListener('click', function(e){
+            if(e.target && cy.nodes().not(":parent").anySame(cy.getElementById(e.target.id))){
+              let row = document.getElementById(e.target.id);
+              row.parentNode.removeChild(row);
+              let index = 0;
+              fixedNodes.forEach(function(value, i){
+                if(value["node"].id() == e.target.id){
+                  index = i;
+                }
+              });
+              fixedNodes.splice(index, 1);
+            }
+            else if(e.target.classList.contains('removable')){
+              let rpIds = [];
+              let id;
+              relativePlacement.forEach(function(value){
+                if(value.direction == "horizontal")
+                  id = value["left"].id() + "-" + value["right"].id() + "horizontal";
+                else 
+                  id = value["top"].id() + "-" + value["bottom"].id() + "vertical";
+                rpIds.push(id);
+              });
+              let index = -1;
+              rpIds.forEach(function(value, i){
+                if(value == e.target.id){
+                  index = i;
+                }
+              });
+              let row = document.getElementById(rpIds[index]);
+              if(row){
+                row.parentNode.removeChild(row);
+                if(index != -1){
+                  relativePlacement.splice(index, 1);
+                }
+              }
+              let verticalIds = [];
+              let verticalId = "";
+              verticalAlignment.forEach(function(value){
+                value.forEach(function(node){
+                  if(verticalId != "")
+                    verticalId += "-" + node.id(); 
+                  else
+                    verticalId += node.id();
+                });
+                verticalIds.push(verticalId + "-vertical");
+              });
+              let indexVertical = -1;
+              verticalIds.forEach(function(value, i){
+                if(value == e.target.id){
+                  indexVertical = i;
+                }
+              });
+              let rowVertical = document.getElementById(verticalIds[indexVertical]); 
+              if(rowVertical){
+                rowVertical.parentNode.removeChild(rowVertical);
+                if(indexVertical != -1){
+                  verticalAlignment.splice(indexVertical, 1);
+                }
+              }
+              let horizontalIds = [];
+              let horizontalId = "";
+              horizontalAlignment.forEach(function(value){
+                value.forEach(function(node){
+                  if(horizontalId != "")
+                    horizontalId += "-" + node.id(); 
+                  else
+                    horizontalId += node.id();
+                });
+                horizontalIds.push(horizontalId + "-horizontal");
+              });
+              let indexHorizontal = -1;
+              horizontalIds.forEach(function(value, i){
+                if(value == e.target.id){
+                  indexHorizontal = i;
+                }
+              });
+              let rowHorizontal = document.getElementById(horizontalIds[indexHorizontal]); 
+              if(rowHorizontal){
+                rowHorizontal.parentNode.removeChild(rowHorizontal);
+                if(indexHorizontal != -1){
+                  horizontalAlignment.splice(indexHorizontal, 1);
+                }
+              }                          
+            }
+          });
+          cy.on("position", "node", debounce(function(event) {
+            if(event.target.id() == document.getElementById("nodeList").value){
+              document.getElementById("fixedNodeX").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("x"));
+              document.getElementById("fixedNodeY").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("y"));
+            }
+          }, 150));
+          document.getElementById("fixedNode").addEventListener("click", function(){
+            let node = cy.getElementById(document.getElementById("nodeList").value);
+            let exist = false;
+            fixedNodes.forEach(function(value){
+              if(value["node"].same(node)){
+                exist = true;
+              }
+            });
+            if(!exist){
+              let fixedNode = {node: node, position: Object.assign({}, {x: parseInt(document.getElementById("fixedNodeX").value), y: parseInt(document.getElementById("fixedNodeY").value)})};
+              fixedNodes.push(fixedNode);         
+              let fixedNodeTable = document.getElementById("fixedNodeTable");
+              let row = fixedNodeTable.insertRow(-1);
+              row.id = node.id();
+              let cell1 = row.insertCell(0);
+              let cell2 = row.insertCell(1);
+              let cell3 = row.insertCell(2);
+              cell1.innerHTML = "" + node.id();
+              cell2.innerHTML = "pos: (" + fixedNode["position"]["x"] + ", " + fixedNode["position"]["y"] + ")";
+              cell3.innerHTML = "<button id='" + node.id() + "' class='constraintButton removable' >Remove</button>";
+            }
+          });           
+          document.getElementById("verticalAlignment").addEventListener("click", function(){
+            if(cy.nodes(":selected").not(":parent").length > 0){
+              let alignmentTable = document.getElementById("alignmentTable");
+              let row = alignmentTable.insertRow(document.getElementById("horizontalButton").rowIndex);
+              let id = "";
+              let tempArray = [];
+              cy.nodes(":selected").not(":parent").forEach(function(node){
+                tempArray.push(node);
+                if(id != "")
+                  id += "-" + node.id(); 
+                else
+                  id += node.id();
+              });
+              let text = id;
+              id += "-vertical";
+              verticalAlignment.push(tempArray);
+              row.id = id;
+              let cell1 = row.insertCell(0);
+              let cell2 = row.insertCell(1);
+              cell1.innerHTML = text;
+              cell2.innerHTML = "<button id='" + id + "' class='constraintButton removable' >Remove</button>";  
+            }
           }); 
           document.getElementById("horizontalAlignment").addEventListener("click", function(){
-            var paragraph = document.getElementById("horizontalAlignmentText");
-            var tempArray = [];
-            if(paragraph.innerHTML != ""){
-              let text = document.createTextNode(" --- ");
-              paragraph.appendChild(text);
+            if(cy.nodes(":selected").not(":parent").length > 0){
+              let alignmentTable = document.getElementById("alignmentTable");
+              let row = alignmentTable.insertRow(-1);
+              let id = "";
+              let tempArray = [];
+              cy.nodes(":selected").not(":parent").forEach(function(node){
+                tempArray.push(node);
+                if(id != "")
+                  id += "-" + node.id(); 
+                else
+                  id += node.id();
+              });
+              let text = id;
+              id += "-horizontal";
+              horizontalAlignment.push(tempArray);
+              row.id = id;
+              let cell1 = row.insertCell(0);
+              let cell2 = row.insertCell(1);
+              cell1.innerHTML = text;
+              cell2.innerHTML = "<button id='" + id + "' class='constraintButton removable' >Remove</button>";
+            }
+          });
+          document.getElementById("relativePlacement").addEventListener("click", function(){
+            let node1 = cy.getElementById(document.getElementById("nodeListRP1").value);
+            let node2 = cy.getElementById(document.getElementById("nodeListRP2").value);
+            let relativePlacementConstraint;
+            if(document.getElementById("directionList").value == "left-right"){
+              relativePlacementConstraint = {left: node1, right: node2, gap: (document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : undefined, direction: "horizontal"};
+            }
+            else{
+              relativePlacementConstraint = {top: node1, bottom: node2, gap: (document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : undefined, direction: "vertical"};
             }            
-            cy.nodes(":selected").forEach(function(node){
-              tempArray.push(node);
-              var text = document.createTextNode(node.id() + " ");
-              paragraph.appendChild(text);
-              node.addClass("horizontalAlignment");
-            })
-            horizontalAlignment.push(tempArray); 
-            cy.elements().unselect();
-          });           
-          document.getElementById("reset").addEventListener("click", function(){
-            fixedNodes = [];
-            verticalAlignment = [];
-            horizontalAlignment = [];
-            document.getElementById("fixedNodeText").innerHTML = "";
-            document.getElementById("verticalAlignmentText").innerHTML = "";
-            document.getElementById("horizontalAlignmentText").innerHTML = "";
-            cy.nodes().classes('');
-          });                    
-          
+            relativePlacement.push(relativePlacementConstraint);  
+            let relativePlacementTable = document.getElementById("relativePlacementTable");
+            let row = relativePlacementTable.insertRow(-1);
+            row.id = node1.id() + "-" + node2.id() + relativePlacementConstraint["direction"];
+            let cell1 = row.insertCell(0);                        
+            let cell2 = row.insertCell(1);
+            cell1.colSpan = 4;
+            cell1.innerHTML = (document.getElementById("directionList").value == "left-right") ? (node1.id() + " is on left of " + node2.id() + " by at least " + 
+                    ((document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : (node1.width()/2 + node2.width()/2 + 50))) : 
+                    (node1.id() + " is on top of " + node2.id() + " by at least " + ((document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : node1.height()/2 + node2.height()/2 + 50));
+            cell2.innerHTML = "<button id='" + row.id + "' class='constraintButton removable' >Remove</button>";
+          });          
+
           var options = {
             name: 'fcose',            
             quality: "draft",
@@ -478,10 +667,8 @@
             initialEnergyOnIncremental: document.getElementById("initialEnergyOnIncremental").value,
             */
             fixedNodeConstraint: fixedNodes.length > 0 ? fixedNodes : undefined,
-            //alignment: {x: [[cy.$('#n26'), cy.$('#n28')], [cy.$('#n34'), cy.$('#n18'), cy.$('#n36')]], y: [[cy.$('#n19'), cy.$('#n18'), cy.$('#n17'), cy.$('#n13')], [cy.$('#n4'), cy.$('#n46'), cy.$('#n9')], [cy.$('#n25'), cy.$('#n26'), cy.$('#n27')]]}
-            //alignment: {x: [[cy.$('#n0'), cy.$('#n3')],[cy.$('#n8'), cy.$('#n9')]], y: [[cy.$('#n0'), cy.$('#n4'), cy.$('#n8')]]}
             alignmentConstraint: verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined,
-            relativePlacementConstraint: [{left: cy.$('#n1'), right: cy.$('#n2')}, {left: cy.$('#n1'), right: cy.$('#n5'), gap: 100}, {top: cy.$('#n7'), bottom: cy.$('#n9')}],
+            relativePlacementConstraint: relativePlacement.length > 0 ? relativePlacement : undefined,
             step: undefined
           };
           document.getElementById("randomizeButton").addEventListener("click", function(){
@@ -499,156 +686,117 @@
             optionsDraft.quality = "default";
             optionsDraft.fixedNodeConstraint = fixedNodes.length > 0 ? fixedNodes : undefined;
             optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;
-            relativePlacementConstraint: [{left: cy.$('#n1'), right: cy.$('#n2')}, {left: cy.$('#n6'), right: cy.$('#n5')}],
-            cy.layout(optionsDraft).run();        
+            optionsDraft.relativePlacementConstraint = relativePlacement.length > 0 ? relativePlacement : undefined;
+            let layout = cy.layout(optionsDraft);
+            layout.one("layoutstop", function( event ){
+              document.getElementById("fixedNodeX").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("x"));
+              document.getElementById("fixedNodeY").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("y"));
+            });            
+            layout.run();
           });           
           document.getElementById("fcoseButton1").addEventListener("click", function(){
             let optionsDraft = Object.assign({}, options);
             optionsDraft.step = "initial";
-            cy.layout(optionsDraft).run();
+            let layout = cy.layout(optionsDraft);
+            layout.one("layoutstop", function( event ){
+              document.getElementById("fixedNodeX").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("x"));
+              document.getElementById("fixedNodeY").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("y"));
+            });            
+            layout.run();
           });
           document.getElementById("fcoseButton2").addEventListener("click", function(){
             let optionsDraft = Object.assign({}, options);
             optionsDraft.step = "transformed";
             optionsDraft.fixedNodeConstraint = fixedNodes.length > 0 ? fixedNodes : undefined;
             optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined; 
-            relativePlacementConstraint: [{left: cy.$('#n1'), right: cy.$('#n2')}, {left: cy.$('#n6'), right: cy.$('#n5')}],
-            cy.layout(optionsDraft).run();  
+            optionsDraft.relativePlacementConstraint = relativePlacement.length > 0 ? relativePlacement : undefined;            
+            let layout = cy.layout(optionsDraft);
+            layout.one("layoutstop", function( event ){
+              document.getElementById("fixedNodeX").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("x"));
+              document.getElementById("fixedNodeY").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("y"));
+            });            
+            layout.run();;  
           });
           document.getElementById("fcoseButton3").addEventListener("click", function(){
             let optionsDraft = Object.assign({}, options);
             optionsDraft.step = "enforced";
             optionsDraft.fixedNodeConstraint = fixedNodes.length > 0 ? fixedNodes : undefined;
             optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;
-            relativePlacementConstraint: [{left: cy.$('#n1'), right: cy.$('#n2')}, {left: cy.$('#n6'), right: cy.$('#n5')}],
-            cy.layout(optionsDraft).run();
+            relativePlacementConstraint: [{left: cy.$('#n1'), right: cy.$('#n2')}, {left: cy.$('#n1'), right: cy.$('#n5'), gap: 100}, {top: cy.$('#n7'), bottom: cy.$('#n9')}];
+            let layout = cy.layout(optionsDraft);
+            layout.one("layoutstop", function( event ){
+              document.getElementById("fixedNodeX").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("x"));
+              document.getElementById("fixedNodeY").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("y"));
+            });            
+            layout.run();
           });
           document.getElementById("coseButton").addEventListener("click", function(){
             let optionsDraft = Object.assign({}, options);
             optionsDraft.fixedNodeConstraint = fixedNodes.length > 0 ? fixedNodes : undefined;
             optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;
-            relativePlacementConstraint: [{left: cy.$('#n1'), right: cy.$('#n2')}, {left: cy.$('#n6'), right: cy.$('#n5')}],
+            relativePlacementConstraint: [{left: cy.$('#n1'), right: cy.$('#n2')}, {left: cy.$('#n1'), right: cy.$('#n5'), gap: 100}, {top: cy.$('#n7'), bottom: cy.$('#n9')}];
             optionsDraft.quality = "default";            
-            cy.layout(optionsDraft).run();
+            let layout = cy.layout(optionsDraft);
+            layout.one("layoutstop", function( event ){
+              document.getElementById("fixedNodeX").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("x"));
+              document.getElementById("fixedNodeY").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("y"));
+            });            
+            layout.run();
           });           
           
         });
       </script>
   </head>
-
   <body>
           <h1>cytoscape-fcose demo (compound)</h1>
-          <div style='width: 500px; position: absolute;'>
-            <button id="randomizeButton" class="button">Randomize</button>&nbsp
-            <button id="fcoseButton" class="button">fCoSE</button><br>
-            <button id="fcoseButton1" class="button">Draft</button>&nbsp
-            <button id="fcoseButton2" class="button">Transform</button>&nbsp
-            <button id="fcoseButton3" class="button">Enforce</button>&nbsp
-            <button id="coseButton" class="button">Cose</button>
+          <div style='width: 375px; position: absolute;'>
+            <button id="randomizeButton" class="layoutButton">Randomize</button>&nbsp
+            <button id="fcoseButton" class="layoutButton">fCoSE</button><br>
+            <button id="fcoseButton1" class="layoutButton">Draft</button>&nbsp
+            <button id="fcoseButton2" class="layoutButton">Transform</button>&nbsp
+            <button id="fcoseButton3" class="layoutButton">Enforce</button>&nbsp
+            <button id="coseButton" class="layoutButton">Cose</button>
             
             <div id="mySidepanel" class="sidepanel">
-              <table>
-              <!--
+              <table id="fixedNodeTable">
                 <tr>
-                  <td><span class="add-on layout-text" title="Quality of the layout"> Quality </span></td>
-                  <td>            
-                    <select id="quality">
-                      <option value="draft" selected="">draft</option>
-                      <option value="default" >default</option>
-                      <option value="proof">proof</option>
-                    </select>
-                  </td>
+                  <td colspan="2"><b>Fixed Node Constraint</b></td><td></td>                    
+                </tr>     
+                <tr>
+                  <td style = "width: 20%" id="nodeListColumn"></td> 
+                  <td style = "width: 50%"> x: <input type="text" id="fixedNodeX" size="3" value="">&nbsp y: <input type="text" id="fixedNodeY" size="3" value=""></td>
+                  <td style = "width: 30%"><button id="fixedNode" class="constraintButton" >Add</button></td>                 
+                </tr>               
+              </table>
+              <hr>
+              <table id="alignmentTable">
+                <tr>
+                  <td><b>Alignment Constraint</b></td><td></td>                  
                 </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Whether to enable incremental mode"> Incremental </span></td>
-                  <td><input id="randomize" class = "checkbox" type="checkbox"></td>
-                </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Whether to perform animation after layout"> Animate </span></td>
-                  <td><input id="animate" class = "checkbox" type="checkbox" checked></td>
-                </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Whether nodes are of uniform dimensions"> Uniform Node Dimensions </span></td>
-                  <td><input id="uniformNodeDimensions" class = "checkbox" type="checkbox"></td>
-                </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Whether to pack components"> Pack Components to Window </span></td>
-                  <td><input id="packComponents" class = "checkbox" type="checkbox"></td>
-                </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Whether to tile disconnected nodes"> Tile Disconnected </span></td>
-                  <td><input id="tile" class = "checkbox" type="checkbox" checked></td>
-                </tr>              
-                <tr>
-                  <td><span class="add-on layout-text" title="Node repulsion (non overlapping) multiplier"> Node Repulsion </span></td>
-                  <td><input id="nodeRepulsion" class="textField" type="text" value="4500" maxlength=5 size="5"></td>
-                </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Ideal (intra-graph) edge length"> Ideal Edge Length </span></td>
-                  <td><input id="idealEdgeLength" class="textField" type="text" value="50" maxlength=5 size="5"></td>
-                </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Divisor to compute edge forces"> Edge Elasticity </span></td>
-                  <td><input id="edgeElasticity" class="textField" type="text" value="0.45" maxlength=5 size="5"></td>
-                </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Nesting factor (multiplier) to compute ideal edge length for inter-graph edges"> Nesting Factor </span></td>
-                  <td><input id="nestingFactor" class="textField" type="text" value="0.1" maxlength=5 size="5"></td>
-                </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Gravity force (constant)"> Gravity </span></td>
-                  <td><input id="gravity" class="textField" type="text" value="0.25" maxlength=5 size="5"></td>
-                </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Gravity range (constant)"> Gravity Range </span></td>
-                  <td><input id="gravityRange" class="textField" type="text" value="3.8" maxlength=5 size="5"></td>
-                </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Gravity force (constant) for compounds"> Compound Gravity </span></td>
-                  <td><input id="gravityCompound" class="textField" type="text" value="1" maxlength=5 size="5"></td>
-                </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Gravity range (constant) for compounds"> Compound Gravity Range </span></td>
-                  <td><input id="gravityRangeCompound" class="textField" type="text" value="1.5" maxlength=5 size="5"></td>
-                </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Maximum number of iterations to perform"> Number of Iterations </span></td>
-                  <td><input id="numIter" class="textField" type="text" value="2500" size="5"></td>
-                </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Amount of vertical space to put between degree zero nodes during tiling"> Tiling Vertical Padding </span></td>
-                  <td><input id="tilingPaddingVertical" class="textField" type="text" value="10" maxlength=5 size="5"></td>
-                </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Amount of horizontal space to put between degree zero nodes during tiling"> Tiling Horizontal Padding </span></td>
-                  <td><input id="tilingPaddingHorizontal" class="textField" type="text" value="10" maxlength=5 size="5"></td>
-                </tr>
-                <tr>
-                  <td><span class="add-on layout-text" title="Initial cooling factor for incremental layout"> Incremental Cooling Factor </span></td>
-                  <td><input id="initialEnergyOnIncremental" class="textField" type="text" value="0.3" maxlength=5 size="5"></td>
-                </tr>
-              -->
-                <tr>
-                  <td><button id="fixedNode" class="button" style= "padding: 5px 0px;" >Add selected to fixed node</button></td><td></td>                  
+                <tr id="verticalButton">
+                  <td><button id="verticalAlignment" class="constraintButtonLarge" >Add selected to ver. alignment</button></td><td></td>                  
                 </tr>  
+                <tr id="horizontalButton">
+                  <td><button id="horizontalAlignment" class="constraintButtonLarge" >Add selected to hor. alignment</button></td><td></td>                  
+                </tr>                
                 <tr>
-                  <td><p style= "margin-left: auto" id="fixedNodeText"></p></td><td></td>                  
+              </table>
+              <hr>
+              <table id="relativePlacementTable">
+                <tr>
+                  <td colspan="5"><b>Relative Placement Constraint</b></td>                  
+                </tr>     
+                <tr>
+                  <td id="nodeListColumnRP1"></td>
+                  <td id="directionListColumn">                  
+                    <select id="directionList" style="background-color: #64ffee;">
+                      <option value="left-right">left-right</option>
+                      <option value="top-bottom">top-bottom</option>
+                    </select></td>                  
+                  <td id="nodeListColumnRP2"></td>
+                  <td>gap: <input type="text" id="gap" size="3" value=""></td>
+                  <td style = "width: 20%; text-align: left"><button id="relativePlacement" class="constraintButton" >Add</button></td>                  
                 </tr>
-                <tr>
-                  <td><button id="verticalAlignment" class="button" style= "padding: 5px 0px" >Add selected to ver. alignment</button></td><td></td>                  
-                </tr>  
-                <tr>
-                  <td><p style= "margin-left: auto" id="verticalAlignmentText"></p></td><td></td>                  
-                </tr>
-                <tr>
-                  <td><button id="horizontalAlignment" class="button" style= "padding: 5px 0px" >Add selected to hor. alignment</button></td><td></td>                  
-                </tr>  
-                <tr>
-                  <td><p style= "margin-left: auto" id="horizontalAlignmentText"></p></td><td></td>                  
-                </tr>  
-                <tr>
-                  <td><button id="reset" class="button" style= "padding: 5px 0px">Reset</button></td>                  
-                </tr>                 
               </table>
             </div>
 
