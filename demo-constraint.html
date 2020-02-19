@@ -28,7 +28,7 @@
           width: auto;
           height: 95%;
           z-index: 999;
-          margin-left: 375px;
+          margin-left: 425px;
           right: 0px;
         }
 
@@ -43,7 +43,7 @@
         /* The sidepanel menu */
         .sidepanel {
           height: auto; /* Specify a height */
-          width: 400px; /* 0 width - change this with JavaScript */
+          width: 425px; /* 0 width - change this with JavaScript */
           position: absolute; /* Stay in place */
           z-index: 1000; /* Stay on top */
           float: left;
@@ -59,7 +59,7 @@
         table{
           margin-left:10;
           margin-right:10;
-          width: 376px;
+          width: 401px;
         }       
         
         /* The sidepanel links */
@@ -116,19 +116,20 @@
 
           var cy = window.cy = cytoscape({
             container: document.getElementById('cy'),
+            wheelSensitivity: 0.2,
             
             ready: function(){              
               let layoutUtilities = this.layoutUtilities({
                 desiredAspectRatio: this.width()/this.height(),
                 componentSpacing: 30
               });
-              /*
+              
               this.nodes().forEach(function(node){
-                let size = Math.random()*120+30;
+                let size = Math.random()*40+30;
                 node.css("width", size);
                 node.css("height", size);
               });
-              */
+              
               this.layout({name: 'fcose', animationEasing: 'ease-out'}).run();
             },
             
@@ -504,6 +505,7 @@
                     verticalId += node.id();
                 });
                 verticalIds.push(verticalId + "-vertical");
+                verticalId = "";
               });
               let indexVertical = -1;
               verticalIds.forEach(function(value, i){
@@ -528,6 +530,7 @@
                     horizontalId += node.id();
                 });
                 horizontalIds.push(horizontalId + "-horizontal");
+                horizontalId = "";
               });
               let indexHorizontal = -1;
               horizontalIds.forEach(function(value, i){
@@ -621,24 +624,39 @@
           document.getElementById("relativePlacement").addEventListener("click", function(){
             let node1 = cy.getElementById(document.getElementById("nodeListRP1").value);
             let node2 = cy.getElementById(document.getElementById("nodeListRP2").value);
-            let relativePlacementConstraint;
-            if(document.getElementById("directionList").value == "left-right"){
-              relativePlacementConstraint = {left: node1, right: node2, gap: (document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : undefined, direction: "horizontal"};
+            let isExist = false;
+            relativePlacement.forEach(function(constraint){
+              if(constraint["direction"] == "horizontal"){
+                if((constraint["left"].same(node1) && constraint["right"].same(node2) || constraint["left"].same(node2) && constraint["right"].same(node1)) && document.getElementById("directionList").value == "left-right"){
+                  isExist = true;
+                }
+              }
+              if(constraint["direction"] == "vertical"){
+                if((constraint["top"].same(node1) && constraint["bottom"].same(node2) || constraint["top"].same(node2) && constraint["bottom"].same(node1)) && document.getElementById("directionList").value == "top-bottom"){
+                  isExist = true;
+                }
+              }
+            });
+            if(!node1.same(node2) && !isExist){
+              let relativePlacementConstraint;
+              if(document.getElementById("directionList").value == "left-right"){
+                relativePlacementConstraint = {left: node1, right: node2, gap: (document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : undefined, direction: "horizontal"};
+              }
+              else{
+                relativePlacementConstraint = {top: node1, bottom: node2, gap: (document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : undefined, direction: "vertical"};
+              }            
+              relativePlacement.push(relativePlacementConstraint);  
+              let relativePlacementTable = document.getElementById("relativePlacementTable");
+              let row = relativePlacementTable.insertRow(-1);
+              row.id = node1.id() + "-" + node2.id() + relativePlacementConstraint["direction"];
+              let cell1 = row.insertCell(0);                        
+              let cell2 = row.insertCell(1);
+              cell1.colSpan = 4;
+              cell1.innerHTML = (document.getElementById("directionList").value == "left-right") ? (node1.id() + " is on left of " + node2.id() + " by at least " + 
+                      ((document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : parseInt(node1.width()/2 + node2.width()/2 + 50))) : 
+                      (node1.id() + " is on top of " + node2.id() + " by at least " + ((document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : parseInt(node1.height()/2 + node2.height()/2 + 50)));
+              cell2.innerHTML = "<button id='" + row.id + "' class='constraintButton removable' >Remove</button>";
             }
-            else{
-              relativePlacementConstraint = {top: node1, bottom: node2, gap: (document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : undefined, direction: "vertical"};
-            }            
-            relativePlacement.push(relativePlacementConstraint);  
-            let relativePlacementTable = document.getElementById("relativePlacementTable");
-            let row = relativePlacementTable.insertRow(-1);
-            row.id = node1.id() + "-" + node2.id() + relativePlacementConstraint["direction"];
-            let cell1 = row.insertCell(0);                        
-            let cell2 = row.insertCell(1);
-            cell1.colSpan = 4;
-            cell1.innerHTML = (document.getElementById("directionList").value == "left-right") ? (node1.id() + " is on left of " + node2.id() + " by at least " + 
-                    ((document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : (node1.width()/2 + node2.width()/2 + 50))) : 
-                    (node1.id() + " is on top of " + node2.id() + " by at least " + ((document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : node1.height()/2 + node2.height()/2 + 50));
-            cell2.innerHTML = "<button id='" + row.id + "' class='constraintButton removable' >Remove</button>";
           });          
 
           var options = {
@@ -722,7 +740,7 @@
             optionsDraft.step = "enforced";
             optionsDraft.fixedNodeConstraint = fixedNodes.length > 0 ? fixedNodes : undefined;
             optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;
-            relativePlacementConstraint: [{left: cy.$('#n1'), right: cy.$('#n2')}, {left: cy.$('#n1'), right: cy.$('#n5'), gap: 100}, {top: cy.$('#n7'), bottom: cy.$('#n9')}];
+            optionsDraft.relativePlacementConstraint = relativePlacement.length > 0 ? relativePlacement : undefined;
             let layout = cy.layout(optionsDraft);
             layout.one("layoutstop", function( event ){
               document.getElementById("fixedNodeX").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("x"));
@@ -734,7 +752,7 @@
             let optionsDraft = Object.assign({}, options);
             optionsDraft.fixedNodeConstraint = fixedNodes.length > 0 ? fixedNodes : undefined;
             optionsDraft.alignmentConstraint = verticalAlignment.length > 0 || horizontalAlignment.length > 0 ? {vertical: verticalAlignment, horizontal: horizontalAlignment}: undefined;
-            relativePlacementConstraint: [{left: cy.$('#n1'), right: cy.$('#n2')}, {left: cy.$('#n1'), right: cy.$('#n5'), gap: 100}, {top: cy.$('#n7'), bottom: cy.$('#n9')}];
+            optionsDraft.relativePlacementConstraint = relativePlacement.length > 0 ? relativePlacement : undefined;
             optionsDraft.quality = "default";            
             let layout = cy.layout(optionsDraft);
             layout.one("layoutstop", function( event ){
@@ -794,7 +812,7 @@
                       <option value="top-bottom">top-bottom</option>
                     </select></td>                  
                   <td id="nodeListColumnRP2"></td>
-                  <td>gap: <input type="text" id="gap" size="3" value=""></td>
+                  <td style = "width: 25%;">gap: <input type="text" id="gap" size="3" value=""></td>
                   <td style = "width: 20%; text-align: left"><button id="relativePlacement" class="constraintButton" >Add</button></td>                  
                 </tr>
               </table>

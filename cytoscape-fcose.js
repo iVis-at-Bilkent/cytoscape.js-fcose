@@ -1183,10 +1183,12 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
 
   /* auxiliary functions */
 
+  // calculate difference between two position objects
   var calculatePositionDiff = function calculatePositionDiff(pos1, pos2) {
     return { x: pos1["x"] - pos2["x"], y: pos1["y"] - pos2["y"] };
   };
 
+  // calculate average position of the nodes
   var calculateAvgPosition = function calculateAvgPosition(nodes) {
     var xPosSum = 0;
     var yPosSum = 0;
@@ -1198,7 +1200,44 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
     return { x: xPosSum / nodes.length, y: yPosSum / nodes.length };
   };
 
-  var findAppropriatePositionForRelativePlacement = function findAppropriatePositionForRelativePlacement(graph, direction) {
+  // find an appropriate positioning for the nodes in a given graph according to relative placement constraints
+  // this function also takes the fixed nodes and alignment constraints into account
+  // graph: dag to be evaluated, direction: "horizontal" or "vertical", 
+  // fixedNodes: set of fixed nodes to consider during evaluation, dummyPositions: appropriate coordinates of the dummy nodes  
+  var findAppropriatePositionForRelativePlacement = function findAppropriatePositionForRelativePlacement(graph, direction, fixedNodes, dummyPositions) {
+
+    // find union of two sets
+    function setUnion(setA, setB) {
+      var union = new Set(setA);
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = setB[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var elem = _step.value;
+
+          union.add(elem);
+        }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
+      }
+
+      return union;
+    }
+
+    // find indegree count for each node
     var inDegrees = new Map();
 
     graph.forEach(function (value, key) {
@@ -1210,31 +1249,56 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
       });
     });
 
-    var distanceMap = new Map();
+    var positionMap = new Map(); // keeps the position for each node
+    var pastMap = new Map(); // keeps the predecessors(past) of a node
     var queue = new LinkedList();
     inDegrees.forEach(function (value, key) {
       if (value == 0) {
         queue.push(key);
         if (direction == "horizontal") {
-          distanceMap.set(key, xCoords[nodeIndexes.get(key)]);
+          positionMap.set(key, xCoords[nodeIndexes.get(key)] ? xCoords[nodeIndexes.get(key)] : dummyPositions.get(key));
         } else {
-          distanceMap.set(key, yCoords[nodeIndexes.get(key)]);
+          positionMap.set(key, yCoords[nodeIndexes.get(key)] ? yCoords[nodeIndexes.get(key)] : dummyPositions.get(key));
         }
       } else {
-        distanceMap.set(key, Number.NEGATIVE_INFINITY);
+        positionMap.set(key, Number.NEGATIVE_INFINITY);
+      }
+      if (fixedNodes) {
+        pastMap.set(key, new Set([key]));
       }
     });
+
+    // calculate positions of the nodes
 
     var _loop = function _loop() {
       var currentNode = queue.shift();
       var neighbors = graph.get(currentNode);
       neighbors.forEach(function (neighbor) {
-        if (distanceMap.get(neighbor["id"]) < distanceMap.get(currentNode) + neighbor["gap"]) {
-          distanceMap.set(neighbor["id"], distanceMap.get(currentNode) + neighbor["gap"]);
+        if (positionMap.get(neighbor["id"]) < positionMap.get(currentNode) + neighbor["gap"]) {
+          if (fixedNodes && fixedNodes.has(neighbor["id"])) {
+            var fixedPosition = void 0;
+            if (direction == "horizontal") {
+              fixedPosition = xCoords[nodeIndexes.get(neighbor["id"])] ? xCoords[nodeIndexes.get(neighbor["id"])] : dummyPositions.get(neighbor["id"]);
+            } else {
+              fixedPosition = yCoords[nodeIndexes.get(neighbor["id"])] ? yCoords[nodeIndexes.get(neighbor["id"])] : dummyPositions.get(neighbor["id"]);
+            }
+            positionMap.set(neighbor["id"], fixedPosition); // burda gereksiz işlem yapılabiliyor, düşün
+            if (fixedPosition < positionMap.get(currentNode) + neighbor["gap"]) {
+              var diff = positionMap.get(currentNode) + neighbor["gap"] - fixedPosition;
+              pastMap.get(currentNode).forEach(function (nodeId) {
+                positionMap.set(nodeId, positionMap.get(nodeId) - diff);
+              });
+            }
+          } else {
+            positionMap.set(neighbor["id"], positionMap.get(currentNode) + neighbor["gap"]);
+          }
         }
         inDegrees.set(neighbor["id"], inDegrees.get(neighbor["id"]) - 1);
         if (inDegrees.get(neighbor["id"]) == 0) {
           queue.push(neighbor["id"]);
+        }
+        if (fixedNodes) {
+          pastMap.set(neighbor["id"], setUnion(pastMap.get(neighbor["id"]), pastMap.get(currentNode)));
         }
       });
     };
@@ -1242,7 +1306,7 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
     while (queue.length != 0) {
       _loop();
     }
-    return distanceMap;
+    return positionMap;
   };
 
   /****  apply transformation to the initial draft layout to better align with constrained nodes ****/
@@ -1454,20 +1518,20 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
         });
       });
       // calculate appropriate positioning for subgraphs
-      var distanceMapHorizontal = findAppropriatePositionForRelativePlacement(subGraphOnHorizontal, "horizontal");
-      var distanceMapVertical = findAppropriatePositionForRelativePlacement(subGraphOnVertical, "vertical");
+      var positionMapHorizontal = findAppropriatePositionForRelativePlacement(subGraphOnHorizontal, "horizontal");
+      var positionMapVertical = findAppropriatePositionForRelativePlacement(subGraphOnVertical, "vertical");
 
       // construct source and target configuration
       components[largestComponentIndex].forEach(function (nodeId, i) {
         sourceMatrix[i] = [xCoords[nodeIndexes.get(nodeId)], yCoords[nodeIndexes.get(nodeId)]];
         targetMatrix[i] = [];
-        if (distanceMapHorizontal.has(nodeId)) {
-          targetMatrix[i][0] = distanceMapHorizontal.get(nodeId);
+        if (positionMapHorizontal.has(nodeId)) {
+          targetMatrix[i][0] = positionMapHorizontal.get(nodeId);
         } else {
           targetMatrix[i][0] = xCoords[nodeIndexes.get(nodeId)];
         }
-        if (distanceMapVertical.has(nodeId)) {
-          targetMatrix[i][1] = distanceMapVertical.get(nodeId);
+        if (positionMapVertical.has(nodeId)) {
+          targetMatrix[i][1] = positionMapVertical.get(nodeId);
         } else {
           targetMatrix[i][1] = yCoords[nodeIndexes.get(nodeId)];
         }
@@ -1528,6 +1592,7 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
     /****  enforce constraints on the transformed draft layout ****/
 
     /* first enforce fixed node constraint */
+
     if (constraints["fixedNodeConstraint"] && constraints["fixedNodeConstraint"].length > 0) {
       var translationAmount = { x: 0, y: 0 };
       constraints["fixedNodeConstraint"].forEach(function (nodeData, i) {
@@ -1604,6 +1669,210 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
     }
 
     /* finally enforce relative placement constraint */
+
+    if (constraints["relativePlacementConstraint"]) {
+      (function () {
+        var nodeToDummyForVerticalAlignment = new Map();
+        var nodeToDummyForHorizontalAlignment = new Map();
+        var dummyToNodeForVerticalAlignment = new Map();
+        var dummyToNodeForHorizontalAlignment = new Map();
+        var dummyPositionsForVerticalAlignment = new Map();
+        var dummyPositionsForHorizontalAlignment = new Map();
+        var fixedNodesOnHorizontal = new Set();
+        var fixedNodesOnVertical = new Set();
+
+        // fill maps and sets      
+        fixedNodes.forEach(function (node) {
+          fixedNodesOnHorizontal.add(node.id());
+          fixedNodesOnVertical.add(node.id());
+        });
+
+        if (constraints["alignmentConstraint"]) {
+          if (constraints["alignmentConstraint"]["vertical"]) {
+            var verticalAlignment = constraints["alignmentConstraint"]["vertical"];
+
+            var _loop6 = function _loop6(_i6) {
+              dummyToNodeForVerticalAlignment.set("dummy" + _i6, []);
+              verticalAlignment[_i6].forEach(function (node) {
+                nodeToDummyForVerticalAlignment.set(node.id(), "dummy" + _i6);
+                dummyToNodeForVerticalAlignment.get("dummy" + _i6).push(node.id());
+                if (node.anySame(fixedNodes)) {
+                  fixedNodesOnHorizontal.add("dummy" + _i6);
+                }
+              });
+              dummyPositionsForVerticalAlignment.set("dummy" + _i6, xCoords[nodeIndexes.get(verticalAlignment[_i6][0].id())]);
+            };
+
+            for (var _i6 = 0; _i6 < verticalAlignment.length; _i6++) {
+              _loop6(_i6);
+            }
+          }
+          if (constraints["alignmentConstraint"]["horizontal"]) {
+            var horizontalAlignment = constraints["alignmentConstraint"]["horizontal"];
+
+            var _loop7 = function _loop7(_i7) {
+              dummyToNodeForHorizontalAlignment.set("dummy" + _i7, []);
+              horizontalAlignment[_i7].forEach(function (node) {
+                nodeToDummyForHorizontalAlignment.set(node.id(), "dummy" + _i7);
+                dummyToNodeForHorizontalAlignment.get("dummy" + _i7).push(node.id());
+                if (node.anySame(fixedNodes)) {
+                  fixedNodesOnVertical.add("dummy" + _i7);
+                }
+              });
+              dummyPositionsForHorizontalAlignment.set("dummy" + _i7, yCoords[nodeIndexes.get(horizontalAlignment[_i7][0].id())]);
+            };
+
+            for (var _i7 = 0; _i7 < horizontalAlignment.length; _i7++) {
+              _loop7(_i7);
+            }
+          }
+        }
+
+        // construct horizontal and vertical dags (subgraphs) from overall dag
+        var dagOnHorizontal = new Map();
+        var dagOnVertical = new Map();
+
+        var _loop8 = function _loop8(nodeId) {
+          dag.get(nodeId).forEach(function (adjacent) {
+            var sourceId = void 0;
+            var targetNode = void 0;
+            if (adjacent["direction"] == "horizontal") {
+              sourceId = nodeToDummyForVerticalAlignment.get(nodeId) ? nodeToDummyForVerticalAlignment.get(nodeId) : nodeId;
+              if (nodeToDummyForVerticalAlignment.get(adjacent["id"])) {
+                targetNode = { id: nodeToDummyForVerticalAlignment.get(adjacent["id"]), gap: adjacent["gap"], direction: adjacent["direction"] };
+              } else {
+                targetNode = adjacent;
+              }
+              if (dagOnHorizontal.has(sourceId)) {
+                dagOnHorizontal.get(sourceId).push(targetNode);
+              } else {
+                dagOnHorizontal.set(sourceId, [targetNode]);
+              }
+              if (!dagOnHorizontal.has(targetNode["id"])) {
+                dagOnHorizontal.set(targetNode["id"], []);
+              }
+            } else {
+              sourceId = nodeToDummyForHorizontalAlignment.get(nodeId) ? nodeToDummyForHorizontalAlignment.get(nodeId) : nodeId;
+              if (nodeToDummyForHorizontalAlignment.get(adjacent["id"])) {
+                targetNode = { id: nodeToDummyForHorizontalAlignment.get(adjacent["id"]), gap: adjacent["gap"], direction: adjacent["direction"] };
+              } else {
+                targetNode = adjacent;
+              }
+              if (dagOnVertical.has(sourceId)) {
+                dagOnVertical.get(sourceId).push(targetNode);
+              } else {
+                dagOnVertical.set(sourceId, [targetNode]);
+              }
+              if (!dagOnVertical.has(targetNode["id"])) {
+                dagOnVertical.set(targetNode["id"], []);
+              }
+            }
+          });
+        };
+
+        var _iteratorNormalCompletion2 = true;
+        var _didIteratorError2 = false;
+        var _iteratorError2 = undefined;
+
+        try {
+          for (var _iterator2 = dag.keys()[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+            var nodeId = _step2.value;
+
+            _loop8(nodeId);
+          }
+        } catch (err) {
+          _didIteratorError2 = true;
+          _iteratorError2 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion2 && _iterator2.return) {
+              _iterator2.return();
+            }
+          } finally {
+            if (_didIteratorError2) {
+              throw _iteratorError2;
+            }
+          }
+        }
+
+        console.log(dagOnHorizontal);
+        // calculate appropriate positioning for subgraphs
+        var positionMapHorizontal = findAppropriatePositionForRelativePlacement(dagOnHorizontal, "horizontal", fixedNodesOnHorizontal, dummyPositionsForVerticalAlignment);
+        var positionMapVertical = findAppropriatePositionForRelativePlacement(dagOnVertical, "vertical", fixedNodesOnVertical, dummyPositionsForHorizontalAlignment);
+        console.log(positionMapHorizontal);
+        // update positions of the nodes based on relative placement constraints
+
+        var _loop9 = function _loop9(key) {
+          if (dummyToNodeForVerticalAlignment.get(key)) {
+            dummyToNodeForVerticalAlignment.get(key).forEach(function (nodeId) {
+              xCoords[nodeIndexes.get(nodeId)] = positionMapHorizontal.get(key);
+            });
+          } else {
+            xCoords[nodeIndexes.get(key)] = positionMapHorizontal.get(key);
+          }
+        };
+
+        var _iteratorNormalCompletion3 = true;
+        var _didIteratorError3 = false;
+        var _iteratorError3 = undefined;
+
+        try {
+          for (var _iterator3 = positionMapHorizontal.keys()[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+            var key = _step3.value;
+
+            _loop9(key);
+          }
+        } catch (err) {
+          _didIteratorError3 = true;
+          _iteratorError3 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion3 && _iterator3.return) {
+              _iterator3.return();
+            }
+          } finally {
+            if (_didIteratorError3) {
+              throw _iteratorError3;
+            }
+          }
+        }
+
+        var _loop10 = function _loop10(key) {
+          if (dummyToNodeForHorizontalAlignment.get(key)) {
+            dummyToNodeForHorizontalAlignment.get(key).forEach(function (nodeId) {
+              yCoords[nodeIndexes.get(nodeId)] = positionMapVertical.get(key);
+            });
+          } else {
+            yCoords[nodeIndexes.get(key)] = positionMapVertical.get(key);
+          }
+        };
+
+        var _iteratorNormalCompletion4 = true;
+        var _didIteratorError4 = false;
+        var _iteratorError4 = undefined;
+
+        try {
+          for (var _iterator4 = positionMapVertical.keys()[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+            var key = _step4.value;
+
+            _loop10(key);
+          }
+        } catch (err) {
+          _didIteratorError4 = true;
+          _iteratorError4 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion4 && _iterator4.return) {
+              _iterator4.return();
+            }
+          } finally {
+            if (_didIteratorError4) {
+              throw _iteratorError4;
+            }
+          }
+        }
+      })();
+    }
   }
 };
 

@@ -23,10 +23,12 @@ let constraintHandler = function(options, spectralResult){
   
   /* auxiliary functions */
  
+  // calculate difference between two position objects
   let calculatePositionDiff = function(pos1, pos2){
     return {x: pos1["x"] - pos2["x"], y: pos1["y"] - pos2["y"]};
   };
   
+  // calculate average position of the nodes
   let calculateAvgPosition = function(nodes){
     let xPosSum = 0;
     let yPosSum = 0;    
@@ -38,7 +40,22 @@ let constraintHandler = function(options, spectralResult){
     return {x: xPosSum / nodes.length, y: yPosSum / nodes.length};
   };
   
-  let findAppropriatePositionForRelativePlacement = function(graph, direction){
+  // find an appropriate positioning for the nodes in a given graph according to relative placement constraints
+  // this function also takes the fixed nodes and alignment constraints into account
+  // graph: dag to be evaluated, direction: "horizontal" or "vertical", 
+  // fixedNodes: set of fixed nodes to consider during evaluation, dummyPositions: appropriate coordinates of the dummy nodes  
+  let findAppropriatePositionForRelativePlacement = function(graph, direction, fixedNodes, dummyPositions){
+    
+    // find union of two sets
+    function setUnion(setA, setB) {
+      let union = new Set(setA);
+      for (let elem of setB) {
+          union.add(elem);
+      }
+      return union;
+    }
+    
+    // find indegree count for each node
     let inDegrees = new Map();
 
     graph.forEach(function(value, key){
@@ -50,38 +67,64 @@ let constraintHandler = function(options, spectralResult){
       });       
     });
 
-    let distanceMap = new Map();
+    let positionMap = new Map(); // keeps the position for each node
+    let pastMap = new Map();  // keeps the predecessors(past) of a node
     let queue = new LinkedList();
     inDegrees.forEach(function(value, key){
       if(value == 0){
         queue.push(key);
         if(direction == "horizontal"){
-          distanceMap.set(key, xCoords[nodeIndexes.get(key)]);
+          positionMap.set(key, xCoords[nodeIndexes.get(key)] ? xCoords[nodeIndexes.get(key)] : dummyPositions.get(key));
         }
         else{
-          distanceMap.set(key, yCoords[nodeIndexes.get(key)]);
+          positionMap.set(key, yCoords[nodeIndexes.get(key)] ? yCoords[nodeIndexes.get(key)] : dummyPositions.get(key));
         }
       }
       else{
-        distanceMap.set(key, Number.NEGATIVE_INFINITY);
+        positionMap.set(key, Number.NEGATIVE_INFINITY);       
+      }
+      if(fixedNodes){
+        pastMap.set(key, new Set([key]));
       }
     });
 
+    // calculate positions of the nodes
     while(queue.length != 0){
       let currentNode = queue.shift();
       let neighbors = graph.get(currentNode);
       neighbors.forEach(function(neighbor){
-        if(distanceMap.get(neighbor["id"]) < (distanceMap.get(currentNode) + neighbor["gap"])){
-          distanceMap.set(neighbor["id"], distanceMap.get(currentNode) + neighbor["gap"]);
+        if(positionMap.get(neighbor["id"]) < (positionMap.get(currentNode) + neighbor["gap"])){
+          if(fixedNodes && fixedNodes.has(neighbor["id"])){
+            let fixedPosition;
+            if(direction == "horizontal"){
+              fixedPosition = xCoords[nodeIndexes.get(neighbor["id"])] ? xCoords[nodeIndexes.get(neighbor["id"])] : dummyPositions.get(neighbor["id"]);
+            }
+            else{
+              fixedPosition = yCoords[nodeIndexes.get(neighbor["id"])] ? yCoords[nodeIndexes.get(neighbor["id"])] : dummyPositions.get(neighbor["id"]);
+            }
+            positionMap.set(neighbor["id"], fixedPosition); // burda gereksiz işlem yapılabiliyor, düşün
+            if(fixedPosition < (positionMap.get(currentNode) + neighbor["gap"])){
+              let diff = (positionMap.get(currentNode) + neighbor["gap"]) - fixedPosition;
+              pastMap.get(currentNode).forEach(function(nodeId){
+                positionMap.set(nodeId, positionMap.get(nodeId) - diff);
+              });
+            }            
+          }
+          else{
+            positionMap.set(neighbor["id"], positionMap.get(currentNode) + neighbor["gap"]);
+          }
         }
         inDegrees.set(neighbor["id"], inDegrees.get(neighbor["id"]) - 1);
         if(inDegrees.get(neighbor["id"]) == 0){
           queue.push(neighbor["id"]);
         }
+        if(fixedNodes){
+          pastMap.set(neighbor["id"], setUnion(pastMap.get(neighbor["id"]), pastMap.get(currentNode)));
+        }
       });
     }
-    return distanceMap;
-  };
+    return positionMap;
+  };  
   
   /****  apply transformation to the initial draft layout to better align with constrained nodes ****/
   // solve the Orthogonal Procrustean Problem to rotate and/or reflect initial draft layout
@@ -295,21 +338,21 @@ let constraintHandler = function(options, spectralResult){
           });
       });
       // calculate appropriate positioning for subgraphs
-      let distanceMapHorizontal = findAppropriatePositionForRelativePlacement(subGraphOnHorizontal, "horizontal");
-      let distanceMapVertical = findAppropriatePositionForRelativePlacement(subGraphOnVertical, "vertical");
+      let positionMapHorizontal = findAppropriatePositionForRelativePlacement(subGraphOnHorizontal, "horizontal");
+      let positionMapVertical = findAppropriatePositionForRelativePlacement(subGraphOnVertical, "vertical");
       
       // construct source and target configuration
       components[largestComponentIndex].forEach(function(nodeId, i){
         sourceMatrix[i] = [xCoords[nodeIndexes.get(nodeId)], yCoords[nodeIndexes.get(nodeId)]];
         targetMatrix[i] = [];
-        if(distanceMapHorizontal.has(nodeId)){
-          targetMatrix[i][0] = distanceMapHorizontal.get(nodeId);          
+        if(positionMapHorizontal.has(nodeId)){
+          targetMatrix[i][0] = positionMapHorizontal.get(nodeId);          
         }
         else{
           targetMatrix[i][0] = xCoords[nodeIndexes.get(nodeId)];                    
         }
-        if(distanceMapVertical.has(nodeId)){
-          targetMatrix[i][1] = distanceMapVertical.get(nodeId);
+        if(positionMapVertical.has(nodeId)){
+          targetMatrix[i][1] = positionMapVertical.get(nodeId);
         }
         else{
           targetMatrix[i][1] = yCoords[nodeIndexes.get(nodeId)];
@@ -374,6 +417,7 @@ let constraintHandler = function(options, spectralResult){
     /****  enforce constraints on the transformed draft layout ****/
 
     /* first enforce fixed node constraint */
+    
     if(constraints["fixedNodeConstraint"] && constraints["fixedNodeConstraint"].length > 0){ 
       let translationAmount = {x:0, y:0};
       constraints["fixedNodeConstraint"].forEach(function(nodeData, i){
@@ -446,8 +490,130 @@ let constraintHandler = function(options, spectralResult){
         }
       }    
     }
+    
+    /* finally enforce relative placement constraint */    
 
-    /* finally enforce relative placement constraint */
+    if(constraints["relativePlacementConstraint"]){
+      let nodeToDummyForVerticalAlignment = new Map();
+      let nodeToDummyForHorizontalAlignment = new Map();
+      let dummyToNodeForVerticalAlignment = new Map();
+      let dummyToNodeForHorizontalAlignment = new Map();      
+      let dummyPositionsForVerticalAlignment = new Map();
+      let dummyPositionsForHorizontalAlignment = new Map();
+      let fixedNodesOnHorizontal = new Set();
+      let fixedNodesOnVertical = new Set();
+      
+      // fill maps and sets      
+      fixedNodes.forEach(function(node){
+        fixedNodesOnHorizontal.add(node.id());
+        fixedNodesOnVertical.add(node.id());
+      });
+      
+      if(constraints["alignmentConstraint"]){
+        if(constraints["alignmentConstraint"]["vertical"]){
+          let verticalAlignment = constraints["alignmentConstraint"]["vertical"];
+          for(let i = 0; i < verticalAlignment.length; i++){
+            dummyToNodeForVerticalAlignment.set("dummy" + i, []);
+            verticalAlignment[i].forEach(function(node){
+              nodeToDummyForVerticalAlignment.set(node.id(), "dummy" + i);
+              dummyToNodeForVerticalAlignment.get("dummy" + i).push(node.id());
+              if(node.anySame(fixedNodes)){
+                fixedNodesOnHorizontal.add("dummy" + i);
+              }
+            });
+            dummyPositionsForVerticalAlignment.set("dummy" + i, xCoords[nodeIndexes.get(verticalAlignment[i][0].id())]);
+          }
+        }
+        if(constraints["alignmentConstraint"]["horizontal"]){
+          let horizontalAlignment = constraints["alignmentConstraint"]["horizontal"];
+          for(let i = 0; i < horizontalAlignment.length; i++){
+            dummyToNodeForHorizontalAlignment.set("dummy" + i, []);
+            horizontalAlignment[i].forEach(function(node){
+              nodeToDummyForHorizontalAlignment.set(node.id(), "dummy" + i);
+              dummyToNodeForHorizontalAlignment.get("dummy" + i).push(node.id());
+              if(node.anySame(fixedNodes)){
+                fixedNodesOnVertical.add("dummy" + i);
+              }              
+            });
+            dummyPositionsForHorizontalAlignment.set("dummy" + i, yCoords[nodeIndexes.get(horizontalAlignment[i][0].id())]);
+          }
+        }        
+      }
+      
+      // construct horizontal and vertical dags (subgraphs) from overall dag
+      let dagOnHorizontal = new Map();
+      let dagOnVertical = new Map();
+
+      for(let nodeId of dag.keys()){
+        dag.get(nodeId).forEach(function(adjacent){
+          let sourceId;
+          let targetNode;
+          if(adjacent["direction"] == "horizontal"){
+            sourceId = nodeToDummyForVerticalAlignment.get(nodeId) ? nodeToDummyForVerticalAlignment.get(nodeId) : nodeId;                        
+            if(nodeToDummyForVerticalAlignment.get(adjacent["id"])){
+              targetNode = {id: nodeToDummyForVerticalAlignment.get(adjacent["id"]), gap: adjacent["gap"], direction: adjacent["direction"]};
+            }
+            else{
+              targetNode = adjacent;
+            }            
+            if(dagOnHorizontal.has(sourceId)){
+              dagOnHorizontal.get(sourceId).push(targetNode);
+            }
+            else{
+              dagOnHorizontal.set(sourceId, [targetNode]);
+            }
+            if(!dagOnHorizontal.has(targetNode["id"])){
+              dagOnHorizontal.set(targetNode["id"], []);
+            }
+          }
+          else{
+            sourceId = nodeToDummyForHorizontalAlignment.get(nodeId) ? nodeToDummyForHorizontalAlignment.get(nodeId) : nodeId;                        
+            if(nodeToDummyForHorizontalAlignment.get(adjacent["id"])){
+              targetNode = {id: nodeToDummyForHorizontalAlignment.get(adjacent["id"]), gap: adjacent["gap"], direction: adjacent["direction"]};
+            }
+            else{
+              targetNode = adjacent;
+            }             
+            if(dagOnVertical.has(sourceId)){
+              dagOnVertical.get(sourceId).push(targetNode);
+            }
+            else{
+              dagOnVertical.set(sourceId, [targetNode]);
+            }
+            if(!dagOnVertical.has(targetNode["id"])){
+              dagOnVertical.set(targetNode["id"], []);
+            }              
+          }
+        });
+      }      
+      
+      console.log(dagOnHorizontal);
+      // calculate appropriate positioning for subgraphs
+      let positionMapHorizontal = findAppropriatePositionForRelativePlacement(dagOnHorizontal, "horizontal", fixedNodesOnHorizontal, dummyPositionsForVerticalAlignment);
+      let positionMapVertical = findAppropriatePositionForRelativePlacement(dagOnVertical, "vertical", fixedNodesOnVertical, dummyPositionsForHorizontalAlignment);      
+      console.log(positionMapHorizontal);
+      // update positions of the nodes based on relative placement constraints
+      for(let key of positionMapHorizontal.keys()){
+        if(dummyToNodeForVerticalAlignment.get(key)){
+          dummyToNodeForVerticalAlignment.get(key).forEach(function(nodeId){
+            xCoords[nodeIndexes.get(nodeId)] = positionMapHorizontal.get(key);
+          });
+        }
+        else{
+          xCoords[nodeIndexes.get(key)] = positionMapHorizontal.get(key);
+        }        
+      }
+      for(let key of positionMapVertical.keys()){
+        if(dummyToNodeForHorizontalAlignment.get(key)){
+          dummyToNodeForHorizontalAlignment.get(key).forEach(function(nodeId){
+            yCoords[nodeIndexes.get(nodeId)] = positionMapVertical.get(key);
+          });
+        }
+        else{
+          yCoords[nodeIndexes.get(key)] = positionMapVertical.get(key);
+        }        
+      }      
+    }    
   }
   
 };
