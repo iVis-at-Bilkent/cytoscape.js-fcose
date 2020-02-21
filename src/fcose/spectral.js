@@ -167,10 +167,10 @@ let spectralLayout = function(options){
   let sample = function(){
 
     let SVDResult = aux.svd(PHI);
-    
-    let a_q = SVDResult.q;
-    let a_u = SVDResult.u;
-    let a_v = SVDResult.v;        
+
+    let a_q = SVDResult.S;
+    let a_u = SVDResult.U;
+    let a_v = SVDResult.V;        
 
     let max_s = a_q[0]*a_q[0]*a_q[0];
 

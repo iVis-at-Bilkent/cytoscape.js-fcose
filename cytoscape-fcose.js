@@ -400,325 +400,637 @@ auxiliary.calcBoundingBox = function (parentNode, xCoords, yCoords, nodeIndexes)
   return boundingBox;
 };
 
-// below singular value decomposition (svd) code is adopted from https://github.com/stardisblue/svdjs
-
+/* Below singular value decomposition (svd) code including hypot function is adopted from https://github.com/dragonfly-ai/JamaJS
+   Some changes are applied to make the code compatible with the fcose code and to make it independent from Jama.
+   Input matrix is changed to a 2D array instead of Jama matrix. Matrix dimensions are taken according to 2D array instead of using Jama functions.
+   An object that includes singular value components is created for return. 
+   The types of input parameters of the hypot function are removed. 
+   let is used instead of var for the variable initialization.
+*/
 /*
-MIT License
+                               Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
 
-Copyright (c) 2018 stardisblue
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+   1. Definitions.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "{}"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright {yyyy} {name of copyright owner}
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
-auxiliary.svd = function (a) {
-
-  var withu = true;
-  var withv = true;
-  var eps = Math.pow(2, -52);
-  var tol = 1e-64 / eps;
-
-  // throw error if a is not defined
-  if (!a) {
-    throw new TypeError("Matrix a is not defined");
-  }
-
-  // Householder's reduction to bidiagonal form
-
-  var n = a[0].length;
-  var m = a.length;
-
-  if (m < n) {
-    throw new TypeError("Invalid matrix: m < n");
-  }
-
-  var l1 = void 0,
-      c = void 0,
-      f = void 0,
-      h = void 0,
-      s = void 0,
-      y = void 0,
-      z = void 0;
-
-  var l = 0,
-      g = 0,
-      x = 0;
-  var e = [];
-
-  var u = [];
-  var v = [];
-
-  // Initialize u
-  for (var i = 0; i < m; i++) {
-    u[i] = new Array(n).fill(0);
-  }
-
-  // Initialize v
-  for (var _i4 = 0; _i4 < n; _i4++) {
-    v[_i4] = new Array(n).fill(0);
-  }
-
-  // Initialize q
-  var q = new Array(n).fill(0);
-
-  // Copy array a in u
-  for (var _i5 = 0; _i5 < m; _i5++) {
-    for (var j = 0; j < n; j++) {
-      u[_i5][j] = a[_i5][j];
-    }
-  }
-
-  for (var _i6 = 0; _i6 < n; _i6++) {
-    e[_i6] = g;
-    s = 0;
-    l = _i6 + 1;
-    for (var _j3 = _i6; _j3 < m; _j3++) {
-      s += Math.pow(u[_j3][_i6], 2);
-    }
-    if (s < tol) {
-      g = 0;
-    } else {
-      f = u[_i6][_i6];
-      g = f < 0 ? Math.sqrt(s) : -Math.sqrt(s);
-      h = f * g - s;
-      u[_i6][_i6] = f - g;
-      for (var _j4 = l; _j4 < n; _j4++) {
-        s = 0;
-        for (var k = _i6; k < m; k++) {
-          s += u[k][_i6] * u[k][_j4];
-        }
-        f = s / h;
-        for (var _k = _i6; _k < m; _k++) {
-          u[_k][_j4] = u[_k][_j4] + f * u[_k][_i6];
-        }
-      }
-    }
-    q[_i6] = g;
-    s = 0;
-    for (var _j5 = l; _j5 < n; _j5++) {
-      s += Math.pow(u[_i6][_j5], 2);
-    }
-    if (s < tol) {
-      g = 0;
-    } else {
-      f = u[_i6][_i6 + 1];
-      g = f < 0 ? Math.sqrt(s) : -Math.sqrt(s);
-      h = f * g - s;
-      u[_i6][_i6 + 1] = f - g;
-      for (var _j6 = l; _j6 < n; _j6++) {
-        e[_j6] = u[_i6][_j6] / h;
-      }
-      for (var _j7 = l; _j7 < m; _j7++) {
-        s = 0;
-        for (var _k2 = l; _k2 < n; _k2++) {
-          s += u[_j7][_k2] * u[_i6][_k2];
-        }
-        for (var _k3 = l; _k3 < n; _k3++) {
-          u[_j7][_k3] = u[_j7][_k3] + s * e[_k3];
-        }
-      }
-    }
-    y = Math.abs(q[_i6]) + Math.abs(e[_i6]);
-    if (y > x) {
-      x = y;
-    }
-  }
-
-  // Accumulation of right-hand transformations
-  if (withv) {
-    for (var _i7 = n - 1; _i7 >= 0; _i7--) {
-      if (g !== 0) {
-        h = u[_i7][_i7 + 1] * g;
-        for (var _j8 = l; _j8 < n; _j8++) {
-          v[_j8][_i7] = u[_i7][_j8] / h;
-        }
-        for (var _j9 = l; _j9 < n; _j9++) {
-          s = 0;
-          for (var _k4 = l; _k4 < n; _k4++) {
-            s += u[_i7][_k4] * v[_k4][_j9];
-          }
-          for (var _k5 = l; _k5 < n; _k5++) {
-            v[_k5][_j9] = v[_k5][_j9] + s * v[_k5][_i7];
-          }
-        }
-      }
-      for (var _j10 = l; _j10 < n; _j10++) {
-        v[_i7][_j10] = 0;
-        v[_j10][_i7] = 0;
-      }
-      v[_i7][_i7] = 1;
-      g = e[_i7];
-      l = _i7;
-    }
-  }
-
-  // Accumulation of left-hand transformations
-  if (withu) {
-    for (var _i8 = n - 1; _i8 >= 0; _i8--) {
-      l = _i8 + 1;
-      g = q[_i8];
-      for (var _j11 = l; _j11 < n; _j11++) {
-        u[_i8][_j11] = 0;
-      }
-      if (g !== 0) {
-        h = u[_i8][_i8] * g;
-        for (var _j12 = l; _j12 < n; _j12++) {
-          s = 0;
-          for (var _k6 = l; _k6 < m; _k6++) {
-            s += u[_k6][_i8] * u[_k6][_j12];
-          }
-          f = s / h;
-          for (var _k7 = _i8; _k7 < m; _k7++) {
-            u[_k7][_j12] = u[_k7][_j12] + f * u[_k7][_i8];
-          }
-        }
-        for (var _j13 = _i8; _j13 < m; _j13++) {
-          u[_j13][_i8] = u[_j13][_i8] / g;
-        }
+auxiliary.svd = function (A) {
+  this.U = null;
+  this.V = null;
+  this.s = null;
+  this.m = 0;
+  this.n = 0;
+  this.m = A.length;
+  this.n = A[0].length;
+  var nu = Math.min(this.m, this.n);
+  this.s = function (s) {
+    var a = [];
+    while (s-- > 0) {
+      a.push(0);
+    }return a;
+  }(Math.min(this.m + 1, this.n));
+  this.U = function (dims) {
+    var allocate = function allocate(dims) {
+      if (dims.length == 0) {
+        return 0;
       } else {
-        for (var _j14 = _i8; _j14 < m; _j14++) {
-          u[_j14][_i8] = 0;
+        var array = [];
+        for (var i = 0; i < dims[0]; i++) {
+          array.push(allocate(dims.slice(1)));
         }
+        return array;
       }
-      u[_i8][_i8] = u[_i8][_i8] + 1;
+    };
+    return allocate(dims);
+  }([this.m, nu]);
+  this.V = function (dims) {
+    var allocate = function allocate(dims) {
+      if (dims.length == 0) {
+        return 0;
+      } else {
+        var array = [];
+        for (var i = 0; i < dims[0]; i++) {
+          array.push(allocate(dims.slice(1)));
+        }
+        return array;
+      }
+    };
+    return allocate(dims);
+  }([this.n, this.n]);
+  var e = function (s) {
+    var a = [];
+    while (s-- > 0) {
+      a.push(0);
+    }return a;
+  }(this.n);
+  var work = function (s) {
+    var a = [];
+    while (s-- > 0) {
+      a.push(0);
+    }return a;
+  }(this.m);
+  var wantu = true;
+  var wantv = true;
+  var nct = Math.min(this.m - 1, this.n);
+  var nrt = Math.max(0, Math.min(this.n - 2, this.m));
+  for (var k = 0; k < Math.max(nct, nrt); k++) {
+    if (k < nct) {
+      this.s[k] = 0;
+      for (var i = k; i < this.m; i++) {
+        this.s[k] = auxiliary.hypot(this.s[k], A[i][k]);
+      }
+      ;
+      if (this.s[k] !== 0.0) {
+        if (A[k][k] < 0.0) {
+          this.s[k] = -this.s[k];
+        }
+        for (var _i4 = k; _i4 < this.m; _i4++) {
+          A[_i4][k] /= this.s[k];
+        }
+        ;
+        A[k][k] += 1.0;
+      }
+      this.s[k] = -this.s[k];
     }
+    for (var j = k + 1; j < this.n; j++) {
+      if (function (lhs, rhs) {
+        return lhs && rhs;
+      }(k < nct, this.s[k] !== 0.0)) {
+        var t = 0;
+        for (var _i5 = k; _i5 < this.m; _i5++) {
+          t += A[_i5][k] * A[_i5][j];
+        }
+        ;
+        t = -t / A[k][k];
+        for (var _i6 = k; _i6 < this.m; _i6++) {
+          A[_i6][j] += t * A[_i6][k];
+        }
+        ;
+      }
+      e[j] = A[k][j];
+    }
+    ;
+    if (function (lhs, rhs) {
+      return lhs && rhs;
+    }(wantu, k < nct)) {
+      for (var _i7 = k; _i7 < this.m; _i7++) {
+        this.U[_i7][k] = A[_i7][k];
+      }
+      ;
+    }
+    if (k < nrt) {
+      e[k] = 0;
+      for (var _i8 = k + 1; _i8 < this.n; _i8++) {
+        e[k] = auxiliary.hypot(e[k], e[_i8]);
+      }
+      ;
+      if (e[k] !== 0.0) {
+        if (e[k + 1] < 0.0) {
+          e[k] = -e[k];
+        }
+        for (var _i9 = k + 1; _i9 < this.n; _i9++) {
+          e[_i9] /= e[k];
+        }
+        ;
+        e[k + 1] += 1.0;
+      }
+      e[k] = -e[k];
+      if (function (lhs, rhs) {
+        return lhs && rhs;
+      }(k + 1 < this.m, e[k] !== 0.0)) {
+        for (var _i10 = k + 1; _i10 < this.m; _i10++) {
+          work[_i10] = 0.0;
+        }
+        ;
+        for (var _j3 = k + 1; _j3 < this.n; _j3++) {
+          for (var _i11 = k + 1; _i11 < this.m; _i11++) {
+            work[_i11] += e[_j3] * A[_i11][_j3];
+          }
+          ;
+        }
+        ;
+        for (var _j4 = k + 1; _j4 < this.n; _j4++) {
+          var _t = -e[_j4] / e[k + 1];
+          for (var _i12 = k + 1; _i12 < this.m; _i12++) {
+            A[_i12][_j4] += _t * work[_i12];
+          }
+          ;
+        }
+        ;
+      }
+      if (wantv) {
+        for (var _i13 = k + 1; _i13 < this.n; _i13++) {
+          this.V[_i13][k] = e[_i13];
+        };
+      }
+    }
+  };
+  var p = Math.min(this.n, this.m + 1);
+  if (nct < this.n) {
+    this.s[nct] = A[nct][nct];
   }
-
-  // Diagonalization of the bidiagonal form
-  eps = eps * x;
-  var testConvergence = void 0;
-  for (var _k8 = n - 1; _k8 >= 0; _k8--) {
-    for (var iteration = 0; iteration < 50; iteration++) {
-      // test-f-splitting
-      testConvergence = false;
-      for (l = _k8; l >= 0; l--) {
-        if (Math.abs(e[l]) <= eps) {
-          testConvergence = true;
+  if (this.m < p) {
+    this.s[p - 1] = 0.0;
+  }
+  if (nrt + 1 < p) {
+    e[nrt] = A[nrt][p - 1];
+  }
+  e[p - 1] = 0.0;
+  if (wantu) {
+    for (var _j5 = nct; _j5 < nu; _j5++) {
+      for (var _i14 = 0; _i14 < this.m; _i14++) {
+        this.U[_i14][_j5] = 0.0;
+      }
+      ;
+      this.U[_j5][_j5] = 1.0;
+    };
+    for (var _k = nct - 1; _k >= 0; _k--) {
+      if (this.s[_k] !== 0.0) {
+        for (var _j6 = _k + 1; _j6 < nu; _j6++) {
+          var _t2 = 0;
+          for (var _i15 = _k; _i15 < this.m; _i15++) {
+            _t2 += this.U[_i15][_k] * this.U[_i15][_j6];
+          };
+          _t2 = -_t2 / this.U[_k][_k];
+          for (var _i16 = _k; _i16 < this.m; _i16++) {
+            this.U[_i16][_j6] += _t2 * this.U[_i16][_k];
+          };
+        };
+        for (var _i17 = _k; _i17 < this.m; _i17++) {
+          this.U[_i17][_k] = -this.U[_i17][_k];
+        };
+        this.U[_k][_k] = 1.0 + this.U[_k][_k];
+        for (var _i18 = 0; _i18 < _k - 1; _i18++) {
+          this.U[_i18][_k] = 0.0;
+        };
+      } else {
+        for (var _i19 = 0; _i19 < this.m; _i19++) {
+          this.U[_i19][_k] = 0.0;
+        };
+        this.U[_k][_k] = 1.0;
+      }
+    };
+  }
+  if (wantv) {
+    for (var _k2 = this.n - 1; _k2 >= 0; _k2--) {
+      if (function (lhs, rhs) {
+        return lhs && rhs;
+      }(_k2 < nrt, e[_k2] !== 0.0)) {
+        for (var _j7 = _k2 + 1; _j7 < nu; _j7++) {
+          var _t3 = 0;
+          for (var _i20 = _k2 + 1; _i20 < this.n; _i20++) {
+            _t3 += this.V[_i20][_k2] * this.V[_i20][_j7];
+          };
+          _t3 = -_t3 / this.V[_k2 + 1][_k2];
+          for (var _i21 = _k2 + 1; _i21 < this.n; _i21++) {
+            this.V[_i21][_j7] += _t3 * this.V[_i21][_k2];
+          };
+        };
+      }
+      for (var _i22 = 0; _i22 < this.n; _i22++) {
+        this.V[_i22][_k2] = 0.0;
+      };
+      this.V[_k2][_k2] = 1.0;
+    };
+  }
+  var pp = p - 1;
+  var iter = 0;
+  var eps = Math.pow(2.0, -52.0);
+  var tiny = Math.pow(2.0, -966.0);
+  while (p > 0) {
+    var _k3 = void 0;
+    var kase = void 0;
+    for (_k3 = p - 2; _k3 >= -1; _k3--) {
+      if (_k3 === -1) {
+        break;
+      }
+      if (Math.abs(e[_k3]) <= tiny + eps * (Math.abs(this.s[_k3]) + Math.abs(this.s[_k3 + 1]))) {
+        e[_k3] = 0.0;
+        break;
+      }
+    };
+    if (_k3 === p - 2) {
+      kase = 4;
+    } else {
+      var ks = void 0;
+      for (ks = p - 1; ks >= _k3; ks--) {
+        if (ks === _k3) {
           break;
         }
-        if (Math.abs(q[l - 1]) <= eps) {
+        var _t4 = (ks !== p ? Math.abs(e[ks]) : 0.0) + (ks !== _k3 + 1 ? Math.abs(e[ks - 1]) : 0.0);
+        if (Math.abs(this.s[ks]) <= tiny + eps * _t4) {
+          this.s[ks] = 0.0;
           break;
         }
+      };
+      if (ks === _k3) {
+        kase = 3;
+      } else if (ks === p - 1) {
+        kase = 1;
+      } else {
+        kase = 2;
+        _k3 = ks;
       }
-
-      if (!testConvergence) {
-        // cancellation of e[l] if l>0
-        c = 0;
-        s = 1;
-        l1 = l - 1;
-        for (var _i9 = l; _i9 < _k8 + 1; _i9++) {
-          f = s * e[_i9];
-          e[_i9] = c * e[_i9];
-          if (Math.abs(f) <= eps) {
-            break; // goto test-f-convergence
-          }
-          g = q[_i9];
-          q[_i9] = Math.sqrt(f * f + g * g);
-          h = q[_i9];
-          c = g / h;
-          s = -f / h;
-          if (withu) {
-            for (var _j15 = 0; _j15 < m; _j15++) {
-              y = u[_j15][l1];
-              z = u[_j15][_i9];
-              u[_j15][l1] = y * c + z * s;
-              u[_j15][_i9] = -y * s + z * c;
-            }
-          }
-        }
-      }
-
-      // test f convergence
-      z = q[_k8];
-      if (l === _k8) {
-        // convergence
-        if (z < 0) {
-          // q[k] is made non-negative
-          q[_k8] = -z;
-          if (withv) {
-            for (var _j16 = 0; _j16 < n; _j16++) {
-              v[_j16][_k8] = -v[_j16][_k8];
-            }
-          }
-        }
-        break; // break out of iteration loop and move on to next k value
-      }
-
-      // Shift from bottom 2x2 minor
-      x = q[l];
-      y = q[_k8 - 1];
-      g = e[_k8 - 1];
-      h = e[_k8];
-      f = ((y - z) * (y + z) + (g - h) * (g + h)) / (2 * h * y);
-      g = Math.sqrt(f * f + 1);
-      f = ((x - z) * (x + z) + h * (y / (f < 0 ? f - g : f + g) - h)) / x;
-
-      // Next QR transformation
-      c = 1;
-      s = 1;
-      for (var _i10 = l + 1; _i10 < _k8 + 1; _i10++) {
-        g = e[_i10];
-        y = q[_i10];
-        h = s * g;
-        g = c * g;
-        z = Math.sqrt(f * f + h * h);
-        e[_i10 - 1] = z;
-        c = f / z;
-        s = h / z;
-        f = x * c + g * s;
-        g = -x * s + g * c;
-        h = y * s;
-        y = y * c;
-        if (withv) {
-          for (var _j17 = 0; _j17 < n; _j17++) {
-            x = v[_j17][_i10 - 1];
-            z = v[_j17][_i10];
-            v[_j17][_i10 - 1] = x * c + z * s;
-            v[_j17][_i10] = -x * s + z * c;
-          }
-        }
-        z = Math.sqrt(f * f + h * h);
-        q[_i10 - 1] = z;
-        c = f / z;
-        s = h / z;
-        f = c * g + s * y;
-        x = -s * g + c * y;
-        if (withu) {
-          for (var _j18 = 0; _j18 < m; _j18++) {
-            y = u[_j18][_i10 - 1];
-            z = u[_j18][_i10];
-            u[_j18][_i10 - 1] = y * c + z * s;
-            u[_j18][_i10] = -y * s + z * c;
-          }
-        }
-      }
-      e[l] = 0;
-      e[_k8] = f;
-      q[_k8] = x;
     }
-  }
+    _k3++;
+    switch (kase) {
+      case 1:
+        {
+          var f = e[p - 2];
+          e[p - 2] = 0.0;
+          for (var _j8 = p - 2; _j8 >= _k3; _j8--) {
+            var _t5 = auxiliary.hypot(this.s[_j8], f);
+            var cs = this.s[_j8] / _t5;
+            var sn = f / _t5;
+            this.s[_j8] = _t5;
+            if (_j8 !== _k3) {
+              f = -sn * e[_j8 - 1];
+              e[_j8 - 1] = cs * e[_j8 - 1];
+            }
+            if (wantv) {
+              for (var _i23 = 0; _i23 < this.n; _i23++) {
+                _t5 = cs * this.V[_i23][_j8] + sn * this.V[_i23][p - 1];
+                this.V[_i23][p - 1] = -sn * this.V[_i23][_j8] + cs * this.V[_i23][p - 1];
+                this.V[_i23][_j8] = _t5;
+              };
+            }
+          };
+        };
+        break;
+      case 2:
+        {
+          var _f = e[_k3 - 1];
+          e[_k3 - 1] = 0.0;
+          for (var _j9 = _k3; _j9 < p; _j9++) {
+            var _t6 = auxiliary.hypot(this.s[_j9], _f);
+            var _cs = this.s[_j9] / _t6;
+            var _sn = _f / _t6;
+            this.s[_j9] = _t6;
+            _f = -_sn * e[_j9];
+            e[_j9] = _cs * e[_j9];
+            if (wantu) {
+              for (var _i24 = 0; _i24 < this.m; _i24++) {
+                _t6 = _cs * this.U[_i24][_j9] + _sn * this.U[_i24][_k3 - 1];
+                this.U[_i24][_k3 - 1] = -_sn * this.U[_i24][_j9] + _cs * this.U[_i24][_k3 - 1];
+                this.U[_i24][_j9] = _t6;
+              };
+            }
+          };
+        };
+        break;
+      case 3:
+        {
+          var scale = Math.max(Math.max(Math.max(Math.max(Math.abs(this.s[p - 1]), Math.abs(this.s[p - 2])), Math.abs(e[p - 2])), Math.abs(this.s[_k3])), Math.abs(e[_k3]));
+          var sp = this.s[p - 1] / scale;
+          var spm1 = this.s[p - 2] / scale;
+          var epm1 = e[p - 2] / scale;
+          var sk = this.s[_k3] / scale;
+          var ek = e[_k3] / scale;
+          var b = ((spm1 + sp) * (spm1 - sp) + epm1 * epm1) / 2.0;
+          var c = sp * epm1 * (sp * epm1);
+          var shift = 0.0;
+          if (function (lhs, rhs) {
+            return lhs || rhs;
+          }(b !== 0.0, c !== 0.0)) {
+            shift = Math.sqrt(b * b + c);
+            if (b < 0.0) {
+              shift = -shift;
+            }
+            shift = c / (b + shift);
+          }
+          var _f2 = (sk + sp) * (sk - sp) + shift;
+          var g = sk * ek;
+          for (var _j10 = _k3; _j10 < p - 1; _j10++) {
+            var _t7 = auxiliary.hypot(_f2, g);
+            var _cs2 = _f2 / _t7;
+            var _sn2 = g / _t7;
+            if (_j10 !== _k3) {
+              e[_j10 - 1] = _t7;
+            }
+            _f2 = _cs2 * this.s[_j10] + _sn2 * e[_j10];
+            e[_j10] = _cs2 * e[_j10] - _sn2 * this.s[_j10];
+            g = _sn2 * this.s[_j10 + 1];
+            this.s[_j10 + 1] = _cs2 * this.s[_j10 + 1];
+            if (wantv) {
+              for (var _i25 = 0; _i25 < this.n; _i25++) {
+                _t7 = _cs2 * this.V[_i25][_j10] + _sn2 * this.V[_i25][_j10 + 1];
+                this.V[_i25][_j10 + 1] = -_sn2 * this.V[_i25][_j10] + _cs2 * this.V[_i25][_j10 + 1];
+                this.V[_i25][_j10] = _t7;
+              };
+            }
+            _t7 = auxiliary.hypot(_f2, g);
+            _cs2 = _f2 / _t7;
+            _sn2 = g / _t7;
+            this.s[_j10] = _t7;
+            _f2 = _cs2 * e[_j10] + _sn2 * this.s[_j10 + 1];
+            this.s[_j10 + 1] = -_sn2 * e[_j10] + _cs2 * this.s[_j10 + 1];
+            g = _sn2 * e[_j10 + 1];
+            e[_j10 + 1] = _cs2 * e[_j10 + 1];
+            if (wantu && _j10 < this.m - 1) {
+              for (var _i26 = 0; _i26 < this.m; _i26++) {
+                _t7 = _cs2 * this.U[_i26][_j10] + _sn2 * this.U[_i26][_j10 + 1];
+                this.U[_i26][_j10 + 1] = -_sn2 * this.U[_i26][_j10] + _cs2 * this.U[_i26][_j10 + 1];
+                this.U[_i26][_j10] = _t7;
+              };
+            }
+          };
+          e[p - 2] = _f2;
+          iter = iter + 1;
+        };
+        break;
+      case 4:
+        {
+          if (this.s[_k3] <= 0.0) {
+            this.s[_k3] = this.s[_k3] < 0.0 ? -this.s[_k3] : 0.0;
+            if (wantv) {
+              for (var _i27 = 0; _i27 <= pp; _i27++) {
+                this.V[_i27][_k3] = -this.V[_i27][_k3];
+              };
+            }
+          }
+          while (_k3 < pp) {
+            if (this.s[_k3] >= this.s[_k3 + 1]) {
+              break;
+            }
+            var _t8 = this.s[_k3];
+            this.s[_k3] = this.s[_k3 + 1];
+            this.s[_k3 + 1] = _t8;
+            if (wantv && _k3 < this.n - 1) {
+              for (var _i28 = 0; _i28 < this.n; _i28++) {
+                _t8 = this.V[_i28][_k3 + 1];
+                this.V[_i28][_k3 + 1] = this.V[_i28][_k3];
+                this.V[_i28][_k3] = _t8;
+              };
+            }
+            if (wantu && _k3 < this.m - 1) {
+              for (var _i29 = 0; _i29 < this.m; _i29++) {
+                _t8 = this.U[_i29][_k3 + 1];
+                this.U[_i29][_k3 + 1] = this.U[_i29][_k3];
+                this.U[_i29][_k3] = _t8;
+              };
+            }
+            _k3++;
+          };
+          iter = 0;
+          p--;
+        };
+        break;
+    }
+  };
+  var result = { U: this.U, V: this.V, S: this.s };
+  return result;
+};
 
-  // Number below eps should be zero
-  for (var _i11 = 0; _i11 < n; _i11++) {
-    if (q[_i11] < eps) q[_i11] = 0;
+// sqrt(a^2 + b^2) without under/overflow.
+auxiliary.hypot = function (a, b) {
+  var r = void 0;
+  if (Math.abs(a) > Math.abs(b)) {
+    r = b / a;
+    r = Math.abs(a) * Math.sqrt(1 + r * r);
+  } else if (b != 0) {
+    r = a / b;
+    r = Math.abs(b) * Math.sqrt(1 + r * r);
+  } else {
+    r = 0.0;
   }
-
-  return { u: u, q: q, v: v };
+  return r;
 };
 
 module.exports = auxiliary;
@@ -1556,19 +1868,9 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
       }
 
       // do actual calculation for transformation matrix
-      // normally SVD(A'B) = USV' but transpose works better so compute SVD(B'A) = VSU' 
-      var tempMatrix = aux.multMat(sourceMatrixTranspose, aux.transpose(targetMatrixTranspose)); // tempMatrix = B'A
-      // this is required because sometimes svd cannot be calculated for long decimal values
-      for (var _i2 = 0; _i2 < tempMatrix.length; _i2++) {
-        for (var j = 0; j < tempMatrix[0].length; j++) {
-          tempMatrix[_i2][j] = Math.round(tempMatrix[_i2][j]);
-        }
-      }
-      var SVDResult = aux.svd(tempMatrix); // SVD(B'A) = VSU'
-      //      console.log(tempMatrix);
-      //      console.log(SVDResult);
-      //      console.log(aux.svd([[-4406, -4406],[-331, -331]]));
-      transformationMatrix = aux.multMat(SVDResult.u, aux.transpose(SVDResult.v)); // transformationMatrix = T = UV'
+      var tempMatrix = aux.multMat(targetMatrixTranspose, aux.transpose(sourceMatrixTranspose)); // tempMatrix = A'B
+      var SVDResult = aux.svd(tempMatrix); // SVD(A'B) = USV', svd function returns U, S and V 
+      transformationMatrix = aux.multMat(SVDResult.V, aux.transpose(SVDResult.U)); // transformationMatrix = T = VU'
     } else if (transformationType == "reflectOnBoth") {
       transformationMatrix = [[-1, 0], [0, -1]];
     } else if (transformationType == "reflectOnX") {
@@ -1578,12 +1880,12 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
     }
     /* apply found transformation matrix to obtain final draft layout */
 
-    for (var _i3 = 0; _i3 < nodeIndexes.size; _i3++) {
-      var temp1 = [xCoords[_i3], yCoords[_i3]];
+    for (var _i2 = 0; _i2 < nodeIndexes.size; _i2++) {
+      var temp1 = [xCoords[_i2], yCoords[_i2]];
       var temp2 = [transformationMatrix[0][0], transformationMatrix[1][0]];
       var temp3 = [transformationMatrix[0][1], transformationMatrix[1][1]];
-      xCoords[_i3] = aux.dotProduct(temp1, temp2);
-      yCoords[_i3] = aux.dotProduct(temp1, temp3);
+      xCoords[_i2] = aux.dotProduct(temp1, temp2);
+      yCoords[_i2] = aux.dotProduct(temp1, temp3);
     }
   }
 
@@ -1625,45 +1927,45 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
       if (constraints["alignmentConstraint"]["vertical"]) {
         var xAlign = constraints["alignmentConstraint"]["vertical"];
 
-        var _loop4 = function _loop4(_i4) {
+        var _loop4 = function _loop4(_i3) {
           var alignmentSet = cy.collection();
-          xAlign[_i4].forEach(function (node) {
+          xAlign[_i3].forEach(function (node) {
             alignmentSet = alignmentSet.merge(node);
           });
           var intersection = alignmentSet.diff(fixedNodes).both;
           var xPos = void 0;
           if (intersection.length > 0) xPos = xCoords[nodeIndexes.get(intersection[0].id())];else xPos = calculateAvgPosition(alignmentSet)['x'];
 
-          for (var _j = 0; _j < alignmentSet.length; _j++) {
-            var node = alignmentSet[_j];
+          for (var j = 0; j < alignmentSet.length; j++) {
+            var node = alignmentSet[j];
             if (!fixedNodes.contains(node)) xCoords[nodeIndexes.get(node.id())] = xPos;
           }
         };
 
-        for (var _i4 = 0; _i4 < xAlign.length; _i4++) {
-          _loop4(_i4);
+        for (var _i3 = 0; _i3 < xAlign.length; _i3++) {
+          _loop4(_i3);
         }
       }
       if (constraints["alignmentConstraint"]["horizontal"]) {
         var yAlign = constraints["alignmentConstraint"]["horizontal"];
 
-        var _loop5 = function _loop5(_i5) {
+        var _loop5 = function _loop5(_i4) {
           var alignmentSet = cy.collection();
-          yAlign[_i5].forEach(function (node) {
+          yAlign[_i4].forEach(function (node) {
             alignmentSet = alignmentSet.merge(node);
           });
           var intersection = alignmentSet.diff(fixedNodes).both;
           var yPos = void 0;
           if (intersection.length > 0) yPos = yCoords[nodeIndexes.get(intersection[0].id())];else yPos = calculateAvgPosition(alignmentSet)['y'];
 
-          for (var _j2 = 0; _j2 < alignmentSet.length; _j2++) {
-            var node = alignmentSet[_j2];
+          for (var j = 0; j < alignmentSet.length; j++) {
+            var node = alignmentSet[j];
             if (!fixedNodes.contains(node)) yCoords[nodeIndexes.get(node.id())] = yPos;
           }
         };
 
-        for (var _i5 = 0; _i5 < yAlign.length; _i5++) {
-          _loop5(_i5);
+        for (var _i4 = 0; _i4 < yAlign.length; _i4++) {
+          _loop5(_i4);
         }
       }
     }
@@ -1691,39 +1993,39 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
           if (constraints["alignmentConstraint"]["vertical"]) {
             var verticalAlignment = constraints["alignmentConstraint"]["vertical"];
 
-            var _loop6 = function _loop6(_i6) {
-              dummyToNodeForVerticalAlignment.set("dummy" + _i6, []);
-              verticalAlignment[_i6].forEach(function (node) {
-                nodeToDummyForVerticalAlignment.set(node.id(), "dummy" + _i6);
-                dummyToNodeForVerticalAlignment.get("dummy" + _i6).push(node.id());
+            var _loop6 = function _loop6(_i5) {
+              dummyToNodeForVerticalAlignment.set("dummy" + _i5, []);
+              verticalAlignment[_i5].forEach(function (node) {
+                nodeToDummyForVerticalAlignment.set(node.id(), "dummy" + _i5);
+                dummyToNodeForVerticalAlignment.get("dummy" + _i5).push(node.id());
                 if (node.anySame(fixedNodes)) {
-                  fixedNodesOnHorizontal.add("dummy" + _i6);
+                  fixedNodesOnHorizontal.add("dummy" + _i5);
                 }
               });
-              dummyPositionsForVerticalAlignment.set("dummy" + _i6, xCoords[nodeIndexes.get(verticalAlignment[_i6][0].id())]);
+              dummyPositionsForVerticalAlignment.set("dummy" + _i5, xCoords[nodeIndexes.get(verticalAlignment[_i5][0].id())]);
             };
 
-            for (var _i6 = 0; _i6 < verticalAlignment.length; _i6++) {
-              _loop6(_i6);
+            for (var _i5 = 0; _i5 < verticalAlignment.length; _i5++) {
+              _loop6(_i5);
             }
           }
           if (constraints["alignmentConstraint"]["horizontal"]) {
             var horizontalAlignment = constraints["alignmentConstraint"]["horizontal"];
 
-            var _loop7 = function _loop7(_i7) {
-              dummyToNodeForHorizontalAlignment.set("dummy" + _i7, []);
-              horizontalAlignment[_i7].forEach(function (node) {
-                nodeToDummyForHorizontalAlignment.set(node.id(), "dummy" + _i7);
-                dummyToNodeForHorizontalAlignment.get("dummy" + _i7).push(node.id());
+            var _loop7 = function _loop7(_i6) {
+              dummyToNodeForHorizontalAlignment.set("dummy" + _i6, []);
+              horizontalAlignment[_i6].forEach(function (node) {
+                nodeToDummyForHorizontalAlignment.set(node.id(), "dummy" + _i6);
+                dummyToNodeForHorizontalAlignment.get("dummy" + _i6).push(node.id());
                 if (node.anySame(fixedNodes)) {
-                  fixedNodesOnVertical.add("dummy" + _i7);
+                  fixedNodesOnVertical.add("dummy" + _i6);
                 }
               });
-              dummyPositionsForHorizontalAlignment.set("dummy" + _i7, yCoords[nodeIndexes.get(horizontalAlignment[_i7][0].id())]);
+              dummyPositionsForHorizontalAlignment.set("dummy" + _i6, yCoords[nodeIndexes.get(horizontalAlignment[_i6][0].id())]);
             };
 
-            for (var _i7 = 0; _i7 < horizontalAlignment.length; _i7++) {
-              _loop7(_i7);
+            for (var _i6 = 0; _i6 < horizontalAlignment.length; _i6++) {
+              _loop7(_i6);
             }
           }
         }
@@ -1780,6 +2082,8 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
 
             _loop8(nodeId);
           }
+
+          // calculate appropriate positioning for subgraphs
         } catch (err) {
           _didIteratorError2 = true;
           _iteratorError2 = err;
@@ -1795,11 +2099,9 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
           }
         }
 
-        console.log(dagOnHorizontal);
-        // calculate appropriate positioning for subgraphs
         var positionMapHorizontal = findAppropriatePositionForRelativePlacement(dagOnHorizontal, "horizontal", fixedNodesOnHorizontal, dummyPositionsForVerticalAlignment);
         var positionMapVertical = findAppropriatePositionForRelativePlacement(dagOnVertical, "vertical", fixedNodesOnVertical, dummyPositionsForHorizontalAlignment);
-        console.log(positionMapHorizontal);
+
         // update positions of the nodes based on relative placement constraints
 
         var _loop9 = function _loop9(key) {
@@ -2209,9 +2511,9 @@ var spectralLayout = function spectralLayout(options) {
 
     var SVDResult = aux.svd(PHI);
 
-    var a_q = SVDResult.q;
-    var a_u = SVDResult.u;
-    var a_v = SVDResult.v;
+    var a_q = SVDResult.S;
+    var a_u = SVDResult.U;
+    var a_v = SVDResult.V;
 
     var max_s = a_q[0] * a_q[0] * a_q[0];
 

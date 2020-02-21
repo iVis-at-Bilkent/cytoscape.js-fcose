@@ -378,19 +378,9 @@ let constraintHandler = function(options, spectralResult){
       }
 
       // do actual calculation for transformation matrix
-      // normally SVD(A'B) = USV' but transpose works better so compute SVD(B'A) = VSU' 
-      let tempMatrix = aux.multMat(sourceMatrixTranspose, aux.transpose(targetMatrixTranspose)); // tempMatrix = B'A
-      // this is required because sometimes svd cannot be calculated for long decimal values
-      for(let i = 0; i < tempMatrix.length; i++){
-        for(let j = 0; j < tempMatrix[0].length; j++){
-          tempMatrix[i][j] = Math.round( tempMatrix[i][j]);
-        }
-      }
-      let SVDResult = aux.svd(tempMatrix); // SVD(B'A) = VSU'
-//      console.log(tempMatrix);
-//      console.log(SVDResult);
-//      console.log(aux.svd([[-4406, -4406],[-331, -331]]));
-      transformationMatrix = aux.multMat(SVDResult.u, aux.transpose(SVDResult.v)); // transformationMatrix = T = UV'
+      let tempMatrix = aux.multMat(targetMatrixTranspose, aux.transpose(sourceMatrixTranspose)); // tempMatrix = A'B
+      let SVDResult = aux.svd(tempMatrix); // SVD(A'B) = USV', svd function returns U, S and V 
+      transformationMatrix = aux.multMat(SVDResult.V, aux.transpose(SVDResult.U)); // transformationMatrix = T = VU'
     }
     else if(transformationType == "reflectOnBoth"){
       transformationMatrix = [[-1, 0], [0, -1]];
@@ -587,11 +577,10 @@ let constraintHandler = function(options, spectralResult){
         });
       }      
       
-      console.log(dagOnHorizontal);
       // calculate appropriate positioning for subgraphs
       let positionMapHorizontal = findAppropriatePositionForRelativePlacement(dagOnHorizontal, "horizontal", fixedNodesOnHorizontal, dummyPositionsForVerticalAlignment);
       let positionMapVertical = findAppropriatePositionForRelativePlacement(dagOnVertical, "vertical", fixedNodesOnVertical, dummyPositionsForHorizontalAlignment);      
-      console.log(positionMapHorizontal);
+
       // update positions of the nodes based on relative placement constraints
       for(let key of positionMapHorizontal.keys()){
         if(dummyToNodeForVerticalAlignment.get(key)){
