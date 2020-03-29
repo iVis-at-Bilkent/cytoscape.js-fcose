@@ -14,6 +14,8 @@ U. Dogrusoz, E. Giral, A. Cetintas, A. Civril, and E. Demir, "[A Layout Algorith
 
 A. Civril, M. Magdon-Ismail, and E. Bocek-Rivele, "[SSDE: Fast Graph Drawing Using Sampled Spectral Distance Embedding](https://link.springer.com/chapter/10.1007/978-3-540-70904-6_5)", International Symposium on Graph Drawing, pp. 30-41, 2006.
 
+<p align="center"><img src="demo.gif" width="480"></p>
+
 ## Dependencies
 
  * Cytoscape.js ^3.2.0
@@ -63,7 +65,7 @@ Plain HTML/JS has the extension registered for you automatically, because no `re
 <script src="https://unpkg.com/numeric/numeric-1.2.6.js"></script>
 <script src="https://unpkg.com/layout-base/layout-base.js"></script>
 <script src="https://unpkg.com/cose-base/cose-base.js"></script>
-<script src="cytoscape-fcose.js"></script>
+<script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
 ```
 
 
