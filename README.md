@@ -65,7 +65,7 @@ Plain HTML/JS has the extension registered for you automatically, because no `re
 <script src="https://unpkg.com/numeric/numeric-1.2.6.js"></script>
 <script src="https://unpkg.com/layout-base/layout-base.js"></script>
 <script src="https://unpkg.com/cose-base/cose-base.js"></script>
-<script src="cytoscape-fcose.js"></script>
+<script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
 ```
 
 
