@@ -344,7 +344,7 @@ let spectralLayout = function(options){
       eleIndex = nodeIndexes.get(ele.id());
 
     ele.neighborhood().nodes().forEach(function(node){
-      if(eles.anySame(ele.edgesWith(node))){
+      if(eles.intersection(ele.edgesWith(node))){
         if(node.isParent())
           allNodesNeighborhood[eleIndex].push(parentChildMap.get(node.id()));       
         else

@@ -141,7 +141,7 @@ auxiliary.getTopMostNodes = function(nodes) {
 };
 
 // find disconnected components and create dummy nodes that connect them
-auxiliary.connectComponents = function(cy, eles, topMostNodes, dummyNodes){      
+auxiliary.connectComponents = function(cy, eles, topMostNodes, dummyNodes){
   let queue = new LinkedList();
   let visited = new Set();
   let visitedTopMostNodes = [];
@@ -175,7 +175,7 @@ auxiliary.connectComponents = function(cy, eles, topMostNodes, dummyNodes){
       // Traverse all neighbors of this node
       let neighborNodes = cy.collection();
       currentNode.neighborhood().nodes().forEach(function(node){
-        if(eles.anySame(currentNode.edgesWith(node))){
+        if(eles.intersection(currentNode.edgesWith(node))){
           neighborNodes.merge(node);
         }
       });
@@ -200,7 +200,7 @@ auxiliary.connectComponents = function(cy, eles, topMostNodes, dummyNodes){
     }
     
     cmpt.forEach(node => {
-      node.connectedEdges().forEach(e => { // connectedEdges() usually cached
+      eles.intersection(node.connectedEdges()).forEach(e => { // connectedEdges() usually cached
         if( cmpt.has(e.source()) && cmpt.has(e.target()) ){ // has() is cheap
           cmpt.merge(e); // forEach() only considers nodes -- sets N at call time
         }

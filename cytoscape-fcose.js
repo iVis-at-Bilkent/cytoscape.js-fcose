@@ -266,7 +266,7 @@ auxiliary.connectComponents = function (cy, eles, topMostNodes, dummyNodes) {
       // Traverse all neighbors of this node
       var neighborNodes = cy.collection();
       currentNode.neighborhood().nodes().forEach(function (node) {
-        if (eles.anySame(currentNode.edgesWith(node))) {
+        if (eles.intersection(currentNode.edgesWith(node))) {
           neighborNodes.merge(node);
         }
       });
@@ -294,7 +294,7 @@ auxiliary.connectComponents = function (cy, eles, topMostNodes, dummyNodes) {
     }
 
     cmpt.forEach(function (node) {
-      node.connectedEdges().forEach(function (e) {
+      eles.intersection(node.connectedEdges()).forEach(function (e) {
         // connectedEdges() usually cached
         if (cmpt.has(e.source()) && cmpt.has(e.target())) {
           // has() is cheap
@@ -626,9 +626,9 @@ var Layout = function () {
               subgraph.nodes.push({ x: coseResult[index][node.id()].getLeft(), y: coseResult[index][node.id()].getTop(), width: coseResult[index][node.id()].getWidth(), height: coseResult[index][node.id()].getHeight() });
             }
           });
-          component.edges().forEach(function (node) {
-            var source = node.source();
-            var target = node.target();
+          component.edges().forEach(function (edge) {
+            var source = edge.source();
+            var target = edge.target();
             if (options.quality == "draft") {
               var sourceNodeIndex = nodeIndexes.get(source.id());
               var targetNodeIndex = nodeIndexes.get(target.id());
@@ -1274,7 +1274,7 @@ var spectralLayout = function spectralLayout(options) {
     if (ele.isParent()) eleIndex = nodeIndexes.get(parentChildMap.get(ele.id()));else eleIndex = nodeIndexes.get(ele.id());
 
     ele.neighborhood().nodes().forEach(function (node) {
-      if (eles.anySame(ele.edgesWith(node))) {
+      if (eles.intersection(ele.edgesWith(node))) {
         if (node.isParent()) allNodesNeighborhood[eleIndex].push(parentChildMap.get(node.id()));else allNodesNeighborhood[eleIndex].push(node.id());
       }
     });
