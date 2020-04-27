@@ -139,39 +139,18 @@ class Layout {
       options.tile = false;
       options.packComponents = false;
       
-      // get nodes to be fixed
-      if(options.fixedNodeConstraint){
-        options.fixedNodeConstraint.forEach(function(item){
-          item["node"].scratch("constraint", {fixedAxes: 3});
+      // if there exists relative placement constraint without gap value, set it to default 
+      if(options.relativePlacementConstraint){
+        options.relativePlacementConstraint.forEach(function(constraint){
+          if(!constraint["gap"]){
+            if(constraint["left"]){
+              constraint["gap"] = options.idealEdgeLength + constraint["left"].width()/2 + constraint["right"].width()/2;
+            }
+            else{
+              constraint["gap"] = options.idealEdgeLength + constraint["top"].height()/2 + constraint["bottom"].height()/2;
+            }
+          }
         });
-      }
-      
-      // get nodes to be aligned
-      if(options.alignmentConstraint){
-        if(options.alignmentConstraint["vertical"]){
-          let xAlign = options.alignmentConstraint['vertical'];      
-          for(let i = 0; i < xAlign.length; i++){
-            let alignmentSet = xAlign[i];
-            for(let j = 0; j < alignmentSet.length; j++){
-              let scratch = alignmentSet[j].scratch("constraint");
-              if(scratch == undefined)
-                alignmentSet[j].scratch("constraint", {fixedAxes: 1});
-            }
-          }
-        }
-        if(options.alignmentConstraint["horizontal"]){
-          let yAlign = options.alignmentConstraint['horizontal'];
-          for(let i = 0; i < yAlign.length; i++){
-            let alignmentSet = yAlign[i];
-            for(let j = 0; j < alignmentSet.length; j++){
-              let scratch = alignmentSet[j].scratch("constraint");
-              if(scratch == undefined)
-                alignmentSet[j].scratch("constraint", {fixedAxes: 2});
-              else if(scratch["fixedAxes"] == 1)
-                alignmentSet[j].scratch("constraint", {fixedAxes: 3});
-            }
-          }
-        }
       }
     }
     
@@ -377,13 +356,7 @@ class Layout {
     }
     else{
       console.log("If randomize option is set to false, then quality option must be 'default' or 'proof'.");
-    }
-    
-    options.eles.forEach(function(node){
-      if(node.scratch("constraint")){
-        node.removeScratch("constraint");
-      }
-    });    
+    }  
     
   }
 }

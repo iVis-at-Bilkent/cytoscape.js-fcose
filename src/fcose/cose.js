@@ -74,16 +74,13 @@ let coseLayout = function(options, spectralResult){
       theNode.paddingTop = parseInt( theChild.css('padding') );
       theNode.paddingRight = parseInt( theChild.css('padding') );
       theNode.paddingBottom = parseInt( theChild.css('padding') );
-      
-      if(theChild.scratch("constraint"))
-        theNode.constraint = theChild.scratch("constraint")["fixedAxes"];
 
       //Attach the label properties to compound if labels will be included in node dimensions  
       if(options.nodeDimensionsIncludeLabels){
         if(theChild.isParent()){
           let labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false }).w;          
           let labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false }).h;
-          let labelPos = theChild.css("text-halign");
+          let labelPos = theChild.css("text-valign");
           theNode.labelWidth = labelWidth;
           theNode.labelHeight = labelHeight;
           theNode.labelPos = labelPos;          
@@ -120,7 +117,65 @@ let coseLayout = function(options, spectralResult){
         e1.id = edge.id();
       }
     }
-  };   
+  }; 
+  
+  // transfer cytoscape constraints to cose layout
+  let processConstraints = function(layout, options){
+    // get nodes to be fixed
+    if(options.fixedNodeConstraint){
+      var fixedNodeConstraint = [];
+      options.fixedNodeConstraint.forEach(function(constraint){
+        fixedNodeConstraint.push({nodeId: constraint["node"].id(), position: constraint["position"]});
+      });
+      layout.constraints["fixedNodeConstraint"] = fixedNodeConstraint;
+    }
+    // get nodes to be aligned
+    if(options.alignmentConstraint){
+      var alignmentConstraint = {};
+      if(options.alignmentConstraint["vertical"]){
+        let verticalAligned = options.alignmentConstraint['vertical'];
+        let verticalAlignedTemp = []; 
+        for(let i = 0; i < verticalAligned.length; i++){
+          let individualAlignmentSet = [];
+          for(let j = 0; j < verticalAligned[i].length; j++){
+            individualAlignmentSet.push(verticalAligned[i][j].id());
+          }
+          verticalAlignedTemp.push(individualAlignmentSet);
+        }
+        alignmentConstraint["vertical"] = verticalAlignedTemp;
+      }
+      if(options.alignmentConstraint["horizontal"]){
+        let horizontalAligned = options.alignmentConstraint['horizontal'];
+        let horizontalAlignedTemp = []; 
+        for(let i = 0; i < horizontalAligned.length; i++){
+          let individualAlignmentSet = [];
+          for(let j = 0; j < horizontalAligned[i].length; j++){
+            individualAlignmentSet.push(horizontalAligned[i][j].id());
+          }
+          horizontalAlignedTemp.push(individualAlignmentSet);
+        }
+        alignmentConstraint["horizontal"] = horizontalAlignedTemp;
+      }
+      layout.constraints["alignmentConstraint"] = alignmentConstraint;
+    }
+    // get nodes to be relatively placed
+    if(options.relativePlacementConstraint){
+      var relativePlacementConstraint = [];
+      options.relativePlacementConstraint.forEach(function(constraint){
+        let tempObj = {};
+        for (let [key, value] of Object.entries(constraint)) {
+          if(key == "left" || key == "right" || key == "top" || key == "bottom"){
+            tempObj[key] = value.id();
+          }
+          else{
+            tempObj[key] = value;
+          }
+        }
+        relativePlacementConstraint.push(tempObj);        
+      });
+      layout.constraints["relativePlacementConstraint"] = relativePlacementConstraint;
+    }  
+  };
   
   /**** Apply postprocessing ****/
     
@@ -167,8 +222,8 @@ let coseLayout = function(options, spectralResult){
   let gm = coseLayout.newGraphManager(); 
 
   processChildrenList(gm.addRoot(), aux.getTopMostNodes(nodes), coseLayout, options);
-
   processEdges(coseLayout, gm, edges);
+  processConstraints(coseLayout, options);
 
   coseLayout.runLayout();
   

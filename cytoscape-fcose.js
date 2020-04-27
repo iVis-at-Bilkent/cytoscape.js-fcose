@@ -1196,35 +1196,17 @@ var Layout = function () {
         options.tile = false;
         options.packComponents = false;
 
-        // get nodes to be fixed
-        if (options.fixedNodeConstraint) {
-          options.fixedNodeConstraint.forEach(function (item) {
-            item["node"].scratch("constraint", { fixedAxes: 3 });
+        // if there exists relative placement constraint without gap value, set it to default 
+        if (options.relativePlacementConstraint) {
+          options.relativePlacementConstraint.forEach(function (constraint) {
+            if (!constraint["gap"]) {
+              if (constraint["left"]) {
+                constraint["gap"] = options.idealEdgeLength + constraint["left"].width() / 2 + constraint["right"].width() / 2;
+              } else {
+                constraint["gap"] = options.idealEdgeLength + constraint["top"].height() / 2 + constraint["bottom"].height() / 2;
+              }
+            }
           });
-        }
-
-        // get nodes to be aligned
-        if (options.alignmentConstraint) {
-          if (options.alignmentConstraint["vertical"]) {
-            var xAlign = options.alignmentConstraint['vertical'];
-            for (var i = 0; i < xAlign.length; i++) {
-              var alignmentSet = xAlign[i];
-              for (var j = 0; j < alignmentSet.length; j++) {
-                var scratch = alignmentSet[j].scratch("constraint");
-                if (scratch == undefined) alignmentSet[j].scratch("constraint", { fixedAxes: 1 });
-              }
-            }
-          }
-          if (options.alignmentConstraint["horizontal"]) {
-            var yAlign = options.alignmentConstraint['horizontal'];
-            for (var _i = 0; _i < yAlign.length; _i++) {
-              var _alignmentSet = yAlign[_i];
-              for (var _j = 0; _j < _alignmentSet.length; _j++) {
-                var _scratch = _alignmentSet[_j].scratch("constraint");
-                if (_scratch == undefined) _alignmentSet[_j].scratch("constraint", { fixedAxes: 2 });else if (_scratch["fixedAxes"] == 1) _alignmentSet[_j].scratch("constraint", { fixedAxes: 3 });
-              }
-            }
-          }
         }
       }
 
@@ -1295,9 +1277,9 @@ var Layout = function () {
             if (toBeTiledNodes.length > 1) {
               components.push(toBeTiledNodes);
               spectralResult.push(tempSpectralResult);
-              for (var _i2 = indexesToBeDeleted.length - 1; _i2 >= 0; _i2--) {
-                components.splice(indexesToBeDeleted[_i2], 1);
-                spectralResult.splice(indexesToBeDeleted[_i2], 1);
+              for (var i = indexesToBeDeleted.length - 1; i >= 0; i--) {
+                components.splice(indexesToBeDeleted[i], 1);
+                spectralResult.splice(indexesToBeDeleted[i], 1);
               };
             }
           }
@@ -1426,12 +1408,6 @@ var Layout = function () {
       } else {
         console.log("If randomize option is set to false, then quality option must be 'default' or 'proof'.");
       }
-
-      options.eles.forEach(function (node) {
-        if (node.scratch("constraint")) {
-          node.removeScratch("constraint");
-        }
-      });
     }
   }]);
 
@@ -1648,31 +1624,31 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
     constraints["relativePlacementConstraint"].forEach(function (constraint) {
       if (constraint["left"]) {
         if (dag.has(constraint["left"].id())) {
-          dag.get(constraint["left"].id()).push({ id: constraint["right"].id(), gap: constraint["gap"] ? constraint["gap"] : options.idealEdgeLength + constraint["left"].width() / 2 + constraint["right"].width() / 2, direction: "horizontal" });
-          dagUndirected.get(constraint["left"].id()).push({ id: constraint["right"].id(), gap: constraint["gap"] ? constraint["gap"] : options.idealEdgeLength + constraint["left"].width() / 2 + constraint["right"].width() / 2, direction: "horizontal" });
+          dag.get(constraint["left"].id()).push({ id: constraint["right"].id(), gap: constraint["gap"], direction: "horizontal" });
+          dagUndirected.get(constraint["left"].id()).push({ id: constraint["right"].id(), gap: constraint["gap"], direction: "horizontal" });
         } else {
-          dag.set(constraint["left"].id(), [{ id: constraint["right"].id(), gap: constraint["gap"] ? constraint["gap"] : options.idealEdgeLength + constraint["left"].width() / 2 + constraint["right"].width() / 2, direction: "horizontal" }]);
-          dagUndirected.set(constraint["left"].id(), [{ id: constraint["right"].id(), gap: constraint["gap"] ? constraint["gap"] : options.idealEdgeLength + constraint["left"].width() / 2 + constraint["right"].width() / 2, direction: "horizontal" }]);
+          dag.set(constraint["left"].id(), [{ id: constraint["right"].id(), gap: constraint["gap"], direction: "horizontal" }]);
+          dagUndirected.set(constraint["left"].id(), [{ id: constraint["right"].id(), gap: constraint["gap"], direction: "horizontal" }]);
         }
         if (dag.has(constraint["right"].id())) {
-          dagUndirected.get(constraint["right"].id()).push({ id: constraint["left"].id(), gap: constraint["gap"] ? constraint["gap"] : options.idealEdgeLength + constraint["left"].width() / 2 + constraint["right"].width() / 2, direction: "horizontal" });
+          dagUndirected.get(constraint["right"].id()).push({ id: constraint["left"].id(), gap: constraint["gap"], direction: "horizontal" });
         } else {
           dag.set(constraint["right"].id(), []);
-          dagUndirected.set(constraint["right"].id(), [{ id: constraint["left"].id(), gap: constraint["gap"] ? constraint["gap"] : options.idealEdgeLength + constraint["left"].width() / 2 + constraint["right"].width() / 2, direction: "horizontal" }]);
+          dagUndirected.set(constraint["right"].id(), [{ id: constraint["left"].id(), gap: constraint["gap"], direction: "horizontal" }]);
         }
       } else {
         if (dag.has(constraint["top"].id())) {
-          dag.get(constraint["top"].id()).push({ id: constraint["bottom"].id(), gap: constraint["gap"] ? constraint["gap"] : options.idealEdgeLength + constraint["top"].height() / 2 + constraint["bottom"].height() / 2, direction: "vertical" });
-          dagUndirected.get(constraint["top"].id()).push({ id: constraint["bottom"].id(), gap: constraint["gap"] ? constraint["gap"] : options.idealEdgeLength + constraint["top"].height() / 2 + constraint["bottom"].height() / 2, direction: "vertical" });
+          dag.get(constraint["top"].id()).push({ id: constraint["bottom"].id(), gap: constraint["gap"], direction: "vertical" });
+          dagUndirected.get(constraint["top"].id()).push({ id: constraint["bottom"].id(), gap: constraint["gap"], direction: "vertical" });
         } else {
-          dag.set(constraint["top"].id(), [{ id: constraint["bottom"].id(), gap: constraint["gap"] ? constraint["gap"] : options.idealEdgeLength + constraint["top"].height() / 2 + constraint["bottom"].height() / 2, direction: "vertical" }]);
-          dagUndirected.set(constraint["top"].id(), [{ id: constraint["bottom"].id(), gap: constraint["gap"] ? constraint["gap"] : options.idealEdgeLength + constraint["top"].height() / 2 + constraint["bottom"].height() / 2, direction: "vertical" }]);
+          dag.set(constraint["top"].id(), [{ id: constraint["bottom"].id(), gap: constraint["gap"], direction: "vertical" }]);
+          dagUndirected.set(constraint["top"].id(), [{ id: constraint["bottom"].id(), gap: constraint["gap"], direction: "vertical" }]);
         }
         if (dag.has(constraint["bottom"].id())) {
-          dagUndirected.get(constraint["bottom"].id()).push({ id: constraint["top"].id(), gap: constraint["gap"] ? constraint["gap"] : options.idealEdgeLength + constraint["top"].width() / 2 + constraint["bottom"].width() / 2, direction: "vertical" });
+          dagUndirected.get(constraint["bottom"].id()).push({ id: constraint["top"].id(), gap: constraint["gap"], direction: "vertical" });
         } else {
           dag.set(constraint["bottom"].id(), []);
-          dagUndirected.set(constraint["bottom"].id(), [{ id: constraint["top"].id(), gap: constraint["gap"] ? constraint["gap"] : options.idealEdgeLength + constraint["top"].width() / 2 + constraint["bottom"].width() / 2, direction: "vertical" }]);
+          dagUndirected.set(constraint["bottom"].id(), [{ id: constraint["top"].id(), gap: constraint["gap"], direction: "vertical" }]);
         }
       }
     });
@@ -2187,6 +2163,8 @@ module.exports = { constraintHandler: constraintHandler };
 "use strict";
 
 
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 /**
   The implementation of the postprocessing part that applies CoSE layout over the spectral layout
 */
@@ -2254,14 +2232,12 @@ var coseLayout = function coseLayout(options, spectralResult) {
       theNode.paddingRight = parseInt(theChild.css('padding'));
       theNode.paddingBottom = parseInt(theChild.css('padding'));
 
-      if (theChild.scratch("constraint")) theNode.constraint = theChild.scratch("constraint")["fixedAxes"];
-
       //Attach the label properties to compound if labels will be included in node dimensions  
       if (options.nodeDimensionsIncludeLabels) {
         if (theChild.isParent()) {
           var labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false }).w;
           var labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false }).h;
-          var labelPos = theChild.css("text-halign");
+          var labelPos = theChild.css("text-valign");
           theNode.labelWidth = labelWidth;
           theNode.labelHeight = labelHeight;
           theNode.labelPos = labelPos;
@@ -2300,6 +2276,90 @@ var coseLayout = function coseLayout(options, spectralResult) {
     }
   };
 
+  // transfer cytoscape constraints to cose layout
+  var processConstraints = function processConstraints(layout, options) {
+    // get nodes to be fixed
+    if (options.fixedNodeConstraint) {
+      var fixedNodeConstraint = [];
+      options.fixedNodeConstraint.forEach(function (constraint) {
+        fixedNodeConstraint.push({ nodeId: constraint["node"].id(), position: constraint["position"] });
+      });
+      layout.constraints["fixedNodeConstraint"] = fixedNodeConstraint;
+    }
+    // get nodes to be aligned
+    if (options.alignmentConstraint) {
+      var alignmentConstraint = {};
+      if (options.alignmentConstraint["vertical"]) {
+        var verticalAligned = options.alignmentConstraint['vertical'];
+        var verticalAlignedTemp = [];
+        for (var i = 0; i < verticalAligned.length; i++) {
+          var individualAlignmentSet = [];
+          for (var j = 0; j < verticalAligned[i].length; j++) {
+            individualAlignmentSet.push(verticalAligned[i][j].id());
+          }
+          verticalAlignedTemp.push(individualAlignmentSet);
+        }
+        alignmentConstraint["vertical"] = verticalAlignedTemp;
+      }
+      if (options.alignmentConstraint["horizontal"]) {
+        var horizontalAligned = options.alignmentConstraint['horizontal'];
+        var horizontalAlignedTemp = [];
+        for (var _i = 0; _i < horizontalAligned.length; _i++) {
+          var _individualAlignmentSet = [];
+          for (var _j = 0; _j < horizontalAligned[_i].length; _j++) {
+            _individualAlignmentSet.push(horizontalAligned[_i][_j].id());
+          }
+          horizontalAlignedTemp.push(_individualAlignmentSet);
+        }
+        alignmentConstraint["horizontal"] = horizontalAlignedTemp;
+      }
+      layout.constraints["alignmentConstraint"] = alignmentConstraint;
+    }
+    // get nodes to be relatively placed
+    if (options.relativePlacementConstraint) {
+      var relativePlacementConstraint = [];
+      options.relativePlacementConstraint.forEach(function (constraint) {
+        var tempObj = {};
+        var _iteratorNormalCompletion = true;
+        var _didIteratorError = false;
+        var _iteratorError = undefined;
+
+        try {
+          for (var _iterator = Object.entries(constraint)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var _ref = _step.value;
+
+            var _ref2 = _slicedToArray(_ref, 2);
+
+            var key = _ref2[0];
+            var value = _ref2[1];
+
+            if (key == "left" || key == "right" || key == "top" || key == "bottom") {
+              tempObj[key] = value.id();
+            } else {
+              tempObj[key] = value;
+            }
+          }
+        } catch (err) {
+          _didIteratorError = true;
+          _iteratorError = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion && _iterator.return) {
+              _iterator.return();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
+          }
+        }
+
+        relativePlacementConstraint.push(tempObj);
+      });
+      layout.constraints["relativePlacementConstraint"] = relativePlacementConstraint;
+    }
+  };
+
   /**** Apply postprocessing ****/
 
   if (options.nodeRepulsion != null) CoSEConstants.DEFAULT_REPULSION_STRENGTH = FDLayoutConstants.DEFAULT_REPULSION_STRENGTH = options.nodeRepulsion;
@@ -2329,8 +2389,8 @@ var coseLayout = function coseLayout(options, spectralResult) {
   var gm = coseLayout.newGraphManager();
 
   processChildrenList(gm.addRoot(), aux.getTopMostNodes(nodes), coseLayout, options);
-
   processEdges(coseLayout, gm, edges);
+  processConstraints(coseLayout, options);
 
   coseLayout.runLayout();
 

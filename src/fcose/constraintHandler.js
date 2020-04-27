@@ -153,36 +153,36 @@ let constraintHandler = function(options, spectralResult){
     constraints["relativePlacementConstraint"].forEach(function(constraint){
       if(constraint["left"]){
         if(dag.has(constraint["left"].id())){
-          dag.get(constraint["left"].id()).push({id: constraint["right"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["left"].width()/2 + constraint["right"].width()/2), direction: "horizontal"});
-          dagUndirected.get(constraint["left"].id()).push({id: constraint["right"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["left"].width()/2 + constraint["right"].width()/2), direction: "horizontal"});
+          dag.get(constraint["left"].id()).push({id: constraint["right"].id(), gap: constraint["gap"], direction: "horizontal"});
+          dagUndirected.get(constraint["left"].id()).push({id: constraint["right"].id(), gap: constraint["gap"], direction: "horizontal"});
         }
         else{
-          dag.set(constraint["left"].id(), [{id: constraint["right"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["left"].width()/2 + constraint["right"].width()/2), direction: "horizontal"}]);
-          dagUndirected.set(constraint["left"].id(), [{id: constraint["right"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["left"].width()/2 + constraint["right"].width()/2), direction: "horizontal"}]); 
+          dag.set(constraint["left"].id(), [{id: constraint["right"].id(), gap: constraint["gap"], direction: "horizontal"}]);
+          dagUndirected.set(constraint["left"].id(), [{id: constraint["right"].id(), gap: constraint["gap"], direction: "horizontal"}]); 
         }
         if(dag.has(constraint["right"].id())){
-          dagUndirected.get(constraint["right"].id()).push({id: constraint["left"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["left"].width()/2 + constraint["right"].width()/2), direction: "horizontal"});          
+          dagUndirected.get(constraint["right"].id()).push({id: constraint["left"].id(), gap: constraint["gap"], direction: "horizontal"});          
         }
         else{
           dag.set(constraint["right"].id(), []);
-          dagUndirected.set(constraint["right"].id(), [{id: constraint["left"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["left"].width()/2 + constraint["right"].width()/2), direction: "horizontal"}]);           
+          dagUndirected.set(constraint["right"].id(), [{id: constraint["left"].id(), gap: constraint["gap"], direction: "horizontal"}]);           
         }
       }
       else{
         if(dag.has(constraint["top"].id())){
-          dag.get(constraint["top"].id()).push({id: constraint["bottom"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["top"].height()/2 + constraint["bottom"].height()/2), direction: "vertical"});
-          dagUndirected.get(constraint["top"].id()).push({id: constraint["bottom"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["top"].height()/2 + constraint["bottom"].height()/2), direction: "vertical"});
+          dag.get(constraint["top"].id()).push({id: constraint["bottom"].id(), gap: constraint["gap"], direction: "vertical"});
+          dagUndirected.get(constraint["top"].id()).push({id: constraint["bottom"].id(), gap: constraint["gap"], direction: "vertical"});
         }
         else {
-          dag.set(constraint["top"].id(), [{id: constraint["bottom"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["top"].height()/2 + constraint["bottom"].height()/2), direction: "vertical"}]);
-          dagUndirected.set(constraint["top"].id(), [{id: constraint["bottom"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["top"].height()/2 + constraint["bottom"].height()/2), direction: "vertical"}]);          
+          dag.set(constraint["top"].id(), [{id: constraint["bottom"].id(), gap: constraint["gap"], direction: "vertical"}]);
+          dagUndirected.set(constraint["top"].id(), [{id: constraint["bottom"].id(), gap: constraint["gap"], direction: "vertical"}]);          
         }        
         if(dag.has(constraint["bottom"].id())){
-          dagUndirected.get(constraint["bottom"].id()).push({id: constraint["top"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["top"].width()/2 + constraint["bottom"].width()/2), direction: "vertical"});          
+          dagUndirected.get(constraint["bottom"].id()).push({id: constraint["top"].id(), gap: constraint["gap"], direction: "vertical"});          
         }
         else{
           dag.set(constraint["bottom"].id(), []);
-          dagUndirected.set(constraint["bottom"].id(), [{id: constraint["top"].id(), gap: constraint["gap"] ? constraint["gap"] : (options.idealEdgeLength + constraint["top"].width()/2 + constraint["bottom"].width()/2), direction: "vertical"}]);           
+          dagUndirected.set(constraint["bottom"].id(), [{id: constraint["top"].id(), gap: constraint["gap"], direction: "vertical"}]);           
         }        
       }      
     });

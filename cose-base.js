@@ -186,10 +186,10 @@ for (var prop in FDLayoutNode) {
   CoSENode[prop] = FDLayoutNode[prop];
 }
 
-CoSENode.prototype.move = function () {
+CoSENode.prototype.calculateDisplacement = function () {
   var layout = this.graphManager.getLayout();
-  this.displacementX = layout.coolingFactor * (this.springForceX + this.repulsionForceX + this.gravitationForceX) / this.noOfChildren;
-  this.displacementY = layout.coolingFactor * (this.springForceY + this.repulsionForceY + this.gravitationForceY) / this.noOfChildren;
+  this.displacementX += layout.coolingFactor * (this.springForceX + this.repulsionForceX + this.gravitationForceX) / this.noOfChildren;
+  this.displacementY += layout.coolingFactor * (this.springForceY + this.repulsionForceY + this.gravitationForceY) / this.noOfChildren;
 
   if (Math.abs(this.displacementX) > layout.coolingFactor * layout.maxNodeDisplacement) {
     this.displacementX = layout.coolingFactor * layout.maxNodeDisplacement * IMath.sign(this.displacementX);
@@ -198,35 +198,34 @@ CoSENode.prototype.move = function () {
   if (Math.abs(this.displacementY) > layout.coolingFactor * layout.maxNodeDisplacement) {
     this.displacementY = layout.coolingFactor * layout.maxNodeDisplacement * IMath.sign(this.displacementY);
   }
-  
-//  if(dX)
-//    this.displacementX = 0;
-//  if(dY)
-//    this.displacementY = 0;
-  
-  // a simple node, just move it
-  if (this.child == null) {
-    if(this.constraint == 1){
-      this.displacementX = 0;
+
+  // non-empty compound node, propogate movement to children as well
+  if (this.child && this.child.getNodes().length > 0) {
+    this.propogateDisplacementToChildren(this.displacementX, this.displacementY);
+  }
+};
+
+CoSENode.prototype.propogateDisplacementToChildren = function (dX, dY) {
+  var nodes = this.getChild().getNodes();
+  var node;
+  for (var i = 0; i < nodes.length; i++) {
+    node = nodes[i];
+    if (node.getChild() == null) {
+      node.displacementX += dX;
+      node.displacementY += dY;
+    } else {
+      node.propogateDisplacementToChildren(dX, dY);
     }
-    else if(this.constraint == 2){
-      this.displacementY = 0;
-    }
-    else if(this.constraint == 3){
-//      console.log(this.id);
-      this.displacementX = 0;
-      this.displacementY = 0;
-    }
+  }
+};
+
+CoSENode.prototype.move = function () {
+  var layout = this.graphManager.getLayout();
+
+  // a simple node or an empty compound node, move it
+  if (this.child == null || this.child.getNodes().length == 0) {
     this.moveBy(this.displacementX, this.displacementY);
   }
-  // an empty compound node, again just move it
-  else if (this.child.getNodes().length == 0) {
-      this.moveBy(this.displacementX, this.displacementY);
-    }
-    // non-empty compound node, propogate movement to children as well
-    else {
-        this.propogateDisplacementToChildren(this.displacementX, this.displacementY);
-      }
 
   layout.totalDisplacement += Math.abs(this.displacementX) + Math.abs(this.displacementY);
 
@@ -238,44 +237,6 @@ CoSENode.prototype.move = function () {
   this.gravitationForceY = 0;
   this.displacementX = 0;
   this.displacementY = 0;
-};
-
-CoSENode.prototype.propogateDisplacementToChildren = function (dX, dY) {
-  var nodes = this.getChild().getNodes();
-  var node;
-//  var isContrained = false;
-//  for (var i = 0; i < nodes.length; i++) {
-//    if(nodes[i].constraint)
-//      isContrained = true;
-//  }
-//  if(isContrained){
-    for (var i = 0; i < nodes.length; i++) {
-      node = nodes[i];
-      if (node.getChild() == null) {
-        if(node.constraint == 1){
-          node.moveBy(0, dY);
-          node.displacementY += dY;
-        }
-        else if(node.constraint == 2){
-          node.moveBy(dX, 0);
-          node.displacementX += dX; 
-        }
-        else if(node.constraint == 3){
-          node.moveBy(0, 0);
-        }
-        else{
-          node.moveBy(dX, dY);
-          node.displacementX += dX;
-          node.displacementY += dY;
-        }      
-  //      node.moveBy(dX, dY);
-  //      node.displacementX += dX;
-  //      node.displacementY += dY;
-      } else {
-        node.propogateDisplacementToChildren(dX, dY);
-      }
-    }
-//  }
 };
 
 CoSENode.prototype.setPred1 = function (pred1) {
@@ -335,6 +296,7 @@ function CoSELayout() {
   FDLayout.call(this);
 
   this.toBeTiled = {}; // Memorize if a node is to be tiled or is tiled
+  this.constraints = {}; // keep layout constraints
 }
 
 CoSELayout.prototype = Object.create(FDLayout.prototype);
@@ -436,6 +398,10 @@ CoSELayout.prototype.classicLayout = function () {
       }
   }
 
+  if (Object.keys(this.constraints).length > 0) {
+    this.initConstraintVariables();
+  }
+
   this.initSpringEmbedder();
   this.runSpringEmbedder();
 
@@ -528,36 +494,6 @@ CoSELayout.prototype.tick = function () {
   return false; // Layout is not ended yet return false
 };
 
-//CoSELayout.prototype.moveNodesWithConstraint = function (nodesWithConstraint) {
-//  
-//  var fixedNodes = [];
-//  
-//  for(var i = 0; i < nodesWithConstraint.length; i++){
-//    if(constrainedNode.constraint == 3){
-//      fixedNodes.push(nodesWithConstraint[i]);      
-//    }    
-//  }
-//  for(var i = 0; i < nodesWithConstraint.length; i++){
-//    var constrainedNode = nodesWithConstraint[i];
-//    if(constrainedNode.constraint == 3){
-//      constrainedNode.moveBy(0, 0);      
-//    }
-//    else if(constrainedNode.constraint == 1){
-//      
-//    }
-//  }
-//  
-//  for(var i = 0; i < nodesWithConstraint.length; i++){
-//    if(nodesWithConstraint[i].constraint == 3)
-//      nodesWithConstraint[i].moveBy(0, 0);
-//    else if(nodesWithConstraint[i].constraint == 1)
-//      nodesWithConstraint[i].move(10, undefined);
-//    else if(nodesWithConstraint[i].constraint == 2)
-//      nodesWithConstraint[i].move(undefined, 10);     
-//  }
-//
-//};
-
 CoSELayout.prototype.getPositionsData = function () {
   var allNodes = this.graphManager.getAllNodes();
   var pData = {};
@@ -591,6 +527,96 @@ CoSELayout.prototype.runSpringEmbedder = function () {
     }
 
     this.graphManager.updateBounds();
+  }
+};
+
+// overrides moveNodes method in FDLayout
+CoSELayout.prototype.moveNodes = function () {
+  var lNodes = this.getAllNodes();
+  var node;
+
+  // calculate displacement for each node 
+  for (var i = 0; i < lNodes.length; i++) {
+    node = lNodes[i];
+    node.calculateDisplacement();
+  }
+
+  if (Object.keys(this.constraints).length > 0) {
+    this.updateDisplacements();
+  }
+
+  // move each node
+  for (var i = 0; i < lNodes.length; i++) {
+    node = lNodes[i];
+    node.move();
+  }
+};
+
+CoSELayout.prototype.updateDisplacements = function () {
+  self = this;
+  if (this.constraints.fixedNodeConstraint) {
+    this.constraints["fixedNodeConstraint"].forEach(function (nodeData) {
+      var fixedNode = self.idToNodeMap.get(nodeData["nodeId"]);
+      fixedNode.displacementX = 0;
+      fixedNode.displacementY = 0;
+    });
+  }
+
+  if (this.constraints.alignmentConstraint) {
+    if (this.constraints.alignmentConstraint["vertical"]) {
+      var allVerticalAlignments = this.constraints.alignmentConstraint['vertical'];
+      for (var i = 0; i < allVerticalAlignments.length; i++) {
+        var totalDisplacementX = 0;
+        for (var j = 0; j < allVerticalAlignments[i].length; j++) {
+          if (this.fixedNodeSet.has(allVerticalAlignments[i][j])) {
+            totalDisplacementX = 0;
+            break;
+          }
+          totalDisplacementX += this.idToNodeMap.get(allVerticalAlignments[i][j]).displacementX;
+        }
+        var averageDisplacementX = totalDisplacementX / allVerticalAlignments[i].length;
+        for (var j = 0; j < allVerticalAlignments[i].length; j++) {
+          this.idToNodeMap.get(allVerticalAlignments[i][j]).displacementX = averageDisplacementX;
+        }
+      }
+    }
+    if (this.constraints.alignmentConstraint["horizontal"]) {
+      var allHorizontalAlignments = this.constraints.alignmentConstraint['horizontal'];
+      for (var i = 0; i < allHorizontalAlignments.length; i++) {
+        var totalDisplacementY = 0;
+        for (var j = 0; j < allHorizontalAlignments[i].length; j++) {
+          if (this.fixedNodeSet.has(allHorizontalAlignments[i][j])) {
+            totalDisplacementY = 0;
+            break;
+          }
+          totalDisplacementY += this.idToNodeMap.get(allHorizontalAlignments[i][j]).displacementY;
+        }
+        var averageDisplacementY = totalDisplacementY / allHorizontalAlignments[i].length;
+        for (var j = 0; j < allHorizontalAlignments[i].length; j++) {
+          this.idToNodeMap.get(allHorizontalAlignments[i][j]).displacementY = averageDisplacementY;
+        }
+      }
+    }
+  }
+};
+
+CoSELayout.prototype.initConstraintVariables = function () {
+  self = this;
+  this.idToNodeMap = new Map();
+  this.fixedNodeSet = new Set();
+
+  var allNodes = this.graphManager.getAllNodes();
+
+  // Fill idToNodeMap
+  for (var i = 0; i < allNodes.length; i++) {
+    var node = allNodes[i];
+    this.idToNodeMap.set(node.id, node);
+  }
+
+  if (this.constraints.fixedNodeConstraint) {
+    this.constraints["fixedNodeConstraint"].forEach(function (nodeData) {
+      self.fixedNodeSet.add(nodeData["nodeId"]);
+    });
   }
 };
 
@@ -1077,8 +1103,8 @@ CoSELayout.prototype.tileCompoundMembers = function (childGraphMap, idToNode) {
 
     self.tiledMemberPack[id] = self.tileNodes(childGraphMap[id], compoundNode.paddingLeft + compoundNode.paddingRight);
 
-    compoundNode.rect.width = self.tiledMemberPack[id].width + 20;
-    compoundNode.rect.height = self.tiledMemberPack[id].height + 20;
+    compoundNode.rect.width = self.tiledMemberPack[id].width;
+    compoundNode.rect.height = self.tiledMemberPack[id].height;
   });
 };
 
@@ -1089,8 +1115,8 @@ CoSELayout.prototype.tileNodes = function (nodes, minWidth) {
     rows: [],
     rowWidth: [],
     rowHeight: [],
-    width: 20,
-    height: 20,
+    width: 0,
+    height: minWidth, // assume minHeight equals to minWidth
     verticalPadding: verticalPadding,
     horizontalPadding: horizontalPadding
   };
