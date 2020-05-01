@@ -1199,7 +1199,7 @@ var Layout = function () {
         // if there exists relative placement constraint without gap value, set it to default 
         if (options.relativePlacementConstraint) {
           options.relativePlacementConstraint.forEach(function (constraint) {
-            if (!constraint["gap"]) {
+            if (!constraint["gap"] && constraint["gap"] != 0) {
               if (constraint["left"]) {
                 constraint["gap"] = options.idealEdgeLength + constraint["left"].width() / 2 + constraint["right"].width() / 2;
               } else {
