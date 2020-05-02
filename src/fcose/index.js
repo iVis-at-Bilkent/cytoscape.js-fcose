@@ -175,9 +175,19 @@ class Layout {
             constraintHandler(options, result);
           }
         }
+        
+        // move graph to its original position because spectral moves it to origin
+        if(!options.fixedNodeConstraint) {
+          let boundingBox = options.eles.boundingBox();
+          let diffOnX = (boundingBox.x1 + boundingBox.w / 2) - (Math.max(...result.xCoords) + Math.min(...result.xCoords)) / 2;
+          let diffOnY = (boundingBox.y1 + boundingBox.h / 2) - (Math.max(...result.yCoords) + Math.min(...result.yCoords)) / 2;
+          result.xCoords = result.xCoords.map(x => x + diffOnX);
+          result.yCoords = result.yCoords.map(y => y + diffOnY);
+        }
+        
         spectralResult.push(result);
         xCoords = spectralResult[0]["xCoords"];
-        yCoords = spectralResult[0]["yCoords"];
+        yCoords = spectralResult[0]["yCoords"];        
       }
       // apply cose layout as postprocessing
       if(options.quality == "default" || options.quality == "proof"){  
