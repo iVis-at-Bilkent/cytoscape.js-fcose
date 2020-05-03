@@ -207,9 +207,119 @@
                   'line-color': '#F08080'
                 }
               }                 
-            ],  
-            /*
-            elements: [{ group:'nodes', data:{ id: 'n0'}},
+            ],              
+            elements: {
+              nodes: [
+              //  { data: { id: 'n0'} },
+                { data: { id: 'n1'} },
+                { data: { id: 'n2'} },
+                { data: { id: 'n3'} },
+                { data: { id: 'n4', parent: 'n10'} },
+                { data: { id: 'n5'} },
+                { data: { id: 'n6'} },
+                { data: { id: 'n7', parent: 'n10'} },
+                { data: { id: 'n8', parent: 'n10'} },
+                { data: { id: 'n9', parent: 'n10'}},
+                { data: { id: 'n10'} }               
+              ],
+              edges: [
+              //  { data: { source: 'n0', target: 'n1' } },
+              //  { data: { source: 'n0', target: 'n3' } },
+                { data: { source: 'n1', target: 'n2' } },
+                { data: { source: 'n1', target: 'n4' } },
+                { data: { source: 'n2', target: 'n3' } },
+                { data: { source: 'n2', target: 'n4' } },
+                { data: { source: 'n4', target: 'n5' } },
+                { data: { source: 'n5', target: 'n6' } },
+                { data: { source: 'n6', target: 'n10' } },
+                { data: { source: 'n7', target: 'n4' } },
+                { data: { source: 'n7', target: 'n8' } },
+                { data: { source: 'n7', target: 'n9' } }               
+              ]
+            }            
+          });
+          
+          let elements1 = {
+              nodes: [
+              //  { data: { id: 'n0'} },
+                { data: { id: 'n1'} },
+                { data: { id: 'n2'} },
+                { data: { id: 'n3'} },
+                { data: { id: 'n4', parent: 'n10'} },
+                { data: { id: 'n5'} },
+                { data: { id: 'n6'} },
+                { data: { id: 'n7', parent: 'n10'} },
+                { data: { id: 'n8', parent: 'n10'} },
+                { data: { id: 'n9', parent: 'n10'}},
+                { data: { id: 'n10'} }               
+              ],
+              edges: [
+              //  { data: { source: 'n0', target: 'n1' } },
+              //  { data: { source: 'n0', target: 'n3' } },
+                { data: { source: 'n1', target: 'n2' } },
+                { data: { source: 'n1', target: 'n4' } },
+                { data: { source: 'n2', target: 'n3' } },
+                { data: { source: 'n2', target: 'n4' } },
+                { data: { source: 'n4', target: 'n5' } },
+                { data: { source: 'n5', target: 'n6' } },
+                { data: { source: 'n6', target: 'n10' } },
+                { data: { source: 'n7', target: 'n4' } },
+                { data: { source: 'n7', target: 'n8' } },
+                { data: { source: 'n7', target: 'n9' } }               
+              ]
+          };
+            
+          let elements2 = {
+              nodes: [
+                { data: { id: 'n0', parent: 'n17'} },
+                { data: { id: 'n1', parent: 'n17'} },
+                { data: { id: 'n2'} },
+                { data: { id: 'n3'} },
+                { data: { id: 'n4', parent: 'n17'} },
+                { data: { id: 'n5', parent: 'n17'} },
+                { data: { id: 'n6'} },
+                { data: { id: 'n7'} },
+                { data: { id: 'n8'} },
+                { data: { id: 'n9', parent: 'n18'}},
+                { data: { id: 'n10', parent: 'n16'} },
+                { data: { id: 'n11', parent: 'n16'} },
+                { data: { id: 'n12'} },
+                { data: { id: 'n13', parent: 'n18'}},
+                { data: { id: 'n14', parent: 'n16'} },
+                { data: { id: 'n15', parent: 'n16'} },
+                { data: { id: 'n16'} },
+                { data: { id: 'n17'} },
+                { data: { id: 'n18'} }                
+              ],
+              edges: [
+                { data: { source: 'n0', target: 'n1' } },
+                { data: { source: 'n0', target: 'n4' } },
+                { data: { source: 'n17', target: 'n2' } },
+                { data: { source: 'n1', target: 'n5' } },
+                { data: { source: 'n2', target: 'n3' } },
+                //{ data: { source: 'n2', target: 'n6' } },
+                //{ data: { source: 'n3', target: 'n7' } },
+                { data: { source: 'n4', target: 'n5' } },
+                { data: { source: 'n17', target: 'n8' } },
+                //{ data: { source: 'n5', target: 'n6' } },
+                { data: { source: 'n5', target: 'n9' } },
+                { data: { source: 'n6', target: 'n7' } },
+                { data: { source: 'n6', target: 'n10' } },
+                { data: { source: 'n7', target: 'n16' } },
+                { data: { source: 'n8', target: 'n9' } },
+                { data: { source: 'n8', target: 'n12' } },
+                //{ data: { source: 'n9', target: 'n16' } },
+                { data: { source: 'n9', target: 'n13' } },
+                { data: { source: 'n10', target: 'n11' } },
+                { data: { source: 'n10', target: 'n14' } },
+                //{ data: { source: 'n11', target: 'n15' } },
+                //{ data: { source: 'n12', target: 'n13' } },
+                { data: { source: 'n13', target: 'n14' } },
+                { data: { source: 'n14', target: 'n15' } }                
+              ]
+          };          
+
+          let elements3 = [{ group:'nodes', data:{ id: 'n0'}},
                     { group:'nodes', data:{ id: 'n1'}},
                     { group:'nodes', data:{ id: 'n2'}},
                     { group:'nodes', data:{ id: 'n3'}},
@@ -295,92 +405,9 @@
                     { group:'edges', data:{ id: 'e41', source: 'n44', target: 'n45'} },
                     { group:'edges', data:{ id: 'e42', source: 'n44', target: 'n46'} },
                     { group:'edges', data:{ id: 'e43', source: 'n45', target: 'n46'} }                 
-                   ]
-            */
-            /*
-            elements: {
-              nodes: [
-                { data: { id: 'n0', parent: 'n17'} },
-                { data: { id: 'n1', parent: 'n17'} },
-                { data: { id: 'n2'} },
-                { data: { id: 'n3'} },
-                { data: { id: 'n4', parent: 'n17'} },
-                { data: { id: 'n5', parent: 'n17'} },
-                { data: { id: 'n6'} },
-                { data: { id: 'n7'} },
-                { data: { id: 'n8'} },
-                { data: { id: 'n9', parent: 'n18'}},
-                { data: { id: 'n10', parent: 'n16'} },
-                { data: { id: 'n11', parent: 'n16'} },
-                { data: { id: 'n12'} },
-                { data: { id: 'n13', parent: 'n18'}},
-                { data: { id: 'n14', parent: 'n16'} },
-                { data: { id: 'n15', parent: 'n16'} },
-                { data: { id: 'n16'} },
-                { data: { id: 'n17'} },
-                { data: { id: 'n18'} }                
-              ],
-              edges: [
-                { data: { source: 'n0', target: 'n1' } },
-                { data: { source: 'n0', target: 'n4' } },
-                { data: { source: 'n17', target: 'n2' } },
-                { data: { source: 'n1', target: 'n5' } },
-                { data: { source: 'n2', target: 'n3' } },
-                { data: { source: 'n2', target: 'n6' } },
-                { data: { source: 'n3', target: 'n7' } },
-                { data: { source: 'n4', target: 'n5' } },
-                { data: { source: 'n17', target: 'n8' } },
-                { data: { source: 'n5', target: 'n6' } },
-                { data: { source: 'n5', target: 'n9' } },
-                { data: { source: 'n6', target: 'n7' } },
-                { data: { source: 'n6', target: 'n10' } },
-                { data: { source: 'n7', target: 'n16' } },
-                { data: { source: 'n8', target: 'n9' } },
-                { data: { source: 'n8', target: 'n12' } },
-                { data: { source: 'n9', target: 'n16' } },
-                { data: { source: 'n9', target: 'n13' } },
-                { data: { source: 'n10', target: 'n11' } },
-                { data: { source: 'n10', target: 'n14' } },
-                { data: { source: 'n11', target: 'n15' } },
-                { data: { source: 'n12', target: 'n13' } },
-                { data: { source: 'n13', target: 'n14' } },
-                { data: { source: 'n14', target: 'n15' } }                
-              ]
-            }    
-            */
-            
-            elements: {
-              nodes: [
-              //  { data: { id: 'n0'} },
-                { data: { id: 'n1'} },
-                { data: { id: 'n2'} },
-                { data: { id: 'n3'} },
-                { data: { id: 'n4', parent: 'n10'} },
-                { data: { id: 'n5'} },
-                { data: { id: 'n6'} },
-                { data: { id: 'n7', parent: 'n10'} },
-                { data: { id: 'n8', parent: 'n10'} },
-                { data: { id: 'n9', parent: 'n10'}},
-                { data: { id: 'n10'} }               
-              ],
-              edges: [
-              //  { data: { source: 'n0', target: 'n1' } },
-              //  { data: { source: 'n0', target: 'n3' } },
-                { data: { source: 'n1', target: 'n2' } },
-                { data: { source: 'n1', target: 'n4' } },
-                { data: { source: 'n2', target: 'n3' } },
-                { data: { source: 'n2', target: 'n4' } },
-                { data: { source: 'n4', target: 'n5' } },
-                { data: { source: 'n5', target: 'n6' } },
-                { data: { source: 'n6', target: 'n10' } },
-                { data: { source: 'n7', target: 'n4' } },
-                { data: { source: 'n7', target: 'n8' } },
-                { data: { source: 'n7', target: 'n9' } }               
-              ]
-            }  
-           
-           /*
-            elements: {
+          ];
+          
+          let elements4 = {
               nodes: [
                 { data: { id: 'n0'} },
                 { data: { id: 'n1'} },
@@ -410,11 +437,45 @@
                 { data: { source: 'n7', target: 'n11' } },
                 { data: { source: 'n7', target: 'n12' } }              
               ]
-            }             
-         */
-          });                  
+          };                
+            
+          document.getElementById("sample").addEventListener("change", function(){
+            cy.elements().remove();
+            var selectionObject = document.getElementById("sample");
+            var selected = selectionObject.options[selectionObject.selectedIndex].index;
+            if(selected == 0){
+              cy.add(elements1);
+            }
+            else if(selected == 1){
+              cy.add(elements2);
+            }
+            else if(selected == 2){
+              cy.add(elements3);
+            }
+            else if(selected == 3){
+              cy.add(elements4);
+            }                                  
+            
+            cy.nodes().forEach(function(node){
+              let size = Math.random()*40+30;
+              node.css("width", size);
+              node.css("height", size);
+            });            
+            
+            let optionsDraft = Object.assign({}, options);
+            optionsDraft.step = "all";
+            optionsDraft.quality = "default";
+            cy.layout(optionsDraft).run();
+            
+            onLoad();
+            
+            document.getElementById("nodeList").addEventListener("change", function(){
+              document.getElementById("fixedNodeX").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("x"));
+              document.getElementById("fixedNodeY").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("y"));
+            });
+          });
           
-          cy.ready( function(event){
+          let onLoad = function(){
             let nodeList = "<select style='background-color: #64ffee;' id='nodeList'>";
             for(let i = 0; i < cy.nodes().not(":parent").length; i++){
               nodeList += "<option value=" + cy.nodes().not(":parent")[i].id() + ">" + cy.nodes().not(":parent")[i].id() + "</option>";
@@ -439,6 +500,9 @@
             
             let listComponentForRP2 = document.getElementById("nodeListColumnRP2");
             listComponentForRP2.innerHTML = nodeListRP2;            
+          }
+          cy.ready( function(event){
+            onLoad();
           });
           
           const debounce = (func, delay) => { 
@@ -770,7 +834,13 @@
           <h1>cytoscape-fcose demo (compound)</h1>
           <div style='width: 375px; position: absolute;'>
             <button id="randomizeButton" class="layoutButton">Randomize</button>&nbsp
-            <button id="fcoseButton" class="layoutButton">fCoSE</button><br>
+            <button id="fcoseButton" class="layoutButton">fCoSE</button>&nbsp
+            <select id="sample">
+              <option value="sample1" selected="">sample1</option>
+              <option value="sample2">sample2</option>
+              <option value="sample3">sample3</option>
+              <option value="sample4">sample4</option>
+            </select><br>
             <button id="fcoseButton1" class="layoutButton">Draft</button>&nbsp
             <button id="fcoseButton2" class="layoutButton">Transform</button>&nbsp
             <button id="fcoseButton3" class="layoutButton">Enforce</button>&nbsp

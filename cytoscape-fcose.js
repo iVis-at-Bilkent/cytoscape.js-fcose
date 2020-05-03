@@ -1044,8 +1044,6 @@ module.exports = auxiliary;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 /**
@@ -1233,18 +1231,14 @@ var Layout = function () {
             }
           }
 
-          // move graph to its original position because spectral moves it to origin
-          if (!options.fixedNodeConstraint) {
-            var boundingBox = options.eles.boundingBox();
-            var diffOnX = boundingBox.x1 + boundingBox.w / 2 - (Math.max.apply(Math, _toConsumableArray(result.xCoords)) + Math.min.apply(Math, _toConsumableArray(result.xCoords))) / 2;
-            var diffOnY = boundingBox.y1 + boundingBox.h / 2 - (Math.max.apply(Math, _toConsumableArray(result.yCoords)) + Math.min.apply(Math, _toConsumableArray(result.yCoords))) / 2;
-            result.xCoords = result.xCoords.map(function (x) {
-              return x + diffOnX;
-            });
-            result.yCoords = result.yCoords.map(function (y) {
-              return y + diffOnY;
-            });
-          }
+          //        // move graph to its original position because spectral moves it to origin
+          //        if(!options.fixedNodeConstraint) {
+          //          let boundingBox = options.eles.boundingBox();
+          //          let diffOnX = (boundingBox.x1 + boundingBox.w / 2) - (Math.max(...result.xCoords) + Math.min(...result.xCoords)) / 2;
+          //          let diffOnY = (boundingBox.y1 + boundingBox.h / 2) - (Math.max(...result.yCoords) + Math.min(...result.yCoords)) / 2;
+          //          result.xCoords = result.xCoords.map(x => x + diffOnX);
+          //          result.yCoords = result.yCoords.map(y => y + diffOnY);
+          //        }
 
           spectralResult.push(result);
           xCoords = spectralResult[0]["xCoords"];
