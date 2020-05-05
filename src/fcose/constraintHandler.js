@@ -124,7 +124,37 @@ let constraintHandler = function(options, spectralResult){
       });
     }
     return positionMap;
-  };  
+  };
+  
+  // find transformation based on rel. placement constraints if there are both alignment and rel. placement constraints
+  // or if there are only rel. placement contraints where the largest component isn't sufficiently large
+  let findReflectionForRelativePlacement = function (relativePlacementConstraints) {
+    // variables to count votes
+    let reflectOnY = 0, notReflectOnY = 0;
+    let reflectOnX = 0, notReflectOnX = 0;
+
+    relativePlacementConstraints.forEach(function(constraint){
+      if(constraint["left"]){
+        (xCoords[nodeIndexes.get(constraint["left"].id())] - xCoords[nodeIndexes.get(constraint["right"].id())] >= 0) ? reflectOnY++ : notReflectOnY++;
+      }
+      else{
+        (yCoords[nodeIndexes.get(constraint["top"].id())] - yCoords[nodeIndexes.get(constraint["bottom"].id())] >= 0) ? reflectOnX++ : notReflectOnX++;
+      }
+    });
+
+    if(reflectOnY > notReflectOnY && reflectOnX > notReflectOnX){
+      return "reflectOnBoth";
+    }
+    else if(reflectOnY > notReflectOnY){
+      return "reflectOnY";
+    }
+    else if(reflectOnX > notReflectOnX){
+      return "reflectOnX";
+    }
+    else{
+      return false;
+    }
+  };
   
   /****  apply transformation to the initial draft layout to better align with constrained nodes ****/
   // solve the Orthogonal Procrustean Problem to rotate and/or reflect initial draft layout
@@ -134,7 +164,8 @@ let constraintHandler = function(options, spectralResult){
   
   let targetMatrix = []; // A - target configuration
   let sourceMatrix = []; // B - source configuration 
-  let transformationType = false; // false for no transformation, 'full' for rotation and/or reflection, 'reflectOnX' or 'reflectOnY' or 'reflectOnBoth' for only reflection
+  let standardTransformation = false; // false for no transformation, true for standart (Procrustes) transformation (rotation and/or reflection)
+  let reflectionType = false; // false/true for reflection check, 'reflectOnX', 'reflectOnY' or 'reflectOnBoth' for reflection type if necessary
   let fixedNodes = cy.collection();
   let dag = new Map(); // adjacency list to keep directed acyclic graph (dag) that consists of relative placement constraints
   let dagUndirected = new Map(); // undirected version of the dag
@@ -222,7 +253,7 @@ let constraintHandler = function(options, spectralResult){
       targetMatrix[i] = [nodeData["position"]["x"], nodeData["position"]["y"]];
       sourceMatrix[i] = [xCoords[nodeIndexes.get(nodeData["node"].id())], yCoords[nodeIndexes.get(nodeData["node"].id())]];      
     });
-    transformationType = "full";
+    standardTransformation = true;
   }
   else if(constraints["alignmentConstraint"]){  // then check alignment constraint  
     let count = 0; 
@@ -246,7 +277,7 @@ let constraintHandler = function(options, spectralResult){
           count++;
         });
       }
-      transformationType = "full";
+      standardTransformation = true;
     }
     if(constraints["alignmentConstraint"]["horizontal"]){
       let horizontalAlign = constraints["alignmentConstraint"]["horizontal"];
@@ -268,8 +299,11 @@ let constraintHandler = function(options, spectralResult){
           count++;
         });
       }
-      transformationType = "full";
-    }     
+      standardTransformation = true;
+    }
+    if(constraints["relativePlacementConstraint"]){
+      reflectionType = true;
+    }
   }
   else if(constraints["relativePlacementConstraint"]){  // finally check relative placement constraint 
     // find largest component in dag
@@ -283,28 +317,8 @@ let constraintHandler = function(options, spectralResult){
     }
     // if largest component isn't dominant, then take the votes for reflection
     if(largestComponentSize < (dagUndirected.size / 2)){
-      // variables to count votes
-      let reflectOnY = 0, notReflectOnY = 0;
-      let reflectOnX = 0, notReflectOnX = 0;
-
-      constraints["relativePlacementConstraint"].forEach(function(constraint){
-        if(constraint["left"]){
-          (xCoords[nodeIndexes.get(constraint["left"].id())] - xCoords[nodeIndexes.get(constraint["right"].id())] >= 0) ? reflectOnY++ : notReflectOnY++;
-        }
-        else{
-          (yCoords[nodeIndexes.get(constraint["top"].id())] - yCoords[nodeIndexes.get(constraint["bottom"].id())] >= 0) ? reflectOnX++ : notReflectOnX++;
-        }
-      });
-
-      if(reflectOnY > notReflectOnY && reflectOnX > notReflectOnX){
-        transformationType = "reflectOnBoth";
-      }
-      else if(reflectOnY > notReflectOnY){
-        transformationType = "reflectOnY";
-      }
-      else if(reflectOnX > notReflectOnX){
-        transformationType = "reflectOnX";
-      } 
+      standardTransformation = false;
+      reflectionType = findReflectionForRelativePlacement(constraints["relativePlacementConstraint"]); 
     }
     else{ // use largest component for transformation 
       // construct horizontal and vertical subgraphs in the largest component
@@ -359,15 +373,15 @@ let constraintHandler = function(options, spectralResult){
         }
       });
 
-      transformationType = "full";
+      standardTransformation = true;
     }
   }
 
   // if transformation is required, then calculate and apply transformation matrix
-  if(transformationType && (options.step == "transformed" || options.step == "all")){
+  if((standardTransformation || reflectionType) && (options.step == "transformed" || options.step == "all")){
     /* calculate transformation matrix */
     let transformationMatrix;
-    if(transformationType == "full"){
+    if(standardTransformation){
       let targetMatrixTranspose = aux.transpose(targetMatrix);  // A'
       let sourceMatrixTranspose = aux.transpose(sourceMatrix);  // B'
 
@@ -381,24 +395,54 @@ let constraintHandler = function(options, spectralResult){
       let tempMatrix = aux.multMat(targetMatrixTranspose, aux.transpose(sourceMatrixTranspose)); // tempMatrix = A'B
       let SVDResult = aux.svd(tempMatrix); // SVD(A'B) = USV', svd function returns U, S and V 
       transformationMatrix = aux.multMat(SVDResult.V, aux.transpose(SVDResult.U)); // transformationMatrix = T = VU'
+      
+      // if this is true then we have both alignment and rel. placement constraint
+      if (reflectionType) {
+        // apply transformation based on alignment constraint
+        for(let i = 0; i < nodeIndexes.size; i++){
+          let temp1 = [xCoords[i], yCoords[i]];
+          let temp2 = [transformationMatrix[0][0], transformationMatrix[1][0]];
+          let temp3 = [transformationMatrix[0][1], transformationMatrix[1][1]];
+          xCoords[i] = aux.dotProduct(temp1, temp2);
+          yCoords[i] = aux.dotProduct(temp1, temp3);
+        }      
+        
+        reflectionType = findReflectionForRelativePlacement(constraints["relativePlacementConstraint"]);   
+        
+        // redefine transformation matrix based on rel. placement constraints
+        if (reflectionType == "reflectOnBoth") {
+          transformationMatrix = [[-1, 0], [0, -1]];
+        }
+        else if (reflectionType == "reflectOnX") {
+          transformationMatrix = [[1, 0], [0, -1]];
+        }
+        else if (reflectionType == "reflectOnY") {
+          transformationMatrix = [[-1, 0], [0, 1]];
+        }
+        else {  // reflection is not necessary
+          transformationMatrix = undefined;
+        }
+      }
     }
-    else if(transformationType == "reflectOnBoth"){
+    else if(reflectionType == "reflectOnBoth"){
       transformationMatrix = [[-1, 0], [0, -1]];
     }
-    else if(transformationType == "reflectOnX"){
+    else if(reflectionType == "reflectOnX"){
       transformationMatrix = [[1, 0], [0, -1]];
     }
-    else if(transformationType == "reflectOnY"){
+    else if(reflectionType == "reflectOnY"){
       transformationMatrix = [[-1, 0], [0, 1]];
-    }    
+    }
+    
     /* apply found transformation matrix to obtain final draft layout */
-
-    for(let i = 0; i < nodeIndexes.size; i++){
-      let temp1 = [xCoords[i], yCoords[i]];
-      let temp2 = [transformationMatrix[0][0], transformationMatrix[1][0]];
-      let temp3 = [transformationMatrix[0][1], transformationMatrix[1][1]];
-      xCoords[i] = aux.dotProduct(temp1, temp2);
-      yCoords[i] = aux.dotProduct(temp1, temp3);
+    if (transformationMatrix) {
+      for(let i = 0; i < nodeIndexes.size; i++){
+        let temp1 = [xCoords[i], yCoords[i]];
+        let temp2 = [transformationMatrix[0][0], transformationMatrix[1][0]];
+        let temp3 = [transformationMatrix[0][1], transformationMatrix[1][1]];
+        xCoords[i] = aux.dotProduct(temp1, temp2);
+        yCoords[i] = aux.dotProduct(temp1, temp3);
+      }
     }
   }
   

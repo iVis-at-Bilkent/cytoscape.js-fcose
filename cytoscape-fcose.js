@@ -1607,6 +1607,34 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
     return positionMap;
   };
 
+  // find transformation based on rel. placement constraints if there are both alignment and rel. placement constraints
+  // or if there are only rel. placement contraints where the largest component isn't sufficiently large
+  var findReflectionForRelativePlacement = function findReflectionForRelativePlacement(relativePlacementConstraints) {
+    // variables to count votes
+    var reflectOnY = 0,
+        notReflectOnY = 0;
+    var reflectOnX = 0,
+        notReflectOnX = 0;
+
+    relativePlacementConstraints.forEach(function (constraint) {
+      if (constraint["left"]) {
+        xCoords[nodeIndexes.get(constraint["left"].id())] - xCoords[nodeIndexes.get(constraint["right"].id())] >= 0 ? reflectOnY++ : notReflectOnY++;
+      } else {
+        yCoords[nodeIndexes.get(constraint["top"].id())] - yCoords[nodeIndexes.get(constraint["bottom"].id())] >= 0 ? reflectOnX++ : notReflectOnX++;
+      }
+    });
+
+    if (reflectOnY > notReflectOnY && reflectOnX > notReflectOnX) {
+      return "reflectOnBoth";
+    } else if (reflectOnY > notReflectOnY) {
+      return "reflectOnY";
+    } else if (reflectOnX > notReflectOnX) {
+      return "reflectOnX";
+    } else {
+      return false;
+    }
+  };
+
   /****  apply transformation to the initial draft layout to better align with constrained nodes ****/
   // solve the Orthogonal Procrustean Problem to rotate and/or reflect initial draft layout
   // here we follow the solution in Chapter 20.2 of Borg, I. & Groenen, P. (2005) Modern Multidimensional Scaling: Theory and Applications 
@@ -1615,7 +1643,8 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
 
   var targetMatrix = []; // A - target configuration
   var sourceMatrix = []; // B - source configuration 
-  var transformationType = false; // false for no transformation, 'full' for rotation and/or reflection, 'reflectOnX' or 'reflectOnY' or 'reflectOnBoth' for only reflection
+  var standardTransformation = false; // false for no transformation, true for standart (Procrustes) transformation (rotation and/or reflection)
+  var reflectionType = false; // false/true for reflection check, 'reflectOnX', 'reflectOnY' or 'reflectOnBoth' for reflection type if necessary
   var fixedNodes = cy.collection();
   var dag = new Map(); // adjacency list to keep directed acyclic graph (dag) that consists of relative placement constraints
   var dagUndirected = new Map(); // undirected version of the dag
@@ -1698,7 +1727,7 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
       targetMatrix[i] = [nodeData["position"]["x"], nodeData["position"]["y"]];
       sourceMatrix[i] = [xCoords[nodeIndexes.get(nodeData["node"].id())], yCoords[nodeIndexes.get(nodeData["node"].id())]];
     });
-    transformationType = "full";
+    standardTransformation = true;
   } else if (constraints["alignmentConstraint"]) {
     (function () {
       // then check alignment constraint  
@@ -1725,7 +1754,7 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
         for (var i = 0; i < verticalAlign.length; i++) {
           _loop2(i);
         }
-        transformationType = "full";
+        standardTransformation = true;
       }
       if (constraints["alignmentConstraint"]["horizontal"]) {
         var horizontalAlign = constraints["alignmentConstraint"]["horizontal"];
@@ -1749,7 +1778,10 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
         for (var i = 0; i < horizontalAlign.length; i++) {
           _loop3(i);
         }
-        transformationType = "full";
+        standardTransformation = true;
+      }
+      if (constraints["relativePlacementConstraint"]) {
+        reflectionType = true;
       }
     })();
   } else if (constraints["relativePlacementConstraint"]) {
@@ -1765,27 +1797,8 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
     }
     // if largest component isn't dominant, then take the votes for reflection
     if (largestComponentSize < dagUndirected.size / 2) {
-      // variables to count votes
-      var reflectOnY = 0,
-          notReflectOnY = 0;
-      var reflectOnX = 0,
-          notReflectOnX = 0;
-
-      constraints["relativePlacementConstraint"].forEach(function (constraint) {
-        if (constraint["left"]) {
-          xCoords[nodeIndexes.get(constraint["left"].id())] - xCoords[nodeIndexes.get(constraint["right"].id())] >= 0 ? reflectOnY++ : notReflectOnY++;
-        } else {
-          yCoords[nodeIndexes.get(constraint["top"].id())] - yCoords[nodeIndexes.get(constraint["bottom"].id())] >= 0 ? reflectOnX++ : notReflectOnX++;
-        }
-      });
-
-      if (reflectOnY > notReflectOnY && reflectOnX > notReflectOnX) {
-        transformationType = "reflectOnBoth";
-      } else if (reflectOnY > notReflectOnY) {
-        transformationType = "reflectOnY";
-      } else if (reflectOnX > notReflectOnX) {
-        transformationType = "reflectOnX";
-      }
+      standardTransformation = false;
+      reflectionType = findReflectionForRelativePlacement(constraints["relativePlacementConstraint"]);
     } else {
       // use largest component for transformation 
       // construct horizontal and vertical subgraphs in the largest component
@@ -1835,15 +1848,15 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
         }
       });
 
-      transformationType = "full";
+      standardTransformation = true;
     }
   }
 
   // if transformation is required, then calculate and apply transformation matrix
-  if (transformationType && (options.step == "transformed" || options.step == "all")) {
+  if ((standardTransformation || reflectionType) && (options.step == "transformed" || options.step == "all")) {
     /* calculate transformation matrix */
     var transformationMatrix = void 0;
-    if (transformationType == "full") {
+    if (standardTransformation) {
       var targetMatrixTranspose = aux.transpose(targetMatrix); // A'
       var sourceMatrixTranspose = aux.transpose(sourceMatrix); // B'
 
@@ -1857,21 +1870,49 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
       var tempMatrix = aux.multMat(targetMatrixTranspose, aux.transpose(sourceMatrixTranspose)); // tempMatrix = A'B
       var SVDResult = aux.svd(tempMatrix); // SVD(A'B) = USV', svd function returns U, S and V 
       transformationMatrix = aux.multMat(SVDResult.V, aux.transpose(SVDResult.U)); // transformationMatrix = T = VU'
-    } else if (transformationType == "reflectOnBoth") {
+
+      // if this is true then we have both alignment and rel. placement constraint
+      if (reflectionType) {
+        // apply transformation based on alignment constraint
+        for (var _i2 = 0; _i2 < nodeIndexes.size; _i2++) {
+          var temp1 = [xCoords[_i2], yCoords[_i2]];
+          var temp2 = [transformationMatrix[0][0], transformationMatrix[1][0]];
+          var temp3 = [transformationMatrix[0][1], transformationMatrix[1][1]];
+          xCoords[_i2] = aux.dotProduct(temp1, temp2);
+          yCoords[_i2] = aux.dotProduct(temp1, temp3);
+        }
+
+        reflectionType = findReflectionForRelativePlacement(constraints["relativePlacementConstraint"]);
+
+        // redefine transformation matrix based on rel. placement constraints
+        if (reflectionType == "reflectOnBoth") {
+          transformationMatrix = [[-1, 0], [0, -1]];
+        } else if (reflectionType == "reflectOnX") {
+          transformationMatrix = [[1, 0], [0, -1]];
+        } else if (reflectionType == "reflectOnY") {
+          transformationMatrix = [[-1, 0], [0, 1]];
+        } else {
+          // reflection is not necessary
+          transformationMatrix = undefined;
+        }
+      }
+    } else if (reflectionType == "reflectOnBoth") {
       transformationMatrix = [[-1, 0], [0, -1]];
-    } else if (transformationType == "reflectOnX") {
+    } else if (reflectionType == "reflectOnX") {
       transformationMatrix = [[1, 0], [0, -1]];
-    } else if (transformationType == "reflectOnY") {
+    } else if (reflectionType == "reflectOnY") {
       transformationMatrix = [[-1, 0], [0, 1]];
     }
-    /* apply found transformation matrix to obtain final draft layout */
 
-    for (var _i2 = 0; _i2 < nodeIndexes.size; _i2++) {
-      var temp1 = [xCoords[_i2], yCoords[_i2]];
-      var temp2 = [transformationMatrix[0][0], transformationMatrix[1][0]];
-      var temp3 = [transformationMatrix[0][1], transformationMatrix[1][1]];
-      xCoords[_i2] = aux.dotProduct(temp1, temp2);
-      yCoords[_i2] = aux.dotProduct(temp1, temp3);
+    /* apply found transformation matrix to obtain final draft layout */
+    if (transformationMatrix) {
+      for (var _i3 = 0; _i3 < nodeIndexes.size; _i3++) {
+        var _temp = [xCoords[_i3], yCoords[_i3]];
+        var _temp2 = [transformationMatrix[0][0], transformationMatrix[1][0]];
+        var _temp3 = [transformationMatrix[0][1], transformationMatrix[1][1]];
+        xCoords[_i3] = aux.dotProduct(_temp, _temp2);
+        yCoords[_i3] = aux.dotProduct(_temp, _temp3);
+      }
     }
   }
 
@@ -1913,9 +1954,9 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
       if (constraints["alignmentConstraint"]["vertical"]) {
         var xAlign = constraints["alignmentConstraint"]["vertical"];
 
-        var _loop4 = function _loop4(_i3) {
+        var _loop4 = function _loop4(_i4) {
           var alignmentSet = cy.collection();
-          xAlign[_i3].forEach(function (node) {
+          xAlign[_i4].forEach(function (node) {
             alignmentSet = alignmentSet.merge(node);
           });
           var intersection = alignmentSet.diff(fixedNodes).both;
@@ -1928,16 +1969,16 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
           }
         };
 
-        for (var _i3 = 0; _i3 < xAlign.length; _i3++) {
-          _loop4(_i3);
+        for (var _i4 = 0; _i4 < xAlign.length; _i4++) {
+          _loop4(_i4);
         }
       }
       if (constraints["alignmentConstraint"]["horizontal"]) {
         var yAlign = constraints["alignmentConstraint"]["horizontal"];
 
-        var _loop5 = function _loop5(_i4) {
+        var _loop5 = function _loop5(_i5) {
           var alignmentSet = cy.collection();
-          yAlign[_i4].forEach(function (node) {
+          yAlign[_i5].forEach(function (node) {
             alignmentSet = alignmentSet.merge(node);
           });
           var intersection = alignmentSet.diff(fixedNodes).both;
@@ -1950,8 +1991,8 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
           }
         };
 
-        for (var _i4 = 0; _i4 < yAlign.length; _i4++) {
-          _loop5(_i4);
+        for (var _i5 = 0; _i5 < yAlign.length; _i5++) {
+          _loop5(_i5);
         }
       }
     }
@@ -1979,39 +2020,39 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
           if (constraints["alignmentConstraint"]["vertical"]) {
             var verticalAlignment = constraints["alignmentConstraint"]["vertical"];
 
-            var _loop6 = function _loop6(_i5) {
-              dummyToNodeForVerticalAlignment.set("dummy" + _i5, []);
-              verticalAlignment[_i5].forEach(function (node) {
-                nodeToDummyForVerticalAlignment.set(node.id(), "dummy" + _i5);
-                dummyToNodeForVerticalAlignment.get("dummy" + _i5).push(node.id());
+            var _loop6 = function _loop6(_i6) {
+              dummyToNodeForVerticalAlignment.set("dummy" + _i6, []);
+              verticalAlignment[_i6].forEach(function (node) {
+                nodeToDummyForVerticalAlignment.set(node.id(), "dummy" + _i6);
+                dummyToNodeForVerticalAlignment.get("dummy" + _i6).push(node.id());
                 if (node.anySame(fixedNodes)) {
-                  fixedNodesOnHorizontal.add("dummy" + _i5);
+                  fixedNodesOnHorizontal.add("dummy" + _i6);
                 }
               });
-              dummyPositionsForVerticalAlignment.set("dummy" + _i5, xCoords[nodeIndexes.get(verticalAlignment[_i5][0].id())]);
+              dummyPositionsForVerticalAlignment.set("dummy" + _i6, xCoords[nodeIndexes.get(verticalAlignment[_i6][0].id())]);
             };
 
-            for (var _i5 = 0; _i5 < verticalAlignment.length; _i5++) {
-              _loop6(_i5);
+            for (var _i6 = 0; _i6 < verticalAlignment.length; _i6++) {
+              _loop6(_i6);
             }
           }
           if (constraints["alignmentConstraint"]["horizontal"]) {
             var horizontalAlignment = constraints["alignmentConstraint"]["horizontal"];
 
-            var _loop7 = function _loop7(_i6) {
-              dummyToNodeForHorizontalAlignment.set("dummy" + _i6, []);
-              horizontalAlignment[_i6].forEach(function (node) {
-                nodeToDummyForHorizontalAlignment.set(node.id(), "dummy" + _i6);
-                dummyToNodeForHorizontalAlignment.get("dummy" + _i6).push(node.id());
+            var _loop7 = function _loop7(_i7) {
+              dummyToNodeForHorizontalAlignment.set("dummy" + _i7, []);
+              horizontalAlignment[_i7].forEach(function (node) {
+                nodeToDummyForHorizontalAlignment.set(node.id(), "dummy" + _i7);
+                dummyToNodeForHorizontalAlignment.get("dummy" + _i7).push(node.id());
                 if (node.anySame(fixedNodes)) {
-                  fixedNodesOnVertical.add("dummy" + _i6);
+                  fixedNodesOnVertical.add("dummy" + _i7);
                 }
               });
-              dummyPositionsForHorizontalAlignment.set("dummy" + _i6, yCoords[nodeIndexes.get(horizontalAlignment[_i6][0].id())]);
+              dummyPositionsForHorizontalAlignment.set("dummy" + _i7, yCoords[nodeIndexes.get(horizontalAlignment[_i7][0].id())]);
             };
 
-            for (var _i6 = 0; _i6 < horizontalAlignment.length; _i6++) {
-              _loop7(_i6);
+            for (var _i7 = 0; _i7 < horizontalAlignment.length; _i7++) {
+              _loop7(_i7);
             }
           }
         }
