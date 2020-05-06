@@ -1456,6 +1456,8 @@ module.exports = Object.assign != null ? Object.assign.bind(Object) : function (
 "use strict";
 
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 /**
   The implementation of the constraints on the initial draft layout obtained by the spectral layout algorithm
   First calculate transformed draft layout and then final draft layout that satisfies the constraints
@@ -1580,7 +1582,7 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
             } else {
               fixedPosition = yCoords[nodeIndexes.get(neighbor["id"])] ? yCoords[nodeIndexes.get(neighbor["id"])] : dummyPositions.get(neighbor["id"]);
             }
-            positionMap.set(neighbor["id"], fixedPosition); // burda gereksiz işlem yapılabiliyor, düşün
+            positionMap.set(neighbor["id"], fixedPosition); // TODO: may do unnecessary work
             if (fixedPosition < positionMap.get(currentNode) + neighbor["gap"]) {
               var diff = positionMap.get(currentNode) + neighbor["gap"] - fixedPosition;
               pastMap.get(currentNode).forEach(function (nodeId) {
@@ -1596,7 +1598,7 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
           queue.push(neighbor["id"]);
         }
         if (fixedNodes) {
-          pastMap.set(neighbor["id"], setUnion(pastMap.get(neighbor["id"]), pastMap.get(currentNode)));
+          pastMap.set(neighbor["id"], setUnion(pastMap.get(currentNode), pastMap.get(neighbor["id"])));
         }
       });
     };
@@ -1604,6 +1606,145 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
     while (queue.length != 0) {
       _loop();
     }
+
+    // readjust position of the nodes after enforcement
+    if (fixedNodes) {
+      // find indegree count for each node
+      var sinkNodes = new Set();
+
+      graph.forEach(function (value, key) {
+        if (value.length == 0) {
+          sinkNodes.add(key);
+        }
+      });
+
+      var _components = [];
+      pastMap.forEach(function (value, key) {
+        if (sinkNodes.has(key)) {
+          var isFixedComponent = false;
+          var _iteratorNormalCompletion2 = true;
+          var _didIteratorError2 = false;
+          var _iteratorError2 = undefined;
+
+          try {
+            for (var _iterator2 = value[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+              var nodeId = _step2.value;
+
+              if (fixedNodes.has(nodeId)) {
+                isFixedComponent = true;
+              }
+            }
+          } catch (err) {
+            _didIteratorError2 = true;
+            _iteratorError2 = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                _iterator2.return();
+              }
+            } finally {
+              if (_didIteratorError2) {
+                throw _iteratorError2;
+              }
+            }
+          }
+
+          if (!isFixedComponent) {
+            var isExist = false;
+            var existAt = void 0;
+            _components.forEach(function (component, index) {
+              if (component.has([].concat(_toConsumableArray(value))[0])) {
+                isExist = true;
+                existAt = index;
+              }
+            });
+            if (!isExist) {
+              _components.push(new Set(value));
+            } else {
+              _components[existAt].add(key);
+            }
+          }
+        }
+      });
+
+      _components.forEach(function (component, index) {
+        var minBefore = Number.POSITIVE_INFINITY;
+        var minAfter = Number.POSITIVE_INFINITY;
+        var maxBefore = Number.NEGATIVE_INFINITY;
+        var maxAfter = Number.NEGATIVE_INFINITY;
+
+        var _iteratorNormalCompletion3 = true;
+        var _didIteratorError3 = false;
+        var _iteratorError3 = undefined;
+
+        try {
+          for (var _iterator3 = component[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+            var nodeId = _step3.value;
+
+            var posBefore = void 0;
+            if (direction == "horizontal") {
+              posBefore = xCoords[nodeIndexes.get(nodeId)] ? xCoords[nodeIndexes.get(nodeId)] : dummyPositions.get(nodeId);
+            } else {
+              posBefore = yCoords[nodeIndexes.get(nodeId)] ? yCoords[nodeIndexes.get(nodeId)] : dummyPositions.get(nodeId);
+            }
+            var posAfter = positionMap.get(nodeId);
+            if (posBefore < minBefore) {
+              minBefore = posBefore;
+            }
+            if (posBefore > maxBefore) {
+              maxBefore = posBefore;
+            }
+            if (posAfter < minAfter) {
+              minAfter = posAfter;
+            }
+            if (posAfter > maxAfter) {
+              maxAfter = posAfter;
+            }
+          }
+        } catch (err) {
+          _didIteratorError3 = true;
+          _iteratorError3 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion3 && _iterator3.return) {
+              _iterator3.return();
+            }
+          } finally {
+            if (_didIteratorError3) {
+              throw _iteratorError3;
+            }
+          }
+        }
+
+        var diff = (minBefore + maxBefore) / 2 - (minAfter + maxAfter) / 2;
+
+        var _iteratorNormalCompletion4 = true;
+        var _didIteratorError4 = false;
+        var _iteratorError4 = undefined;
+
+        try {
+          for (var _iterator4 = component[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+            var _nodeId = _step4.value;
+
+            positionMap.set(_nodeId, positionMap.get(_nodeId) + diff);
+          }
+        } catch (err) {
+          _didIteratorError4 = true;
+          _iteratorError4 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion4 && _iterator4.return) {
+              _iterator4.return();
+            }
+          } finally {
+            if (_didIteratorError4) {
+              throw _iteratorError4;
+            }
+          }
+        }
+      });
+    }
+
     return positionMap;
   };
 
@@ -2099,29 +2240,29 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
           });
         };
 
-        var _iteratorNormalCompletion2 = true;
-        var _didIteratorError2 = false;
-        var _iteratorError2 = undefined;
+        var _iteratorNormalCompletion5 = true;
+        var _didIteratorError5 = false;
+        var _iteratorError5 = undefined;
 
         try {
-          for (var _iterator2 = dag.keys()[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-            var nodeId = _step2.value;
+          for (var _iterator5 = dag.keys()[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+            var nodeId = _step5.value;
 
             _loop8(nodeId);
           }
 
           // calculate appropriate positioning for subgraphs
         } catch (err) {
-          _didIteratorError2 = true;
-          _iteratorError2 = err;
+          _didIteratorError5 = true;
+          _iteratorError5 = err;
         } finally {
           try {
-            if (!_iteratorNormalCompletion2 && _iterator2.return) {
-              _iterator2.return();
+            if (!_iteratorNormalCompletion5 && _iterator5.return) {
+              _iterator5.return();
             }
           } finally {
-            if (_didIteratorError2) {
-              throw _iteratorError2;
+            if (_didIteratorError5) {
+              throw _iteratorError5;
             }
           }
         }
@@ -2141,27 +2282,27 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
           }
         };
 
-        var _iteratorNormalCompletion3 = true;
-        var _didIteratorError3 = false;
-        var _iteratorError3 = undefined;
+        var _iteratorNormalCompletion6 = true;
+        var _didIteratorError6 = false;
+        var _iteratorError6 = undefined;
 
         try {
-          for (var _iterator3 = positionMapHorizontal.keys()[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-            var key = _step3.value;
+          for (var _iterator6 = positionMapHorizontal.keys()[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+            var key = _step6.value;
 
             _loop9(key);
           }
         } catch (err) {
-          _didIteratorError3 = true;
-          _iteratorError3 = err;
+          _didIteratorError6 = true;
+          _iteratorError6 = err;
         } finally {
           try {
-            if (!_iteratorNormalCompletion3 && _iterator3.return) {
-              _iterator3.return();
+            if (!_iteratorNormalCompletion6 && _iterator6.return) {
+              _iterator6.return();
             }
           } finally {
-            if (_didIteratorError3) {
-              throw _iteratorError3;
+            if (_didIteratorError6) {
+              throw _iteratorError6;
             }
           }
         }
@@ -2176,27 +2317,27 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
           }
         };
 
-        var _iteratorNormalCompletion4 = true;
-        var _didIteratorError4 = false;
-        var _iteratorError4 = undefined;
+        var _iteratorNormalCompletion7 = true;
+        var _didIteratorError7 = false;
+        var _iteratorError7 = undefined;
 
         try {
-          for (var _iterator4 = positionMapVertical.keys()[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-            var key = _step4.value;
+          for (var _iterator7 = positionMapVertical.keys()[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
+            var key = _step7.value;
 
             _loop10(key);
           }
         } catch (err) {
-          _didIteratorError4 = true;
-          _iteratorError4 = err;
+          _didIteratorError7 = true;
+          _iteratorError7 = err;
         } finally {
           try {
-            if (!_iteratorNormalCompletion4 && _iterator4.return) {
-              _iterator4.return();
+            if (!_iteratorNormalCompletion7 && _iterator7.return) {
+              _iterator7.return();
             }
           } finally {
-            if (_didIteratorError4) {
-              throw _iteratorError4;
+            if (_didIteratorError7) {
+              throw _iteratorError7;
             }
           }
         }

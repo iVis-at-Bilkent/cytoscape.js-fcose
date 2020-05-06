@@ -102,7 +102,7 @@ let constraintHandler = function(options, spectralResult){
             else{
               fixedPosition = yCoords[nodeIndexes.get(neighbor["id"])] ? yCoords[nodeIndexes.get(neighbor["id"])] : dummyPositions.get(neighbor["id"]);
             }
-            positionMap.set(neighbor["id"], fixedPosition); // burda gereksiz işlem yapılabiliyor, düşün
+            positionMap.set(neighbor["id"], fixedPosition); // TODO: may do unnecessary work
             if(fixedPosition < (positionMap.get(currentNode) + neighbor["gap"])){
               let diff = (positionMap.get(currentNode) + neighbor["gap"]) - fixedPosition;
               pastMap.get(currentNode).forEach(function(nodeId){
@@ -119,10 +119,86 @@ let constraintHandler = function(options, spectralResult){
           queue.push(neighbor["id"]);
         }
         if(fixedNodes){
-          pastMap.set(neighbor["id"], setUnion(pastMap.get(neighbor["id"]), pastMap.get(currentNode)));
+          pastMap.set(neighbor["id"], setUnion(pastMap.get(currentNode), pastMap.get(neighbor["id"])));
         }
       });
     }
+
+    // readjust position of the nodes after enforcement
+    if (fixedNodes) {
+      // find indegree count for each node
+      let sinkNodes = new Set();
+
+      graph.forEach(function(value, key){
+        if (value.length == 0) {
+          sinkNodes.add(key);
+        }
+      });
+
+      let components = [];
+      pastMap.forEach(function(value, key){
+        if(sinkNodes.has(key)) {
+          let isFixedComponent = false;
+          for (let nodeId of value) {
+            if (fixedNodes.has(nodeId)) {
+              isFixedComponent = true;
+            }
+          }
+          if (!isFixedComponent) {
+            let isExist = false;
+            let existAt;
+            components.forEach(function(component, index) {
+              if (component.has([...value][0])) {
+                isExist = true;
+                existAt = index;
+              }
+            });
+            if (!isExist) {
+              components.push(new Set(value));
+            }
+            else {
+              components[existAt].add(key);
+            }
+          }
+        }
+      });
+
+      components.forEach(function(component, index) {
+        let minBefore = Number.POSITIVE_INFINITY;
+        let minAfter = Number.POSITIVE_INFINITY;
+        let maxBefore = Number.NEGATIVE_INFINITY;
+        let maxAfter = Number.NEGATIVE_INFINITY;
+
+        for (let nodeId of component) {
+          let posBefore;
+          if (direction == "horizontal") {
+            posBefore = xCoords[nodeIndexes.get(nodeId)] ? xCoords[nodeIndexes.get(nodeId)] : dummyPositions.get(nodeId);
+          }
+          else {
+            posBefore = yCoords[nodeIndexes.get(nodeId)] ? yCoords[nodeIndexes.get(nodeId)] : dummyPositions.get(nodeId);
+          }
+          let posAfter = positionMap.get(nodeId);
+          if(posBefore < minBefore) {
+            minBefore = posBefore;
+          }
+          if(posBefore > maxBefore) {
+            maxBefore = posBefore;
+          }
+          if(posAfter < minAfter) {
+            minAfter = posAfter;
+          }
+          if(posAfter > maxAfter) {
+            maxAfter = posAfter;
+          }
+        }
+        let diff = (minBefore + maxBefore) / 2 - (minAfter + maxAfter) / 2;
+
+        for (let nodeId of component) {
+          positionMap.set(nodeId, positionMap.get(nodeId) + diff);
+        }
+      });
+    }
+
     return positionMap;
   };
   
