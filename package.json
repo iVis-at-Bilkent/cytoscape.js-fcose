@@ -53,7 +53,7 @@
     "cytoscape": "^3.2.0"
   },
   "dependencies": {
-    "numeric": "1.2.6",
-    "cose-base": "^1.0.0"
+    "cose-base": "^1.0.0",
+    "svd-js": "^1.0.6"
   }
 }

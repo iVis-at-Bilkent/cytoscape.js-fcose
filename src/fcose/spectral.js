@@ -3,7 +3,7 @@
 */
 
 const aux = require('./auxiliary');
-const numeric = require('numeric');
+const svdjs = require('svd-js');
 
 // main function that spectral layout is processed
 let spectralLayout = function(options){
@@ -167,11 +167,11 @@ let spectralLayout = function(options){
   // perform the SVD algorithm and apply a regularization step
   let sample = function(){
 
-    let SVDResult = numeric.svd(PHI);
+    let SVDResult = svdjs.SVD(PHI);
 
-    let a_w = SVDResult.S;
-    let a_u = SVDResult.U;
-    let a_v = SVDResult.V;        
+    let a_w = SVDResult.q;
+    let a_u = SVDResult.u;
+    let a_v = SVDResult.v;
 
     let max_s = a_w[0]*a_w[0]*a_w[0];
 
@@ -188,9 +188,36 @@ let spectralLayout = function(options){
       }
     }
 
-    INV = aux.multMat(aux.multMat(a_v, a_Sig), numeric.transpose(a_u));
+    INV = aux.multMat(aux.multMat(a_v, a_Sig), transpose(a_u));
 
   };
+
+  function transpose(x) {
+    var i,j,m = x.length,n = x[0].length, ret=Array(n),A0,A1,Bj;
+    for(j=0;j<n;j++) ret[j] = Array(m);
+    for(i=m-1;i>=1;i-=2) {
+      A1 = x[i];
+      A0 = x[i-1];
+      for(j=n-1;j>=1;--j) {
+        Bj = ret[j]; Bj[i] = A1[j]; Bj[i-1] = A0[j];
+        --j;
+        Bj = ret[j]; Bj[i] = A1[j]; Bj[i-1] = A0[j];
+      }
+      if(j===0) {
+        Bj = ret[0]; Bj[i] = A1[0]; Bj[i-1] = A0[0];
+      }
+    }
+    if(i===0) {
+      A0 = x[0];
+      for(j=n-1;j>=1;--j) {
+        ret[j][0] = A0[j];
+        --j;
+        ret[j][0] = A0[j];
+      }
+      if(j===0) { ret[0][0] = A0[0]; }
+    }
+    return ret;
+  }
 
   // calculate final coordinates 
   let powerIteration = function(){
