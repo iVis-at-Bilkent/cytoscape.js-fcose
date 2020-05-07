@@ -3,7 +3,6 @@
 */
 
 const aux = require('./auxiliary');
-const numeric = require('numeric');
 
 // main function that spectral layout is processed
 let spectralLayout = function(options){
@@ -167,13 +166,13 @@ let spectralLayout = function(options){
   // perform the SVD algorithm and apply a regularization step
   let sample = function(){
 
-    let SVDResult = numeric.svd(PHI);
+    let SVDResult = aux.svd(PHI);
 
-    let a_w = SVDResult.S;
+    let a_q = SVDResult.S;
     let a_u = SVDResult.U;
     let a_v = SVDResult.V;        
 
-    let max_s = a_w[0]*a_w[0]*a_w[0];
+    let max_s = a_q[0]*a_q[0]*a_q[0];
 
     let a_Sig = [];
 
@@ -183,12 +182,12 @@ let spectralLayout = function(options){
       for(let j = 0; j < sampleSize; j++){
         a_Sig[i][j] = 0;
         if(i == j){
-          a_Sig[i][j] = a_w[i]/(a_w[i]*a_w[i] + max_s/(a_w[i]*a_w[i]));
+          a_Sig[i][j] = a_q[i]/(a_q[i]*a_q[i] + max_s/(a_q[i]*a_q[i]));
         }
       }
     }
 
-    INV = aux.multMat(aux.multMat(a_v, a_Sig), numeric.transpose(a_u));
+    INV = aux.multMat(aux.multMat(a_v, a_Sig), aux.transpose(a_u));
 
   };
 
