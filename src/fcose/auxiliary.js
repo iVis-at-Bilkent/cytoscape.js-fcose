@@ -258,10 +258,10 @@ auxiliary.connectComponents = function(cy, eles, topMostNodes, dummyNodes){
 
 auxiliary.calcBoundingBox = function(parentNode, xCoords, yCoords, nodeIndexes){
     // calculate bounds
-    let left = Number.MAX_VALUE;
-    let right = Number.MIN_VALUE;
-    let top = Number.MAX_VALUE;
-    let bottom = Number.MIN_VALUE;
+    let left = Number.MAX_SAFE_INTEGER;
+    let right = Number.MIN_SAFE_INTEGER;
+    let top = Number.MAX_SAFE_INTEGER;
+    let bottom = Number.MIN_SAFE_INTEGER;
     let nodeLeft;
     let nodeRight;
     let nodeTop;
