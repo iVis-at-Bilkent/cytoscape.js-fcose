@@ -23,12 +23,6 @@ let config = {
     ]
   },
   externals: PROD ? { 
-    'numeric': {
-      commonjs2: 'numeric',
-      commonjs: 'numeric',
-      amd: 'numeric',
-      root: 'numeric'
-    },
     'cose-base': {
       commonjs2: 'cose-base',
       commonjs: 'cose-base',

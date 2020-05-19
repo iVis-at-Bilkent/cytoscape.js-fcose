@@ -218,9 +218,9 @@ class Layout {
             subgraph.nodes.push({x: coseResult[index][node.id()].getLeft(), y: coseResult[index][node.id()].getTop(), width: coseResult[index][node.id()].getWidth(), height: coseResult[index][node.id()].getHeight()});
           }
         });
-        component.edges().forEach(function (node) {
-          let source = node.source();
-          let target = node.target();
+        component.edges().forEach(function (edge) {
+          let source = edge.source();
+          let target = edge.target();
           if(options.quality == "draft"){
             let sourceNodeIndex = nodeIndexes.get(source.id());
             let targetNodeIndex = nodeIndexes.get(target.id());

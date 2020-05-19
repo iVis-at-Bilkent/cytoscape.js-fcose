@@ -159,6 +159,7 @@ let coseLayout = function(options, spectralResult){
 
   CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
   LayoutConstants.DEFAULT_UNIFORM_LEAF_NODE_SIZES = options.uniformNodeDimensions;
+  CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = options.randomize ? true : false;
 
   let coseLayout = new CoSELayout();
   let gm = coseLayout.newGraphManager(); 

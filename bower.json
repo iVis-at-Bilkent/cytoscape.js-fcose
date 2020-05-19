@@ -4,7 +4,6 @@
   "main": "cytoscape-fcose.js",
   "dependencies": {
     "cytoscape": "^3.2.0",
-    "numeric": "1.2.6",
     "cose-base": "^1.0.0"
   },
   "repository": {
