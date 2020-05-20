@@ -291,7 +291,7 @@ let spectralLayout = function(options){
   aux.connectComponents(cy, eles, aux.getTopMostNodes(nodes), dummyNodes);
 
   parentNodes.forEach(function( ele ){
-    aux.connectComponents(cy, eles, aux.getTopMostNodes(ele.descendants()), dummyNodes);
+    aux.connectComponents(cy, eles, aux.getTopMostNodes(ele.descendants().intersection(eles)), dummyNodes);
   });
 
   // assign indexes to nodes (first real, then dummy nodes)

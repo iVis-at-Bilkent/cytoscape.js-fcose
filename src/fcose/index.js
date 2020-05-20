@@ -96,10 +96,6 @@ class Layout {
     let coseResult = [];
     let components;
     
-    // if there is no elements, return
-    if(options.eles.length == 0)
-      return;
-    
     // decide component packing is enabled or not
     let layUtil;
     let packingEnabled = false;
@@ -108,25 +104,6 @@ class Layout {
       if(!layUtil)
         layUtil = cy.layoutUtilities();
       packingEnabled = true;
-    }
-
-    // if partial layout, update options.eles
-    if(options.eles.length != options.cy.elements().length){
-      let prevNodes = eles.nodes();
-      eles = eles.union(eles.descendants());
-      
-      eles.forEach(function(ele){
-        if(ele.isNode()){
-          let connectedEdges = ele.connectedEdges();
-          connectedEdges.forEach(function(edge){
-            if(eles.contains(edge.source()) && eles.contains(edge.target()) && !prevNodes.contains(edge.source().union(edge.target()))){
-              eles = eles.union(edge);
-            }
-          });
-        }
-      });
-
-      options.eles = eles;
     }
     
     // if packing is not enabled, perform layout on the whole graph

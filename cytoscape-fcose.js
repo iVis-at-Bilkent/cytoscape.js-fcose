@@ -264,7 +264,7 @@ auxiliary.connectComponents = function (cy, eles, topMostNodes, dummyNodes) {
 
     var currentNode = topMostNodes[0];
     var childrenOfCurrentNode = cy.collection();
-    childrenOfCurrentNode.merge(currentNode).merge(currentNode.descendants());
+    childrenOfCurrentNode.merge(currentNode).merge(currentNode.descendants().intersection(eles));
     visitedTopMostNodes.push(currentNode);
 
     childrenOfCurrentNode.forEach(function (node) {
@@ -1152,9 +1152,6 @@ var Layout = function () {
       var coseResult = [];
       var components = void 0;
 
-      // if there is no elements, return
-      if (options.eles.length == 0) return;
-
       // decide component packing is enabled or not
       var layUtil = void 0;
       var packingEnabled = false;
@@ -1162,25 +1159,6 @@ var Layout = function () {
         layUtil = cy.layoutUtilities("get");
         if (!layUtil) layUtil = cy.layoutUtilities();
         packingEnabled = true;
-      }
-
-      // if partial layout, update options.eles
-      if (options.eles.length != options.cy.elements().length) {
-        var prevNodes = eles.nodes();
-        eles = eles.union(eles.descendants());
-
-        eles.forEach(function (ele) {
-          if (ele.isNode()) {
-            var connectedEdges = ele.connectedEdges();
-            connectedEdges.forEach(function (edge) {
-              if (eles.contains(edge.source()) && eles.contains(edge.target()) && !prevNodes.contains(edge.source().union(edge.target()))) {
-                eles = eles.union(edge);
-              }
-            });
-          }
-        });
-
-        options.eles = eles;
       }
 
       // if packing is not enabled, perform layout on the whole graph
@@ -1848,7 +1826,7 @@ var spectralLayout = function spectralLayout(options) {
   aux.connectComponents(cy, eles, aux.getTopMostNodes(nodes), dummyNodes);
 
   parentNodes.forEach(function (ele) {
-    aux.connectComponents(cy, eles, aux.getTopMostNodes(ele.descendants()), dummyNodes);
+    aux.connectComponents(cy, eles, aux.getTopMostNodes(ele.descendants().intersection(eles)), dummyNodes);
   });
 
   // assign indexes to nodes (first real, then dummy nodes)
