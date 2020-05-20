@@ -173,7 +173,7 @@ auxiliary.connectComponents = function(cy, eles, topMostNodes, dummyNodes){
     
     let currentNode = topMostNodes[0];
     let childrenOfCurrentNode = cy.collection();
-    childrenOfCurrentNode.merge(currentNode).merge(currentNode.descendants());
+    childrenOfCurrentNode.merge(currentNode).merge(currentNode.descendants().intersection(eles));
     visitedTopMostNodes.push(currentNode);
 
     childrenOfCurrentNode.forEach(function(node) {
