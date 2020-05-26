@@ -1132,11 +1132,11 @@ var defaults = Object.freeze({
   /* Constraint options */
 
   // Fix required nodes to predefined positions 
-  fixedNodeConstraint: undefined, // [{node: cy.$('#n1'), position: {x: 100, y: 200}]
+  fixedNodeConstraint: undefined, // [{nodeId: 'n1', position: {x: 100, y: 200}]
   // Align required nodes in x/y direction
-  alignmentConstraint: undefined, // {vertical: [[cy.$('#n1'), cy.$('#n2')], [cy.$('#n3'), cy.$('#n4')]]}
+  alignmentConstraint: undefined, // {vertical: [['n1', 'n2')], ['n3', 'n4']]}
   // Place two nodes relatively in vertical/horizontal direction 
-  relativePlacementConstraint: undefined, //  [{top: cy.$('#n1'), bottom: cy.$('#n2'), gap: 25}]
+  relativePlacementConstraint: undefined, //  [{top: 'n1', bottom: 'n2', gap: 25}]
 
   /* layout event callbacks */
   ready: function ready() {}, // on layoutready
@@ -1472,9 +1472,9 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
     constraints["relativePlacementConstraint"].forEach(function (constraint) {
       if (!constraint["gap"] && constraint["gap"] != 0) {
         if (constraint["left"]) {
-          constraint["gap"] = options.idealEdgeLength + constraint["left"].outerWidth() / 2 + constraint["right"].outerWidth() / 2;
+          constraint["gap"] = options.idealEdgeLength + cy.getElementById(constraint["left"]).outerWidth() / 2 + cy.getElementById(constraint["right"]).outerWidth() / 2;
         } else {
-          constraint["gap"] = options.idealEdgeLength + constraint["top"].outerHeight() / 2 + constraint["bottom"].outerHeight() / 2;
+          constraint["gap"] = options.idealEdgeLength + cy.getElementById(constraint["top"]).outerHeight() / 2 + cy.getElementById(constraint["bottom"]).outerHeight() / 2;
         }
       }
     });
@@ -1488,12 +1488,12 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
   };
 
   // calculate average position of the nodes
-  var calculateAvgPosition = function calculateAvgPosition(nodes) {
+  var calculateAvgPosition = function calculateAvgPosition(nodeIdSet) {
     var xPosSum = 0;
     var yPosSum = 0;
-    nodes.forEach(function (node) {
-      xPosSum += xCoords[nodeIndexes.get(node.id())];
-      yPosSum += yCoords[nodeIndexes.get(node.id())];
+    nodeIdSet.forEach(function (nodeId) {
+      xPosSum += xCoords[nodeIndexes.get(nodeId)];
+      yPosSum += yCoords[nodeIndexes.get(nodeId)];
     });
 
     return { x: xPosSum / nodes.length, y: yPosSum / nodes.length };
@@ -1758,9 +1758,9 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
 
     relativePlacementConstraints.forEach(function (constraint) {
       if (constraint["left"]) {
-        xCoords[nodeIndexes.get(constraint["left"].id())] - xCoords[nodeIndexes.get(constraint["right"].id())] >= 0 ? reflectOnY++ : notReflectOnY++;
+        xCoords[nodeIndexes.get(constraint["left"])] - xCoords[nodeIndexes.get(constraint["right"])] >= 0 ? reflectOnY++ : notReflectOnY++;
       } else {
-        yCoords[nodeIndexes.get(constraint["top"].id())] - yCoords[nodeIndexes.get(constraint["bottom"].id())] >= 0 ? reflectOnX++ : notReflectOnX++;
+        yCoords[nodeIndexes.get(constraint["top"])] - yCoords[nodeIndexes.get(constraint["bottom"])] >= 0 ? reflectOnX++ : notReflectOnX++;
       }
     });
 
@@ -1790,7 +1790,7 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
   var sourceMatrix = []; // B - source configuration 
   var standardTransformation = false; // false for no transformation, true for standart (Procrustes) transformation (rotation and/or reflection)
   var reflectionType = false; // false/true for reflection check, 'reflectOnX', 'reflectOnY' or 'reflectOnBoth' for reflection type if necessary
-  var fixedNodes = cy.collection();
+  var fixedNodes = new Set();
   var dag = new Map(); // adjacency list to keep directed acyclic graph (dag) that consists of relative placement constraints
   var dagUndirected = new Map(); // undirected version of the dag
   var components = []; // weakly connected components 
@@ -1798,7 +1798,7 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
   // fill fixedNodes collection to use later
   if (constraints["fixedNodeConstraint"]) {
     constraints["fixedNodeConstraint"].forEach(function (nodeData) {
-      fixedNodes.merge(nodeData["node"]);
+      fixedNodes.add(nodeData["nodeId"]);
     });
   }
 
@@ -1807,32 +1807,32 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
     // construct both directed and undirected version of the dag
     constraints["relativePlacementConstraint"].forEach(function (constraint) {
       if (constraint["left"]) {
-        if (dag.has(constraint["left"].id())) {
-          dag.get(constraint["left"].id()).push({ id: constraint["right"].id(), gap: constraint["gap"], direction: "horizontal" });
-          dagUndirected.get(constraint["left"].id()).push({ id: constraint["right"].id(), gap: constraint["gap"], direction: "horizontal" });
+        if (dag.has(constraint["left"])) {
+          dag.get(constraint["left"]).push({ id: constraint["right"], gap: constraint["gap"], direction: "horizontal" });
+          dagUndirected.get(constraint["left"]).push({ id: constraint["right"], gap: constraint["gap"], direction: "horizontal" });
         } else {
-          dag.set(constraint["left"].id(), [{ id: constraint["right"].id(), gap: constraint["gap"], direction: "horizontal" }]);
-          dagUndirected.set(constraint["left"].id(), [{ id: constraint["right"].id(), gap: constraint["gap"], direction: "horizontal" }]);
+          dag.set(constraint["left"], [{ id: constraint["right"], gap: constraint["gap"], direction: "horizontal" }]);
+          dagUndirected.set(constraint["left"], [{ id: constraint["right"], gap: constraint["gap"], direction: "horizontal" }]);
         }
-        if (dag.has(constraint["right"].id())) {
-          dagUndirected.get(constraint["right"].id()).push({ id: constraint["left"].id(), gap: constraint["gap"], direction: "horizontal" });
+        if (dag.has(constraint["right"])) {
+          dagUndirected.get(constraint["right"]).push({ id: constraint["left"], gap: constraint["gap"], direction: "horizontal" });
         } else {
-          dag.set(constraint["right"].id(), []);
-          dagUndirected.set(constraint["right"].id(), [{ id: constraint["left"].id(), gap: constraint["gap"], direction: "horizontal" }]);
+          dag.set(constraint["right"], []);
+          dagUndirected.set(constraint["right"], [{ id: constraint["left"], gap: constraint["gap"], direction: "horizontal" }]);
         }
       } else {
-        if (dag.has(constraint["top"].id())) {
-          dag.get(constraint["top"].id()).push({ id: constraint["bottom"].id(), gap: constraint["gap"], direction: "vertical" });
-          dagUndirected.get(constraint["top"].id()).push({ id: constraint["bottom"].id(), gap: constraint["gap"], direction: "vertical" });
+        if (dag.has(constraint["top"])) {
+          dag.get(constraint["top"]).push({ id: constraint["bottom"], gap: constraint["gap"], direction: "vertical" });
+          dagUndirected.get(constraint["top"]).push({ id: constraint["bottom"], gap: constraint["gap"], direction: "vertical" });
         } else {
-          dag.set(constraint["top"].id(), [{ id: constraint["bottom"].id(), gap: constraint["gap"], direction: "vertical" }]);
-          dagUndirected.set(constraint["top"].id(), [{ id: constraint["bottom"].id(), gap: constraint["gap"], direction: "vertical" }]);
+          dag.set(constraint["top"], [{ id: constraint["bottom"], gap: constraint["gap"], direction: "vertical" }]);
+          dagUndirected.set(constraint["top"], [{ id: constraint["bottom"], gap: constraint["gap"], direction: "vertical" }]);
         }
-        if (dag.has(constraint["bottom"].id())) {
-          dagUndirected.get(constraint["bottom"].id()).push({ id: constraint["top"].id(), gap: constraint["gap"], direction: "vertical" });
+        if (dag.has(constraint["bottom"])) {
+          dagUndirected.get(constraint["bottom"]).push({ id: constraint["top"], gap: constraint["gap"], direction: "vertical" });
         } else {
-          dag.set(constraint["bottom"].id(), []);
-          dagUndirected.set(constraint["bottom"].id(), [{ id: constraint["top"].id(), gap: constraint["gap"], direction: "vertical" }]);
+          dag.set(constraint["bottom"], []);
+          dagUndirected.set(constraint["bottom"], [{ id: constraint["top"], gap: constraint["gap"], direction: "vertical" }]);
         }
       }
     });
@@ -1872,7 +1872,7 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
     if (constraints["fixedNodeConstraint"] && constraints["fixedNodeConstraint"].length > 1) {
       constraints["fixedNodeConstraint"].forEach(function (nodeData, i) {
         targetMatrix[i] = [nodeData["position"]["x"], nodeData["position"]["y"]];
-        sourceMatrix[i] = [xCoords[nodeIndexes.get(nodeData["node"].id())], yCoords[nodeIndexes.get(nodeData["node"].id())]];
+        sourceMatrix[i] = [xCoords[nodeIndexes.get(nodeData["nodeId"])], yCoords[nodeIndexes.get(nodeData["nodeId"])]];
       });
       standardTransformation = true;
     } else if (constraints["alignmentConstraint"]) {
@@ -1883,17 +1883,19 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
           var verticalAlign = constraints["alignmentConstraint"]["vertical"];
 
           var _loop2 = function _loop2(i) {
-            var alignmentSet = cy.collection();
-            verticalAlign[i].forEach(function (node) {
-              alignmentSet = alignmentSet.merge(node);
+            var alignmentSet = new Set();
+            verticalAlign[i].forEach(function (nodeId) {
+              alignmentSet.add(nodeId);
             });
-            var intersection = alignmentSet.diff(fixedNodes).both;
+            var intersection = new Set([].concat(_toConsumableArray(alignmentSet)).filter(function (x) {
+              return fixedNodes.has(x);
+            }));
             var xPos = void 0;
-            if (intersection.length > 0) xPos = xCoords[nodeIndexes.get(intersection[0].id())];else xPos = calculateAvgPosition(alignmentSet)['x'];
+            if (intersection.size > 0) xPos = xCoords[nodeIndexes.get(intersection.values().next().value)];else xPos = calculateAvgPosition(alignmentSet)['x'];
 
-            verticalAlign[i].forEach(function (node) {
-              targetMatrix[count] = [xPos, yCoords[nodeIndexes.get(node.id())]];
-              sourceMatrix[count] = [xCoords[nodeIndexes.get(node.id())], yCoords[nodeIndexes.get(node.id())]];
+            verticalAlign[i].forEach(function (nodeId) {
+              targetMatrix[count] = [xPos, yCoords[nodeIndexes.get(nodeId)]];
+              sourceMatrix[count] = [xCoords[nodeIndexes.get(nodeId)], yCoords[nodeIndexes.get(nodeId)]];
               count++;
             });
           };
@@ -1907,17 +1909,19 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
           var horizontalAlign = constraints["alignmentConstraint"]["horizontal"];
 
           var _loop3 = function _loop3(i) {
-            var alignmentSet = cy.collection();
-            horizontalAlign[i].forEach(function (node) {
-              alignmentSet = alignmentSet.merge(node);
+            var alignmentSet = new Set();
+            horizontalAlign[i].forEach(function (nodeId) {
+              alignmentSet.add(nodeId);
             });
-            var intersection = alignmentSet.diff(fixedNodes).both;
+            var intersection = new Set([].concat(_toConsumableArray(alignmentSet)).filter(function (x) {
+              return fixedNodes.has(x);
+            }));
             var yPos = void 0;
-            if (intersection.length > 0) yPos = xCoords[nodeIndexes.get(intersection[0].id())];else yPos = calculateAvgPosition(alignmentSet)['y'];
+            if (intersection.size > 0) yPos = xCoords[nodeIndexes.get(intersection.values().next().value)];else yPos = calculateAvgPosition(alignmentSet)['y'];
 
-            horizontalAlign[i].forEach(function (node) {
-              targetMatrix[count] = [xCoords[nodeIndexes.get(node.id())], yPos];
-              sourceMatrix[count] = [xCoords[nodeIndexes.get(node.id())], yCoords[nodeIndexes.get(node.id())]];
+            horizontalAlign[i].forEach(function (nodeId) {
+              targetMatrix[count] = [xCoords[nodeIndexes.get(nodeId)], yPos];
+              sourceMatrix[count] = [xCoords[nodeIndexes.get(nodeId)], yCoords[nodeIndexes.get(nodeId)]];
               count++;
             });
           };
@@ -1965,7 +1969,7 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
               if (!subGraphOnHorizontal.has(adjacent["id"])) {
                 subGraphOnHorizontal.set(adjacent["id"], []);
               }
-              constraintsInlargestComponent.push({ left: cy.getElementById(nodeId), right: cy.getElementById(adjacent["id"]) });
+              constraintsInlargestComponent.push({ left: nodeId, right: adjacent["id"] });
             } else {
               if (subGraphOnVertical.has(nodeId)) {
                 subGraphOnVertical.get(nodeId).push(adjacent);
@@ -1975,7 +1979,7 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
               if (!subGraphOnVertical.has(adjacent["id"])) {
                 subGraphOnVertical.set(adjacent["id"], []);
               }
-              constraintsInlargestComponent.push({ top: cy.getElementById(nodeId), bottom: cy.getElementById(adjacent["id"]) });
+              constraintsInlargestComponent.push({ top: nodeId, bottom: adjacent["id"] });
             }
           });
         });
@@ -2054,7 +2058,7 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
     if (constraints["fixedNodeConstraint"] && constraints["fixedNodeConstraint"].length > 0) {
       var translationAmount = { x: 0, y: 0 };
       constraints["fixedNodeConstraint"].forEach(function (nodeData, i) {
-        var posInTheory = { x: xCoords[nodeIndexes.get(nodeData["node"].id())], y: yCoords[nodeIndexes.get(nodeData["node"].id())] };
+        var posInTheory = { x: xCoords[nodeIndexes.get(nodeData["nodeId"])], y: yCoords[nodeIndexes.get(nodeData["nodeId"])] };
         var posDesired = nodeData.position;
         var posDiff = calculatePositionDiff(posDesired, posInTheory);
         translationAmount.x += posDiff.x;
@@ -2072,8 +2076,8 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
       });
 
       constraints["fixedNodeConstraint"].forEach(function (nodeData) {
-        xCoords[nodeIndexes.get(nodeData["node"].id())] = nodeData["position"]["x"];
-        yCoords[nodeIndexes.get(nodeData["node"].id())] = nodeData["position"]["y"];
+        xCoords[nodeIndexes.get(nodeData["nodeId"])] = nodeData["position"]["x"];
+        yCoords[nodeIndexes.get(nodeData["nodeId"])] = nodeData["position"]["y"];
       });
     }
 
@@ -2084,18 +2088,19 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
         var xAlign = constraints["alignmentConstraint"]["vertical"];
 
         var _loop4 = function _loop4(_i5) {
-          var alignmentSet = cy.collection();
-          xAlign[_i5].forEach(function (node) {
-            alignmentSet = alignmentSet.merge(node);
+          var alignmentSet = new Set();
+          xAlign[_i5].forEach(function (nodeId) {
+            alignmentSet.add(nodeId);
           });
-          var intersection = alignmentSet.diff(fixedNodes).both;
+          var intersection = new Set([].concat(_toConsumableArray(alignmentSet)).filter(function (x) {
+            return fixedNodes.has(x);
+          }));
           var xPos = void 0;
-          if (intersection.length > 0) xPos = xCoords[nodeIndexes.get(intersection[0].id())];else xPos = calculateAvgPosition(alignmentSet)['x'];
+          if (intersection.size > 0) xPos = xCoords[nodeIndexes.get(intersection.values().next().value)];else xPos = calculateAvgPosition(alignmentSet)['x'];
 
-          for (var j = 0; j < alignmentSet.length; j++) {
-            var node = alignmentSet[j];
-            if (!fixedNodes.contains(node)) xCoords[nodeIndexes.get(node.id())] = xPos;
-          }
+          alignmentSet.forEach(function (nodeId) {
+            if (!fixedNodes.has(nodeId)) xCoords[nodeIndexes.get(nodeId)] = xPos;
+          });
         };
 
         for (var _i5 = 0; _i5 < xAlign.length; _i5++) {
@@ -2106,18 +2111,19 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
         var yAlign = constraints["alignmentConstraint"]["horizontal"];
 
         var _loop5 = function _loop5(_i6) {
-          var alignmentSet = cy.collection();
-          yAlign[_i6].forEach(function (node) {
-            alignmentSet = alignmentSet.merge(node);
+          var alignmentSet = new Set();
+          yAlign[_i6].forEach(function (nodeId) {
+            alignmentSet.add(nodeId);
           });
-          var intersection = alignmentSet.diff(fixedNodes).both;
+          var intersection = new Set([].concat(_toConsumableArray(alignmentSet)).filter(function (x) {
+            return fixedNodes.has(x);
+          }));
           var yPos = void 0;
-          if (intersection.length > 0) yPos = yCoords[nodeIndexes.get(intersection[0].id())];else yPos = calculateAvgPosition(alignmentSet)['y'];
+          if (intersection.size > 0) yPos = yCoords[nodeIndexes.get(intersection.values().next().value)];else yPos = calculateAvgPosition(alignmentSet)['y'];
 
-          for (var j = 0; j < alignmentSet.length; j++) {
-            var node = alignmentSet[j];
-            if (!fixedNodes.contains(node)) yCoords[nodeIndexes.get(node.id())] = yPos;
-          }
+          alignmentSet.forEach(function (nodeId) {
+            if (!fixedNodes.has(nodeId)) yCoords[nodeIndexes.get(nodeId)] = yPos;
+          });
         };
 
         for (var _i6 = 0; _i6 < yAlign.length; _i6++) {
@@ -2140,9 +2146,9 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
         var fixedNodesOnVertical = new Set();
 
         // fill maps and sets      
-        fixedNodes.forEach(function (node) {
-          fixedNodesOnHorizontal.add(node.id());
-          fixedNodesOnVertical.add(node.id());
+        fixedNodes.forEach(function (nodeId) {
+          fixedNodesOnHorizontal.add(nodeId);
+          fixedNodesOnVertical.add(nodeId);
         });
 
         if (constraints["alignmentConstraint"]) {
@@ -2151,14 +2157,14 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
 
             var _loop6 = function _loop6(_i7) {
               dummyToNodeForVerticalAlignment.set("dummy" + _i7, []);
-              verticalAlignment[_i7].forEach(function (node) {
-                nodeToDummyForVerticalAlignment.set(node.id(), "dummy" + _i7);
-                dummyToNodeForVerticalAlignment.get("dummy" + _i7).push(node.id());
-                if (node.anySame(fixedNodes)) {
+              verticalAlignment[_i7].forEach(function (nodeId) {
+                nodeToDummyForVerticalAlignment.set(nodeId, "dummy" + _i7);
+                dummyToNodeForVerticalAlignment.get("dummy" + _i7).push(nodeId);
+                if (fixedNodes.has(nodeId)) {
                   fixedNodesOnHorizontal.add("dummy" + _i7);
                 }
               });
-              dummyPositionsForVerticalAlignment.set("dummy" + _i7, xCoords[nodeIndexes.get(verticalAlignment[_i7][0].id())]);
+              dummyPositionsForVerticalAlignment.set("dummy" + _i7, xCoords[nodeIndexes.get(verticalAlignment[_i7][0])]);
             };
 
             for (var _i7 = 0; _i7 < verticalAlignment.length; _i7++) {
@@ -2170,14 +2176,14 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
 
             var _loop7 = function _loop7(_i8) {
               dummyToNodeForHorizontalAlignment.set("dummy" + _i8, []);
-              horizontalAlignment[_i8].forEach(function (node) {
-                nodeToDummyForHorizontalAlignment.set(node.id(), "dummy" + _i8);
-                dummyToNodeForHorizontalAlignment.get("dummy" + _i8).push(node.id());
-                if (node.anySame(fixedNodes)) {
+              horizontalAlignment[_i8].forEach(function (nodeId) {
+                nodeToDummyForHorizontalAlignment.set(nodeId, "dummy" + _i8);
+                dummyToNodeForHorizontalAlignment.get("dummy" + _i8).push(nodeId);
+                if (fixedNodes.has(nodeId)) {
                   fixedNodesOnVertical.add("dummy" + _i8);
                 }
               });
-              dummyPositionsForHorizontalAlignment.set("dummy" + _i8, yCoords[nodeIndexes.get(horizontalAlignment[_i8][0].id())]);
+              dummyPositionsForHorizontalAlignment.set("dummy" + _i8, yCoords[nodeIndexes.get(horizontalAlignment[_i8][0])]);
             };
 
             for (var _i8 = 0; _i8 < horizontalAlignment.length; _i8++) {
@@ -2343,8 +2349,6 @@ module.exports = { constraintHandler: constraintHandler };
 "use strict";
 
 
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
 /**
   The implementation of the postprocessing part that applies CoSE layout over the spectral layout
 */
@@ -2460,83 +2464,15 @@ var coseLayout = function coseLayout(options, spectralResult) {
   var processConstraints = function processConstraints(layout, options) {
     // get nodes to be fixed
     if (options.fixedNodeConstraint) {
-      var fixedNodeConstraint = [];
-      options.fixedNodeConstraint.forEach(function (constraint) {
-        fixedNodeConstraint.push({ nodeId: constraint["node"].id(), position: constraint["position"] });
-      });
-      layout.constraints["fixedNodeConstraint"] = fixedNodeConstraint;
+      layout.constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
     }
     // get nodes to be aligned
     if (options.alignmentConstraint) {
-      var alignmentConstraint = {};
-      if (options.alignmentConstraint["vertical"]) {
-        var verticalAligned = options.alignmentConstraint['vertical'];
-        var verticalAlignedTemp = [];
-        for (var i = 0; i < verticalAligned.length; i++) {
-          var individualAlignmentSet = [];
-          for (var j = 0; j < verticalAligned[i].length; j++) {
-            individualAlignmentSet.push(verticalAligned[i][j].id());
-          }
-          verticalAlignedTemp.push(individualAlignmentSet);
-        }
-        alignmentConstraint["vertical"] = verticalAlignedTemp;
-      }
-      if (options.alignmentConstraint["horizontal"]) {
-        var horizontalAligned = options.alignmentConstraint['horizontal'];
-        var horizontalAlignedTemp = [];
-        for (var _i = 0; _i < horizontalAligned.length; _i++) {
-          var _individualAlignmentSet = [];
-          for (var _j = 0; _j < horizontalAligned[_i].length; _j++) {
-            _individualAlignmentSet.push(horizontalAligned[_i][_j].id());
-          }
-          horizontalAlignedTemp.push(_individualAlignmentSet);
-        }
-        alignmentConstraint["horizontal"] = horizontalAlignedTemp;
-      }
-      layout.constraints["alignmentConstraint"] = alignmentConstraint;
+      layout.constraints["alignmentConstraint"] = options.alignmentConstraint;
     }
     // get nodes to be relatively placed
     if (options.relativePlacementConstraint) {
-      var relativePlacementConstraint = [];
-      options.relativePlacementConstraint.forEach(function (constraint) {
-        var tempObj = {};
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
-
-        try {
-          for (var _iterator = Object.entries(constraint)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var _ref = _step.value;
-
-            var _ref2 = _slicedToArray(_ref, 2);
-
-            var key = _ref2[0];
-            var value = _ref2[1];
-
-            if (key == "left" || key == "right" || key == "top" || key == "bottom") {
-              tempObj[key] = value.id();
-            } else {
-              tempObj[key] = value;
-            }
-          }
-        } catch (err) {
-          _didIteratorError = true;
-          _iteratorError = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion && _iterator.return) {
-              _iterator.return();
-            }
-          } finally {
-            if (_didIteratorError) {
-              throw _iteratorError;
-            }
-          }
-        }
-
-        relativePlacementConstraint.push(tempObj);
-      });
-      layout.constraints["relativePlacementConstraint"] = relativePlacementConstraint;
+      layout.constraints["relativePlacementConstraint"] = options.relativePlacementConstraint;
     }
   };
 

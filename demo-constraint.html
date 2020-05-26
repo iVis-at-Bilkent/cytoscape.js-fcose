@@ -531,7 +531,7 @@
               row.parentNode.removeChild(row);
               let index = 0;
               fixedNodes.forEach(function(value, i){
-                if(value["node"].id() == e.target.id){
+                if(value["node"] == e.target.id){
                   index = i;
                 }
               });
@@ -542,9 +542,9 @@
               let id;
               relativePlacement.forEach(function(value){
                 if(value.direction == "horizontal")
-                  id = value["left"].id() + "-" + value["right"].id() + "horizontal";
+                  id = value["left"] + "-" + value["right"] + "horizontal";
                 else 
-                  id = value["top"].id() + "-" + value["bottom"].id() + "vertical";
+                  id = value["top"] + "-" + value["bottom"] + "vertical";
                 rpIds.push(id);
               });
               let index = -1;
@@ -563,11 +563,11 @@
               let verticalIds = [];
               let verticalId = "";
               verticalAlignment.forEach(function(value){
-                value.forEach(function(node){
+                value.forEach(function(nodeId){
                   if(verticalId != "")
-                    verticalId += "-" + node.id(); 
+                    verticalId += "-" + nodeId; 
                   else
-                    verticalId += node.id();
+                    verticalId += nodeId;
                 });
                 verticalIds.push(verticalId + "-vertical");
                 verticalId = "";
@@ -588,11 +588,11 @@
               let horizontalIds = [];
               let horizontalId = "";
               horizontalAlignment.forEach(function(value){
-                value.forEach(function(node){
+                value.forEach(function(nodeId){
                   if(horizontalId != "")
-                    horizontalId += "-" + node.id(); 
+                    horizontalId += "-" + nodeId; 
                   else
-                    horizontalId += node.id();
+                    horizontalId += nodeId;
                 });
                 horizontalIds.push(horizontalId + "-horizontal");
                 horizontalId = "";
@@ -622,12 +622,12 @@
             let node = cy.getElementById(document.getElementById("nodeList").value);
             let exist = false;
             fixedNodes.forEach(function(value){
-              if(value["node"].same(node)){
+              if(cy.getElementById(value["node"]).same(node)){
                 exist = true;
               }
             });
             if(!exist){
-              let fixedNode = {node: node, position: Object.assign({}, {x: parseInt(document.getElementById("fixedNodeX").value), y: parseInt(document.getElementById("fixedNodeY").value)})};
+              let fixedNode = {nodeId: node.id(), position: Object.assign({}, {x: parseInt(document.getElementById("fixedNodeX").value), y: parseInt(document.getElementById("fixedNodeY").value)})};
               fixedNodes.push(fixedNode);         
               let fixedNodeTable = document.getElementById("fixedNodeTable");
               let row = fixedNodeTable.insertRow(-1);
@@ -647,7 +647,7 @@
               let id = "";
               let tempArray = [];
               cy.nodes(":selected").not(":parent").forEach(function(node){
-                tempArray.push(node);
+                tempArray.push(node.id());
                 if(id != "")
                   id += "-" + node.id(); 
                 else
@@ -670,7 +670,7 @@
               let id = "";
               let tempArray = [];
               cy.nodes(":selected").not(":parent").forEach(function(node){
-                tempArray.push(node);
+                tempArray.push(node.id());
                 if(id != "")
                   id += "-" + node.id(); 
                 else
@@ -692,12 +692,12 @@
             let isExist = false;
             relativePlacement.forEach(function(constraint){
               if(constraint["direction"] == "horizontal"){
-                if((constraint["left"].same(node1) && constraint["right"].same(node2) || constraint["left"].same(node2) && constraint["right"].same(node1)) && document.getElementById("directionList").value == "left-right"){
+                if((cy.getElementById(constraint["left"]).same(node1) && cy.getElementById(constraint["right"]).same(node2) || cy.getElementById(constraint["left"]).same(node2) && cy.getElementById(constraint["right"]).same(node1)) && document.getElementById("directionList").value == "left-right"){
                   isExist = true;
                 }
               }
               if(constraint["direction"] == "vertical"){
-                if((constraint["top"].same(node1) && constraint["bottom"].same(node2) || constraint["top"].same(node2) && constraint["bottom"].same(node1)) && document.getElementById("directionList").value == "top-bottom"){
+                if((cy.getElementById(constraint["top"]).same(node1) && cy.getElementById(constraint["bottom"]).same(node2) || cy.getElementById(constraint["top"]).same(node2) && cy.getElementById(constraint["bottom"]).same(node1)) && document.getElementById("directionList").value == "top-bottom"){
                   isExist = true;
                 }
               }
@@ -705,10 +705,10 @@
             if(!node1.same(node2) && !isExist){
               let relativePlacementConstraint;
               if(document.getElementById("directionList").value == "left-right"){
-                relativePlacementConstraint = {left: node1, right: node2, gap: (document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : undefined, direction: "horizontal"};
+                relativePlacementConstraint = {left: node1.id(), right: node2.id(), gap: (document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : undefined, direction: "horizontal"};
               }
               else{
-                relativePlacementConstraint = {top: node1, bottom: node2, gap: (document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : undefined, direction: "vertical"};
+                relativePlacementConstraint = {top: node1.id(), bottom: node2.id(), gap: (document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : undefined, direction: "vertical"};
               }            
               relativePlacement.push(relativePlacementConstraint);  
               let relativePlacementTable = document.getElementById("relativePlacementTable");

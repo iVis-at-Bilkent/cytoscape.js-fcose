@@ -78,11 +78,11 @@ const defaults = Object.freeze({
   /* Constraint options */
   
   // Fix required nodes to predefined positions 
-  fixedNodeConstraint: undefined, // [{node: cy.$('#n1'), position: {x: 100, y: 200}]
+  fixedNodeConstraint: undefined, // [{nodeId: 'n1', position: {x: 100, y: 200}]
   // Align required nodes in x/y direction
-  alignmentConstraint: undefined, // {vertical: [[cy.$('#n1'), cy.$('#n2')], [cy.$('#n3'), cy.$('#n4')]]}
+  alignmentConstraint: undefined, // {vertical: [['n1', 'n2')], ['n3', 'n4']]}
   // Place two nodes relatively in vertical/horizontal direction 
-  relativePlacementConstraint: undefined, //  [{top: cy.$('#n1'), bottom: cy.$('#n2'), gap: 25}]
+  relativePlacementConstraint: undefined, //  [{top: 'n1', bottom: 'n2', gap: 25}]
   
   /* layout event callbacks */
   ready: () => {}, // on layoutready

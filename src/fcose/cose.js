@@ -123,57 +123,15 @@ let coseLayout = function(options, spectralResult){
   let processConstraints = function(layout, options){
     // get nodes to be fixed
     if(options.fixedNodeConstraint){
-      var fixedNodeConstraint = [];
-      options.fixedNodeConstraint.forEach(function(constraint){
-        fixedNodeConstraint.push({nodeId: constraint["node"].id(), position: constraint["position"]});
-      });
-      layout.constraints["fixedNodeConstraint"] = fixedNodeConstraint;
+      layout.constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
     }
     // get nodes to be aligned
     if(options.alignmentConstraint){
-      var alignmentConstraint = {};
-      if(options.alignmentConstraint["vertical"]){
-        let verticalAligned = options.alignmentConstraint['vertical'];
-        let verticalAlignedTemp = []; 
-        for(let i = 0; i < verticalAligned.length; i++){
-          let individualAlignmentSet = [];
-          for(let j = 0; j < verticalAligned[i].length; j++){
-            individualAlignmentSet.push(verticalAligned[i][j].id());
-          }
-          verticalAlignedTemp.push(individualAlignmentSet);
-        }
-        alignmentConstraint["vertical"] = verticalAlignedTemp;
-      }
-      if(options.alignmentConstraint["horizontal"]){
-        let horizontalAligned = options.alignmentConstraint['horizontal'];
-        let horizontalAlignedTemp = []; 
-        for(let i = 0; i < horizontalAligned.length; i++){
-          let individualAlignmentSet = [];
-          for(let j = 0; j < horizontalAligned[i].length; j++){
-            individualAlignmentSet.push(horizontalAligned[i][j].id());
-          }
-          horizontalAlignedTemp.push(individualAlignmentSet);
-        }
-        alignmentConstraint["horizontal"] = horizontalAlignedTemp;
-      }
-      layout.constraints["alignmentConstraint"] = alignmentConstraint;
+      layout.constraints["alignmentConstraint"] = options.alignmentConstraint;
     }
     // get nodes to be relatively placed
     if(options.relativePlacementConstraint){
-      var relativePlacementConstraint = [];
-      options.relativePlacementConstraint.forEach(function(constraint){
-        let tempObj = {};
-        for (let [key, value] of Object.entries(constraint)) {
-          if(key == "left" || key == "right" || key == "top" || key == "bottom"){
-            tempObj[key] = value.id();
-          }
-          else{
-            tempObj[key] = value;
-          }
-        }
-        relativePlacementConstraint.push(tempObj);        
-      });
-      layout.constraints["relativePlacementConstraint"] = relativePlacementConstraint;
+      layout.constraints["relativePlacementConstraint"] = options.relativePlacementConstraint;
     }  
   };
   
