@@ -5,7 +5,6 @@
 const assign = require('../assign');
 const aux = require('./auxiliary');
 const { spectralLayout } = require('./spectral');
-const { constraintHandler } = require('./constraintHandler');
 const { coseLayout } = require('./cose');
 
 const defaults = Object.freeze({
@@ -152,14 +151,7 @@ class Layout {
     // if packing is not enabled, perform layout on the whole graph
     if(!packingEnabled){
       if(options.randomize){
-        let result = spectralLayout(options);  // apply spectral layout
-        
-        if(options.step == "transformed" || options.step == "enforced" || options.step == "all"){      
-          // enforce constraints if any exists
-          if(constraintExist){
-            constraintHandler(options, result);
-          }
-        }
+        let result = spectralLayout(options);  // apply spectral layout        
         
 //        // move graph to its original position because spectral moves it to origin
 //        if(!options.fixedNodeConstraint) {

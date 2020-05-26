@@ -175,6 +175,28 @@ let coseLayout = function(options, spectralResult){
 
   CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
   LayoutConstants.DEFAULT_UNIFORM_LEAF_NODE_SIZES = options.uniformNodeDimensions;
+  
+  // This part is for demo purpose and will change during release
+  if(options.step == "transformed"){
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;
+    CoSEConstants.ENFORCE_CONSTRAINTS = false;
+    CoSEConstants.APPLY_LAYOUT = false;
+  }
+  if(options.step == "enforced"){
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
+    CoSEConstants.ENFORCE_CONSTRAINTS = true;
+    CoSEConstants.APPLY_LAYOUT = false;
+  }
+  if(options.step == "all"){
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;
+    CoSEConstants.ENFORCE_CONSTRAINTS = true;
+    CoSEConstants.APPLY_LAYOUT = true;
+  }
+  if(!options.step){
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
+    CoSEConstants.ENFORCE_CONSTRAINTS = false;
+    CoSEConstants.APPLY_LAYOUT = true;
+  }  
 
   let coseLayout = new CoSELayout();
   let gm = coseLayout.newGraphManager(); 

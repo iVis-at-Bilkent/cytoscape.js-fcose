@@ -9,7 +9,8 @@
 
       <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
       <script src="https://raw.githack.com/iVis-at-Bilkent/layout-base/unstable/layout-base.js"></script>
-      <script src="https://raw.githack.com/iVis-at-Bilkent/cose-base/constraint-support/cose-base.js"></script>
+      <!-- <script src="https://raw.githack.com/iVis-at-Bilkent/cose-base/constraint-support/cose-base.js"></script> -->
+      <script src="cose-base.js"></script>
       <script src="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-layout-utilities/unstable/cytoscape-layout-utilities.js"></script>
 
       <!-- for testing with local version of cytoscape.js -->
@@ -531,7 +532,7 @@
               row.parentNode.removeChild(row);
               let index = 0;
               fixedNodes.forEach(function(value, i){
-                if(value["node"] == e.target.id){
+                if(value["nodeId"] == e.target.id){
                   index = i;
                 }
               });
@@ -622,7 +623,7 @@
             let node = cy.getElementById(document.getElementById("nodeList").value);
             let exist = false;
             fixedNodes.forEach(function(value){
-              if(cy.getElementById(value["node"]).same(node)){
+              if(cy.getElementById(value["nodeId"]).same(node)){
                 exist = true;
               }
             });
@@ -726,7 +727,7 @@
 
           var options = {
             name: 'fcose',            
-            quality: "draft",
+            quality: "default",
             randomize: true,
             packComponents: false,
             tile: false,
@@ -779,6 +780,7 @@
           });           
           document.getElementById("fcoseButton1").addEventListener("click", function(){
             let optionsDraft = Object.assign({}, options);
+            optionsDraft.quality = "draft";
             optionsDraft.step = "initial";
             let layout = cy.layout(optionsDraft);
             layout.one("layoutstop", function( event ){
