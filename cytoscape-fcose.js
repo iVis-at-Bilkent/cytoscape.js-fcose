@@ -1188,26 +1188,12 @@ var Layout = function () {
 
       var constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;
 
-      // get constraint data from options, if any exists and set some options
+      // if any constraint exists, set some options
       if (constraintExist) {
-
         // constraints work with these options
         options.randomize = true;
         options.tile = false;
         options.packComponents = false;
-
-        // if there exists relative placement constraint without gap value, set it to default 
-        if (options.relativePlacementConstraint) {
-          options.relativePlacementConstraint.forEach(function (constraint) {
-            if (!constraint["gap"] && constraint["gap"] != 0) {
-              if (constraint["left"]) {
-                constraint["gap"] = options.idealEdgeLength + constraint["left"].width() / 2 + constraint["right"].width() / 2;
-              } else {
-                constraint["gap"] = options.idealEdgeLength + constraint["top"].height() / 2 + constraint["bottom"].height() / 2;
-              }
-            }
-          });
-        }
       }
 
       // decide component packing is enabled or not
@@ -1480,6 +1466,19 @@ var constraintHandler = function constraintHandler(options, spectralResult) {
   constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
   constraints["alignmentConstraint"] = options.alignmentConstraint;
   constraints["relativePlacementConstraint"] = options.relativePlacementConstraint;
+
+  // if there exists relative placement constraint without gap value, set it to default 
+  if (constraints["relativePlacementConstraint"]) {
+    constraints["relativePlacementConstraint"].forEach(function (constraint) {
+      if (!constraint["gap"] && constraint["gap"] != 0) {
+        if (constraint["left"]) {
+          constraint["gap"] = options.idealEdgeLength + constraint["left"].outerWidth() / 2 + constraint["right"].outerWidth() / 2;
+        } else {
+          constraint["gap"] = options.idealEdgeLength + constraint["top"].outerHeight() / 2 + constraint["bottom"].outerHeight() / 2;
+        }
+      }
+    });
+  }
 
   /* auxiliary functions */
 

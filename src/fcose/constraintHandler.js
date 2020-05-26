@@ -19,7 +19,21 @@ let constraintHandler = function(options, spectralResult){
   let constraints = {};
   constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
   constraints["alignmentConstraint"] = options.alignmentConstraint;
-  constraints["relativePlacementConstraint"] = options.relativePlacementConstraint;  
+  constraints["relativePlacementConstraint"] = options.relativePlacementConstraint;
+  
+  // if there exists relative placement constraint without gap value, set it to default 
+  if(constraints["relativePlacementConstraint"]){
+    constraints["relativePlacementConstraint"].forEach(function(constraint){
+      if(!constraint["gap"] && constraint["gap"] != 0){
+        if(constraint["left"]){
+          constraint["gap"] = options.idealEdgeLength + constraint["left"].outerWidth()/2 + constraint["right"].outerWidth()/2;
+        }
+        else{
+          constraint["gap"] = options.idealEdgeLength + constraint["top"].outerHeight()/2 + constraint["bottom"].outerHeight()/2;
+        }
+      }
+    });
+  }  
   
   /* auxiliary functions */
  
