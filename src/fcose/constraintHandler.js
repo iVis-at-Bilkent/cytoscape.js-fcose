@@ -204,7 +204,7 @@ let constraintHandler = function(options, spectralResult){
   
   // find transformation based on rel. placement constraints if there are both alignment and rel. placement constraints
   // or if there are only rel. placement contraints where the largest component isn't sufficiently large
-  let findReflectionForRelativePlacement = function (relativePlacementConstraints) {
+  let applyReflectionForRelativePlacement = function (relativePlacementConstraints) {
     // variables to count votes
     let reflectOnY = 0, notReflectOnY = 0;
     let reflectOnX = 0, notReflectOnX = 0;
@@ -219,16 +219,20 @@ let constraintHandler = function(options, spectralResult){
     });
 
     if(reflectOnY > notReflectOnY && reflectOnX > notReflectOnX){
-      return "reflectOnBoth";
+      for(let i = 0; i < nodeIndexes.size; i++){
+        xCoords[i] = -1 * xCoords[i];
+        yCoords[i] = -1 * yCoords[i];
+      }
     }
     else if(reflectOnY > notReflectOnY){
-      return "reflectOnY";
+      for(let i = 0; i < nodeIndexes.size; i++){
+        xCoords[i] = -1 * xCoords[i];
+      }
     }
     else if(reflectOnX > notReflectOnX){
-      return "reflectOnX";
-    }
-    else{
-      return false;
+      for(let i = 0; i < nodeIndexes.size; i++){
+        yCoords[i] = -1 * yCoords[i];
+      }
     }
   };
   
@@ -323,133 +327,144 @@ let constraintHandler = function(options, spectralResult){
     });   
   }
   
-  // first check fixed node constraint
-  if(constraints["fixedNodeConstraint"] && constraints["fixedNodeConstraint"].length > 1){  
-    constraints["fixedNodeConstraint"].forEach(function(nodeData, i){
-      targetMatrix[i] = [nodeData["position"]["x"], nodeData["position"]["y"]];
-      sourceMatrix[i] = [xCoords[nodeIndexes.get(nodeData["node"].id())], yCoords[nodeIndexes.get(nodeData["node"].id())]];      
-    });
-    standardTransformation = true;
-  }
-  else if(constraints["alignmentConstraint"]){  // then check alignment constraint  
-    let count = 0; 
-    if(constraints["alignmentConstraint"]["vertical"]){
-      let verticalAlign = constraints["alignmentConstraint"]["vertical"];
-      for(let i = 0; i < verticalAlign.length; i++){
-        let alignmentSet = cy.collection();
-        verticalAlign[i].forEach(function(node){
-          alignmentSet = alignmentSet.merge(node);
-        });
-        let intersection = alignmentSet.diff(fixedNodes).both;
-        let xPos;
-        if(intersection.length > 0)
-          xPos = xCoords[nodeIndexes.get(intersection[0].id())];
-        else
-          xPos = calculateAvgPosition(alignmentSet)['x'];
+  if(options.step == "transformed" || options.step == "all") {
 
-        verticalAlign[i].forEach(function(node){
-          targetMatrix[count] = [xPos, yCoords[nodeIndexes.get(node.id())]];
-          sourceMatrix[count] = [xCoords[nodeIndexes.get(node.id())], yCoords[nodeIndexes.get(node.id())]];
-          count++;
-        });
-      }
+    // first check fixed node constraint
+    if(constraints["fixedNodeConstraint"] && constraints["fixedNodeConstraint"].length > 1){
+      constraints["fixedNodeConstraint"].forEach(function(nodeData, i){
+        targetMatrix[i] = [nodeData["position"]["x"], nodeData["position"]["y"]];
+        sourceMatrix[i] = [xCoords[nodeIndexes.get(nodeData["node"].id())], yCoords[nodeIndexes.get(nodeData["node"].id())]];
+      });
       standardTransformation = true;
     }
-    if(constraints["alignmentConstraint"]["horizontal"]){
-      let horizontalAlign = constraints["alignmentConstraint"]["horizontal"];
-      for(let i = 0; i < horizontalAlign.length; i++){
-        let alignmentSet = cy.collection();
-        horizontalAlign[i].forEach(function(node){
-          alignmentSet = alignmentSet.merge(node);
-        });
-        let intersection = alignmentSet.diff(fixedNodes).both;
-        let yPos;
-        if(intersection.length > 0)
-          yPos = xCoords[nodeIndexes.get(intersection[0].id())];
-        else
-          yPos = calculateAvgPosition(alignmentSet)['y'];
-
-        horizontalAlign[i].forEach(function(node){
-          targetMatrix[count] = [xCoords[nodeIndexes.get(node.id())], yPos];
-          sourceMatrix[count] = [xCoords[nodeIndexes.get(node.id())], yCoords[nodeIndexes.get(node.id())]];
-          count++;
-        });
-      }
-      standardTransformation = true;
-    }
-    if(constraints["relativePlacementConstraint"]){
-      reflectionType = true;
-    }
-  }
-  else if(constraints["relativePlacementConstraint"]){  // finally check relative placement constraint 
-    // find largest component in dag
-    let largestComponentSize = 0;
-    let largestComponentIndex = 0;
-    for(let i = 0; i < components.length; i++){
-      if(components[i].length > largestComponentSize){
-        largestComponentSize = components[i].length;
-        largestComponentIndex = i;
-      }
-    }
-    // if largest component isn't dominant, then take the votes for reflection
-    if(largestComponentSize < (dagUndirected.size / 2)){
-      standardTransformation = false;
-      reflectionType = findReflectionForRelativePlacement(constraints["relativePlacementConstraint"]); 
-    }
-    else{ // use largest component for transformation 
-      // construct horizontal and vertical subgraphs in the largest component
-      let subGraphOnHorizontal = new Map();
-      let subGraphOnVertical = new Map();
-      
-      components[largestComponentIndex].forEach(function(nodeId){
-          dag.get(nodeId).forEach(function(adjacent){
-            if(adjacent["direction"] == "horizontal"){
-              if(subGraphOnHorizontal.has(nodeId)){
-                subGraphOnHorizontal.get(nodeId).push(adjacent);
-              }
-              else{
-                subGraphOnHorizontal.set(nodeId, [adjacent]);
-              }
-              if(!subGraphOnHorizontal.has(adjacent["id"])){
-                subGraphOnHorizontal.set(adjacent["id"], []);
-              }
-            }
-            else{
-              if(subGraphOnVertical.has(nodeId)){
-                subGraphOnVertical.get(nodeId).push(adjacent);
-              }
-              else{
-                subGraphOnVertical.set(nodeId, [adjacent]);
-              }
-              if(!subGraphOnVertical.has(adjacent["id"])){
-                subGraphOnVertical.set(adjacent["id"], []);
-              }              
-            }
+    else if(constraints["alignmentConstraint"]){  // then check alignment constraint
+      let count = 0;
+      if(constraints["alignmentConstraint"]["vertical"]){
+        let verticalAlign = constraints["alignmentConstraint"]["vertical"];
+        for(let i = 0; i < verticalAlign.length; i++){
+          let alignmentSet = cy.collection();
+          verticalAlign[i].forEach(function(node){
+            alignmentSet = alignmentSet.merge(node);
           });
-      });
-      // calculate appropriate positioning for subgraphs
-      let positionMapHorizontal = findAppropriatePositionForRelativePlacement(subGraphOnHorizontal, "horizontal");
-      let positionMapVertical = findAppropriatePositionForRelativePlacement(subGraphOnVertical, "vertical");
-      
-      // construct source and target configuration
-      components[largestComponentIndex].forEach(function(nodeId, i){
-        sourceMatrix[i] = [xCoords[nodeIndexes.get(nodeId)], yCoords[nodeIndexes.get(nodeId)]];
-        targetMatrix[i] = [];
-        if(positionMapHorizontal.has(nodeId)){
-          targetMatrix[i][0] = positionMapHorizontal.get(nodeId);          
-        }
-        else{
-          targetMatrix[i][0] = xCoords[nodeIndexes.get(nodeId)];                    
-        }
-        if(positionMapVertical.has(nodeId)){
-          targetMatrix[i][1] = positionMapVertical.get(nodeId);
-        }
-        else{
-          targetMatrix[i][1] = yCoords[nodeIndexes.get(nodeId)];
-        }
-      });
+          let intersection = alignmentSet.diff(fixedNodes).both;
+          let xPos;
+          if(intersection.length > 0)
+            xPos = xCoords[nodeIndexes.get(intersection[0].id())];
+          else
+            xPos = calculateAvgPosition(alignmentSet)['x'];
 
-      standardTransformation = true;
+          verticalAlign[i].forEach(function(node){
+            targetMatrix[count] = [xPos, yCoords[nodeIndexes.get(node.id())]];
+            sourceMatrix[count] = [xCoords[nodeIndexes.get(node.id())], yCoords[nodeIndexes.get(node.id())]];
+            count++;
+          });
+        }
+        standardTransformation = true;
+      }
+      if(constraints["alignmentConstraint"]["horizontal"]){
+        let horizontalAlign = constraints["alignmentConstraint"]["horizontal"];
+        for(let i = 0; i < horizontalAlign.length; i++){
+          let alignmentSet = cy.collection();
+          horizontalAlign[i].forEach(function(node){
+            alignmentSet = alignmentSet.merge(node);
+          });
+          let intersection = alignmentSet.diff(fixedNodes).both;
+          let yPos;
+          if(intersection.length > 0)
+            yPos = xCoords[nodeIndexes.get(intersection[0].id())];
+          else
+            yPos = calculateAvgPosition(alignmentSet)['y'];
+
+          horizontalAlign[i].forEach(function(node){
+            targetMatrix[count] = [xCoords[nodeIndexes.get(node.id())], yPos];
+            sourceMatrix[count] = [xCoords[nodeIndexes.get(node.id())], yCoords[nodeIndexes.get(node.id())]];
+            count++;
+          });
+        }
+        standardTransformation = true;
+      }
+      if(constraints["relativePlacementConstraint"]){
+        reflectionType = true;
+      }
+    }
+    else if(constraints["relativePlacementConstraint"]){  // finally check relative placement constraint
+      // find largest component in dag
+      let largestComponentSize = 0;
+      let largestComponentIndex = 0;
+      for(let i = 0; i < components.length; i++){
+        if(components[i].length > largestComponentSize){
+          largestComponentSize = components[i].length;
+          largestComponentIndex = i;
+        }
+      }
+      // if largest component isn't dominant, then take the votes for reflection
+      if(largestComponentSize < (dagUndirected.size / 2)){
+        applyReflectionForRelativePlacement(constraints["relativePlacementConstraint"]);
+        standardTransformation = false;
+        reflectionType = false;
+      }
+      else{ // use largest component for transformation
+        // construct horizontal and vertical subgraphs in the largest component
+        let subGraphOnHorizontal = new Map();
+        let subGraphOnVertical = new Map();
+        let constraintsInlargestComponent = [];
+
+        components[largestComponentIndex].forEach(function(nodeId){
+            dag.get(nodeId).forEach(function(adjacent){
+              if(adjacent["direction"] == "horizontal"){
+                if(subGraphOnHorizontal.has(nodeId)){
+                  subGraphOnHorizontal.get(nodeId).push(adjacent);
+                }
+                else{
+                  subGraphOnHorizontal.set(nodeId, [adjacent]);
+                }
+                if(!subGraphOnHorizontal.has(adjacent["id"])){
+                  subGraphOnHorizontal.set(adjacent["id"], []);
+                }
+                constraintsInlargestComponent.push({left: cy.getElementById(nodeId), right: cy.getElementById(adjacent["id"])});
+              }
+              else{
+                if(subGraphOnVertical.has(nodeId)){
+                  subGraphOnVertical.get(nodeId).push(adjacent);
+                }
+                else{
+                  subGraphOnVertical.set(nodeId, [adjacent]);
+                }
+                if(!subGraphOnVertical.has(adjacent["id"])){
+                  subGraphOnVertical.set(adjacent["id"], []);
+                }
+                constraintsInlargestComponent.push({top: cy.getElementById(nodeId), bottom: cy.getElementById(adjacent["id"])});
+              }
+            });
+        });
+
+        applyReflectionForRelativePlacement(constraintsInlargestComponent);
+        reflectionType = false;
+
+        // calculate appropriate positioning for subgraphs
+        let positionMapHorizontal = findAppropriatePositionForRelativePlacement(subGraphOnHorizontal, "horizontal");
+        let positionMapVertical = findAppropriatePositionForRelativePlacement(subGraphOnVertical, "vertical");
+
+        // construct source and target configuration
+        components[largestComponentIndex].forEach(function(nodeId, i){
+          sourceMatrix[i] = [xCoords[nodeIndexes.get(nodeId)], yCoords[nodeIndexes.get(nodeId)]];
+          targetMatrix[i] = [];
+          if(positionMapHorizontal.has(nodeId)){
+            targetMatrix[i][0] = positionMapHorizontal.get(nodeId);
+          }
+          else{
+            targetMatrix[i][0] = xCoords[nodeIndexes.get(nodeId)];
+          }
+          if(positionMapVertical.has(nodeId)){
+            targetMatrix[i][1] = positionMapVertical.get(nodeId);
+          }
+          else{
+            targetMatrix[i][1] = yCoords[nodeIndexes.get(nodeId)];
+          }
+        });
+
+        standardTransformation = true;
+      }
     }
   }
 
@@ -471,43 +486,6 @@ let constraintHandler = function(options, spectralResult){
       let tempMatrix = aux.multMat(targetMatrixTranspose, aux.transpose(sourceMatrixTranspose)); // tempMatrix = A'B
       let SVDResult = aux.svd(tempMatrix); // SVD(A'B) = USV', svd function returns U, S and V 
       transformationMatrix = aux.multMat(SVDResult.V, aux.transpose(SVDResult.U)); // transformationMatrix = T = VU'
-      
-      // if this is true then we have both alignment and rel. placement constraint
-      if (reflectionType) {
-        // apply transformation based on alignment constraint
-        for(let i = 0; i < nodeIndexes.size; i++){
-          let temp1 = [xCoords[i], yCoords[i]];
-          let temp2 = [transformationMatrix[0][0], transformationMatrix[1][0]];
-          let temp3 = [transformationMatrix[0][1], transformationMatrix[1][1]];
-          xCoords[i] = aux.dotProduct(temp1, temp2);
-          yCoords[i] = aux.dotProduct(temp1, temp3);
-        }      
-        
-        reflectionType = findReflectionForRelativePlacement(constraints["relativePlacementConstraint"]);   
-        
-        // redefine transformation matrix based on rel. placement constraints
-        if (reflectionType == "reflectOnBoth") {
-          transformationMatrix = [[-1, 0], [0, -1]];
-        }
-        else if (reflectionType == "reflectOnX") {
-          transformationMatrix = [[1, 0], [0, -1]];
-        }
-        else if (reflectionType == "reflectOnY") {
-          transformationMatrix = [[-1, 0], [0, 1]];
-        }
-        else {  // reflection is not necessary
-          transformationMatrix = undefined;
-        }
-      }
-    }
-    else if(reflectionType == "reflectOnBoth"){
-      transformationMatrix = [[-1, 0], [0, -1]];
-    }
-    else if(reflectionType == "reflectOnX"){
-      transformationMatrix = [[1, 0], [0, -1]];
-    }
-    else if(reflectionType == "reflectOnY"){
-      transformationMatrix = [[-1, 0], [0, 1]];
     }
     
     /* apply found transformation matrix to obtain final draft layout */
@@ -519,6 +497,11 @@ let constraintHandler = function(options, spectralResult){
         xCoords[i] = aux.dotProduct(temp1, temp2);
         yCoords[i] = aux.dotProduct(temp1, temp3);
       }
+    }
+
+    // applied only both alignment and rel. placement constraints exist
+    if (reflectionType) {
+      applyReflectionForRelativePlacement(constraints["relativePlacementConstraint"]);
     }
   }
   
