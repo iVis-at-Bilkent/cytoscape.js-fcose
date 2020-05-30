@@ -1,14 +1,12 @@
 {
   "name": "cytoscape-fcose",
-  "version": "1.1.0",
+  "version": "1.2.2",
   "description": "The fCoSE layout for Cytoscape.js by Bilkent with fast compound node placement",
   "main": "cytoscape-fcose.js",
   "author": {
     "name": "iVis-at-Bilkent"
   },
   "scripts": {
-    "postpublish": "run-s gh-pages",
-    "gh-pages": "gh-pages -d pages",
     "copyright": "update license",
     "lint": "eslint src",
     "build": "cross-env NODE_ENV=production webpack",
@@ -39,7 +37,7 @@
     "chai": "4.0.2",
     "cpy-cli": "^1.0.1",
     "cross-env": "^5.0.0",
-    "eslint": "^3.9.1",
+    "eslint": "^6.8.0",
     "gh-pages": "^1.0.0",
     "mocha": "3.4.2",
     "npm-run-all": "^4.1.2",
@@ -47,12 +45,12 @@
     "update": "^0.7.4",
     "updater-license": "^1.0.0",
     "webpack": "^2.6.1",
-    "webpack-dev-server": "^2.4.5"
+    "webpack-dev-server": "^3.1.11"
   },
   "peerDependencies": {
     "cytoscape": "^3.2.0"
   },
   "dependencies": {
-    "cose-base": "https://github.com/iVis-at-Bilkent/cose-base#unstable"
+    "cose-base": "https://github.com/iVis-at-Bilkent/cose-base#constraint-support"
   }
 }

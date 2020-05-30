@@ -293,7 +293,7 @@ let spectralLayout = function(options){
   aux.connectComponents(cy, eles, aux.getTopMostNodes(nodes), dummyNodes);
 
   parentNodes.forEach(function( ele ){
-    aux.connectComponents(cy, eles, aux.getTopMostNodes(ele.descendants()), dummyNodes);
+    aux.connectComponents(cy, eles, aux.getTopMostNodes(ele.descendants().intersection(eles)), dummyNodes);
   });
 
   // assign indexes to nodes (first real, then dummy nodes)
@@ -345,7 +345,7 @@ let spectralLayout = function(options){
       eleIndex = nodeIndexes.get(ele.id());
 
     ele.neighborhood().nodes().forEach(function(node){
-      if(eles.contains(ele.edgesWith(node))){
+      if(eles.intersection(ele.edgesWith(node))){
         if(node.isParent())
           allNodesNeighborhood[eleIndex].push(parentChildMap.get(node.id()));       
         else
