@@ -64,7 +64,7 @@ auxiliary.connectComponents = function(cy, eles, topMostNodes, dummyNodes){
       // Traverse all neighbors of this node
       let neighborNodes = cy.collection();
       currentNode.neighborhood().nodes().forEach(function(node){
-        if(eles.intersection(currentNode.edgesWith(node))){
+        if(eles.intersection(currentNode.edgesWith(node)).length > 0){
           neighborNodes.merge(node);
         }
       });

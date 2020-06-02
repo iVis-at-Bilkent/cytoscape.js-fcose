@@ -155,7 +155,7 @@ auxiliary.connectComponents = function (cy, eles, topMostNodes, dummyNodes) {
       // Traverse all neighbors of this node
       var neighborNodes = cy.collection();
       currentNode.neighborhood().nodes().forEach(function (node) {
-        if (eles.intersection(currentNode.edgesWith(node))) {
+        if (eles.intersection(currentNode.edgesWith(node)).length > 0) {
           neighborNodes.merge(node);
         }
       });
@@ -1210,7 +1210,7 @@ var spectralLayout = function spectralLayout(options) {
     if (ele.isParent()) eleIndex = nodeIndexes.get(parentChildMap.get(ele.id()));else eleIndex = nodeIndexes.get(ele.id());
 
     ele.neighborhood().nodes().forEach(function (node) {
-      if (eles.intersection(ele.edgesWith(node))) {
+      if (eles.intersection(ele.edgesWith(node)).length > 0) {
         if (node.isParent()) allNodesNeighborhood[eleIndex].push(parentChildMap.get(node.id()));else allNodesNeighborhood[eleIndex].push(node.id());
       }
     });
