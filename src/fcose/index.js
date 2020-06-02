@@ -199,82 +199,84 @@ class Layout {
         }  
 
         // packing
-        let subgraphs = [];  
-        components.forEach(function(component, index){
-          let nodeIndexes;
-          if(options.quality == "draft"){
-            nodeIndexes = spectralResult[index].nodeIndexes;
-          }
-          let subgraph = {};
-          subgraph.nodes = [];
-          subgraph.edges = [];
-          let nodeIndex;
-          component.nodes().forEach(function (node) {
+        if(components.length > 1){
+          let subgraphs = [];
+          components.forEach(function(component, index){
+            let nodeIndexes;
             if(options.quality == "draft"){
-              if(!node.isParent()){
-                nodeIndex = nodeIndexes.get(node.id());
-                subgraph.nodes.push({x: spectralResult[index].xCoords[nodeIndex] - node.boundingbox().w/2, y: spectralResult[index].yCoords[nodeIndex] - node.boundingbox().h/2, width: node.boundingbox().w, height: node.boundingbox().h});              
+              nodeIndexes = spectralResult[index].nodeIndexes;
+            }
+            let subgraph = {};
+            subgraph.nodes = [];
+            subgraph.edges = [];
+            let nodeIndex;
+            component.nodes().forEach(function (node) {
+              if(options.quality == "draft"){
+                if(!node.isParent()){
+                  nodeIndex = nodeIndexes.get(node.id());
+                  subgraph.nodes.push({x: spectralResult[index].xCoords[nodeIndex] - node.boundingbox().w/2, y: spectralResult[index].yCoords[nodeIndex] - node.boundingbox().h/2, width: node.boundingbox().w, height: node.boundingbox().h});
+                }
+                else{
+                  let parentInfo = aux.calcBoundingBox(node, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                  subgraph.nodes.push({x: parentInfo.topLeftX, y: parentInfo.topLeftY, width: parentInfo.width, height: parentInfo.height});
+                }
               }
               else{
-                let parentInfo = aux.calcBoundingBox(node, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
-                subgraph.nodes.push({x: parentInfo.topLeftX, y: parentInfo.topLeftY, width: parentInfo.width, height: parentInfo.height}); 
-              }   
-            }
-            else{
-              subgraph.nodes.push({x: coseResult[index][node.id()].getLeft(), y: coseResult[index][node.id()].getTop(), width: coseResult[index][node.id()].getWidth(), height: coseResult[index][node.id()].getHeight()});
-            }
-          });
-          component.edges().forEach(function (edge) {
-            let source = edge.source();
-            let target = edge.target();
-            if(options.quality == "draft"){
-              let sourceNodeIndex = nodeIndexes.get(source.id());
-              let targetNodeIndex = nodeIndexes.get(target.id());
-              let sourceCenter = [];
-              let targetCenter = []; 
-              if(source.isParent()){
-                let parentInfo = aux.calcBoundingBox(source, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
-                sourceCenter.push(parentInfo.topLeftX + parentInfo.width / 2);
-                sourceCenter.push(parentInfo.topLeftY + parentInfo.height / 2);              
+                subgraph.nodes.push({x: coseResult[index][node.id()].getLeft(), y: coseResult[index][node.id()].getTop(), width: coseResult[index][node.id()].getWidth(), height: coseResult[index][node.id()].getHeight()});
               }
-              else{
-                sourceCenter.push(spectralResult[index].xCoords[sourceNodeIndex]);
-                sourceCenter.push(spectralResult[index].yCoords[sourceNodeIndex]);              
-              }
-              if(target.isParent()){
-                let parentInfo = aux.calcBoundingBox(target, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
-                targetCenter.push(parentInfo.topLeftX + parentInfo.width / 2);
-                targetCenter.push(parentInfo.topLeftY + parentInfo.height / 2);              
-              }
-              else{
-                targetCenter.push(spectralResult[index].xCoords[targetNodeIndex]);
-                targetCenter.push(spectralResult[index].yCoords[targetNodeIndex]);              
-              }            
-              subgraph.edges.push({startX: sourceCenter[0], startY: sourceCenter[1], endX: targetCenter[0], endY: targetCenter[1]});
-            }
-            else{
-              subgraph.edges.push({startX: coseResult[index][source.id()].getCenterX(), startY: coseResult[index][source.id()].getCenterY(), endX: coseResult[index][target.id()].getCenterX(), endY: coseResult[index][target.id()].getCenterY()});
-            }
-          });        
-          subgraphs.push(subgraph);
-        });
-        let shiftResult = layUtil.packComponents(subgraphs).shifts;
-        if(options.quality == "draft"){
-          spectralResult.forEach(function(result, index){
-            let newXCoords = result.xCoords.map(x => x + shiftResult[index].dx);
-            let newYCoords = result.yCoords.map(y => y + shiftResult[index].dy);
-            result.xCoords = newXCoords;
-            result.yCoords = newYCoords;
-          });
-        }
-        else{
-          coseResult.forEach(function(result, index){
-            Object.keys(result).forEach(function (item) {
-              let nodeRectangle = result[item];
-              nodeRectangle.setCenter(nodeRectangle.getCenterX() + shiftResult[index].dx, nodeRectangle.getCenterY() + shiftResult[index].dy);
             });
-          });        
-        }      
+            component.edges().forEach(function (edge) {
+              let source = edge.source();
+              let target = edge.target();
+              if(options.quality == "draft"){
+                let sourceNodeIndex = nodeIndexes.get(source.id());
+                let targetNodeIndex = nodeIndexes.get(target.id());
+                let sourceCenter = [];
+                let targetCenter = [];
+                if(source.isParent()){
+                  let parentInfo = aux.calcBoundingBox(source, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                  sourceCenter.push(parentInfo.topLeftX + parentInfo.width / 2);
+                  sourceCenter.push(parentInfo.topLeftY + parentInfo.height / 2);
+                }
+                else{
+                  sourceCenter.push(spectralResult[index].xCoords[sourceNodeIndex]);
+                  sourceCenter.push(spectralResult[index].yCoords[sourceNodeIndex]);
+                }
+                if(target.isParent()){
+                  let parentInfo = aux.calcBoundingBox(target, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                  targetCenter.push(parentInfo.topLeftX + parentInfo.width / 2);
+                  targetCenter.push(parentInfo.topLeftY + parentInfo.height / 2);
+                }
+                else{
+                  targetCenter.push(spectralResult[index].xCoords[targetNodeIndex]);
+                  targetCenter.push(spectralResult[index].yCoords[targetNodeIndex]);
+                }
+                subgraph.edges.push({startX: sourceCenter[0], startY: sourceCenter[1], endX: targetCenter[0], endY: targetCenter[1]});
+              }
+              else{
+                subgraph.edges.push({startX: coseResult[index][source.id()].getCenterX(), startY: coseResult[index][source.id()].getCenterY(), endX: coseResult[index][target.id()].getCenterX(), endY: coseResult[index][target.id()].getCenterY()});
+              }
+            });
+            subgraphs.push(subgraph);
+          });
+          let shiftResult = layUtil.packComponents(subgraphs).shifts;
+          if(options.quality == "draft"){
+            spectralResult.forEach(function(result, index){
+              let newXCoords = result.xCoords.map(x => x + shiftResult[index].dx);
+              let newYCoords = result.yCoords.map(y => y + shiftResult[index].dy);
+              result.xCoords = newXCoords;
+              result.yCoords = newYCoords;
+            });
+          }
+          else{
+            coseResult.forEach(function(result, index){
+              Object.keys(result).forEach(function (item) {
+                let nodeRectangle = result[item];
+                nodeRectangle.setCenter(nodeRectangle.getCenterX() + shiftResult[index].dx, nodeRectangle.getCenterY() + shiftResult[index].dy);
+              });
+            });
+          }
+        }
       }
     }
     
