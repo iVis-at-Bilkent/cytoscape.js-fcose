@@ -509,7 +509,9 @@ ConstraintHandler.handleConstraints = function (layout) {
             if (!isExist) {
               _components.push(new Set(value));
             } else {
-              _components[existAt].add(key);
+              value.forEach(function (ele) {
+                _components[existAt].add(ele);
+              });
             }
           }
         }
