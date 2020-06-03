@@ -196,8 +196,14 @@ let coseLayout = function(options, spectralResult){
     CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
     CoSEConstants.ENFORCE_CONSTRAINTS = false;
     CoSEConstants.APPLY_LAYOUT = true;
-  }  
-  CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = options.randomize ? true : false;
+  }
+  
+  if(options.randomize && !(options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint)){
+    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = true;
+  }
+  else{
+    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = false;
+  }
 
   let coseLayout = new CoSELayout();
   let gm = coseLayout.newGraphManager(); 

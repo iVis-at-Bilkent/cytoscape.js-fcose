@@ -107,6 +107,7 @@ CoSEConstants.TILING_PADDING_HORIZONTAL = 10;
 CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;
 CoSEConstants.ENFORCE_CONSTRAINTS = true;
 CoSEConstants.APPLY_LAYOUT = true;
+CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = false; // make this true when cose is used incrementally as a part of other non-incremental layout
 
 module.exports = CoSEConstants;
 
@@ -1321,6 +1322,18 @@ CoSELayout.prototype.classicLayout = function () {
 
         this.positionNodesRandomly();
       }
+  } else {
+    if (CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL) {
+      // Reduce the trees in incremental mode if only this constant is set to true 
+      this.reduceTrees();
+      // Update nodes that gravity will be applied
+      this.graphManager.resetAllNodesToApplyGravitation();
+      var allNodes = new Set(this.getAllNodes());
+      var intersection = this.nodesWithGravity.filter(function (x) {
+        return allNodes.has(x);
+      });
+      this.graphManager.setAllNodesToApplyGravitation(intersection);
+    }
   }
 
   if (Object.keys(this.constraints).length > 0) {
@@ -1479,6 +1492,8 @@ CoSELayout.prototype.moveNodes = function () {
     node.move();
   }
 };
+
+// constraint related methods: initConstraintVariables and updateDisplacements
 
 // initialize constraint related variables
 CoSELayout.prototype.initConstraintVariables = function () {
