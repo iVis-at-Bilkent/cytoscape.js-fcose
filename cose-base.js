@@ -404,9 +404,9 @@ ConstraintHandler.handleConstraints = function (layout) {
       if (value == 0) {
         queue.push(key);
         if (direction == "horizontal") {
-          positionMap.set(key, xCoords[nodeIndexes.get(key)] ? xCoords[nodeIndexes.get(key)] : dummyPositions.get(key));
+          positionMap.set(key, nodeIndexes.has(key) ? xCoords[nodeIndexes.get(key)] : dummyPositions.get(key));
         } else {
-          positionMap.set(key, yCoords[nodeIndexes.get(key)] ? yCoords[nodeIndexes.get(key)] : dummyPositions.get(key));
+          positionMap.set(key, nodeIndexes.has(key) ? yCoords[nodeIndexes.get(key)] : dummyPositions.get(key));
         }
       } else {
         positionMap.set(key, Number.NEGATIVE_INFINITY);
@@ -426,9 +426,9 @@ ConstraintHandler.handleConstraints = function (layout) {
           if (fixedNodes && fixedNodes.has(neighbor.id)) {
             var fixedPosition = void 0;
             if (direction == "horizontal") {
-              fixedPosition = xCoords[nodeIndexes.get(neighbor.id)] ? xCoords[nodeIndexes.get(neighbor.id)] : dummyPositions.get(neighbor.id);
+              fixedPosition = nodeIndexes.has(neighbor.id) ? xCoords[nodeIndexes.get(neighbor.id)] : dummyPositions.get(neighbor.id);
             } else {
-              fixedPosition = yCoords[nodeIndexes.get(neighbor.id)] ? yCoords[nodeIndexes.get(neighbor.id)] : dummyPositions.get(neighbor.id);
+              fixedPosition = nodeIndexes.has(neighbor.id) ? yCoords[nodeIndexes.get(neighbor.id)] : dummyPositions.get(neighbor.id);
             }
             positionMap.set(neighbor.id, fixedPosition); // TODO: may do unnecessary work
             if (fixedPosition < positionMap.get(currentNode) + neighbor.gap) {
@@ -533,9 +533,9 @@ ConstraintHandler.handleConstraints = function (layout) {
 
             var posBefore = void 0;
             if (direction == "horizontal") {
-              posBefore = xCoords[nodeIndexes.get(nodeId)] ? xCoords[nodeIndexes.get(nodeId)] : dummyPositions.get(nodeId);
+              posBefore = nodeIndexes.has(nodeId) ? xCoords[nodeIndexes.get(nodeId)] : dummyPositions.get(nodeId);
             } else {
-              posBefore = yCoords[nodeIndexes.get(nodeId)] ? yCoords[nodeIndexes.get(nodeId)] : dummyPositions.get(nodeId);
+              posBefore = nodeIndexes.has(nodeId) ? yCoords[nodeIndexes.get(nodeId)] : dummyPositions.get(nodeId);
             }
             var posAfter = positionMap.get(nodeId);
             if (posBefore < minBefore) {

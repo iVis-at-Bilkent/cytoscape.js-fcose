@@ -110,7 +110,7 @@ class Layout {
     // if any constraint exists, set some options
     if(constraintExist){    
       // constraints work with these options
-      options.randomize = true;
+//      options.randomize = true;
       options.tile = false;
       options.packComponents = false;
     }    

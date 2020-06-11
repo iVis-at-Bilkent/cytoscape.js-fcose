@@ -188,7 +188,10 @@ let coseLayout = function(options, spectralResult){
     CoSEConstants.APPLY_LAYOUT = false;
   }
   if(options.step == "all"){
-    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;
+    if(options.randomize)
+      CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;
+    else
+      CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
     CoSEConstants.ENFORCE_CONSTRAINTS = true;
     CoSEConstants.APPLY_LAYOUT = true;
   }
