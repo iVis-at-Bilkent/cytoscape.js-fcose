@@ -7,27 +7,42 @@
 
       <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
       
-      <!-- Bootstrap and jQuery - for demo purpose only-->
+      <!-- Bootstrap, popper, jQuery and filesaver - for demo purpose only -->
       <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-      <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">      
-
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
+      <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+      <script src="https://raw.githack.com/eligrey/FileSaver.js/master/dist/FileSaver.min.js"></script>      
+      <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+      
+      <!-- Cytoscape and fcose -->
       <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
-      <script src="https://raw.githack.com/iVis-at-Bilkent/layout-base/unstable/layout-base.js"></script>
+      <script src="https://raw.githack.com/iVis-at-Bilkent/layout-base/unstable/layout-base.js"></script> 
       <script src="https://raw.githack.com/iVis-at-Bilkent/cose-base/constraint-support/cose-base.js"></script>
-      <!-- <script src="cose-base.js"></script> -->
-      <script src="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-layout-utilities/unstable/cytoscape-layout-utilities.js"></script>
-      <script src="https://unpkg.com/cytoscape-graphml/cytoscape-graphml.js"></script>  <!-- graphml - for demo purpose only-->  
+      <script src="cytoscape-fcose.js"></script>
+      
       <script src="demo-constraint-control.js" defer></script>
       
-      <!-- for testing with local version of cytoscape.js -->
-      <!--<script src="../cytoscape.js/build/cytoscape.js"></script>-->
-
-      <script src="cytoscape-fcose.js"></script>
+      <!-- CoLa for local comparison only -->
+      <!-- <script src="https://unpkg.com/webcola/WebCola/cola.min.js"></script> -->
+      <!-- <script src="cytoscape-cola.js"></script> -->      
+      
+      <script src="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-layout-utilities/unstable/cytoscape-layout-utilities.js"></script>
+      <script src="https://unpkg.com/cytoscape-graphml/cytoscape-graphml.js"></script>  <!-- graphml - for demo purpose only--> 	
+      <script src="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-layvo/unstable/cytoscape-layvo.js"></script> <!-- For quality metrics -->
+      <script src="https://raw.githack.com/kinimesi/cytoscape-svg/master/cytoscape-svg.js"></script> <!-- For svg export -->
+      
+      <!-- We use a workaround here to be able to debug real world files in local by keeping json content as js variable. -->
+      <script type="text/javascript" src="samples/chalk.js"></script>
+      <script type="text/javascript" src="samples/chalk_constraints.js"></script>
+      <script type="text/javascript" src="samples/unix.js"></script>
+      <script type="text/javascript" src="samples/unix_constraints.js"></script>
+      <script type="text/javascript" src="samples/uwsn.js"></script>
+      <script type="text/javascript" src="samples/uwsn_constraints.js"></script>
 
       <style>
         body {
           font-family: helvetica neue, helvetica, liberation sans, arial, sans-serif;
-          font-size: 14px;
+          font-size: 13px;
         }
 
         #cy {
@@ -44,11 +59,12 @@
           color: #555;
           font-size: 15px;
           font-weight: bold;
+          padding-top: 5px;
         }
         
         hr.line {
-            margin-top: 4px;
-            margin-bottom: 4px
+            margin-top: 9px;
+            margin-bottom: 9px
         }        
                 
         /* The sidepanel menu */
@@ -60,7 +76,7 @@
           float: left;
           top: auto;
           left: 0;
-          background-color: #b7ffff; /* Black*/
+          background-color: #77ffff;
           overflow-x: hidden; /* Disable horizontal scroll */
           padding-top: 10px; /* Place content 10px from the top */
           padding-bottom: 10px; /* Place content 10px from the bottom */
@@ -68,27 +84,26 @@
         }
 
         table{
-          margin-left:10;
-          margin-right:10;
+          margin-left: 8;
+          margin-right: 10;
           width: 360px;
         }       
         
         /* The sidepanel links */
         table td {
-          padding: 4px 4px 4px 2px;
+          padding: 4px 4px 4px 0px;
           text-decoration: none;
-          font-size: 15px;
+          font-size: 14px;
           color: #555;
           transition: 0.3s;
           text-align: left;
         }
 
         .layoutButton {
-          font-size: 15px;
           color: #555;
           cursor: pointer;
           background-color: #b7ffff;
-          padding: 2px 10px;
+          padding: 5px 10px;
           border: none;
           margin-bottom: 5px;
         }
@@ -108,6 +123,17 @@
           border-radius: 3px;
           border-width: 1px;         
         }
+        .btn-group-sm>.btn, .btn-sm { 
+          font-size: 13px
+        }
+        
+        .form-control-sm { 
+          font-size: 13px
+        } 
+
+        .custom-select-sm {
+          font-size: 13px
+        }        
         
         .textField {
           padding-left: 5px;
@@ -119,93 +145,163 @@
 
         .button:hover {
           background-color: #0f0;
-        }        
+        }
+        
+        .custom-control-label {
+          padding-top: 2px;
+        }
+        
       </style>
   </head>
   <body>
-          <h1>cytoscape-fcose demo (constraint)</h1>
-          <div style='width: 375px; position: absolute;'>
-            <input id="inputFile" type='file' style="display: none" />
-            <button id="openFile" type="button" class="btn btn-success btn-sm" data-toggle="tooltip" title="Load graphml file">Load Graph</button>            
-            <select id="sample">
-              <option value="sample1" selected="">sample1</option>
-              <option value="sample2">sample2</option>
-              <option value="sample3">sample3</option>
-              <option value="sample4">sample4</option>
-            </select>
-            <!--<span id="fileName" style="font-size:70%;" class="text-dark mt-2 mr-5">sample1.graphml</span> -->
-            <hr class="line">
-            <button id="randomizeButton" class="btn btn-primary btn-sm mb-2">Randomize</button>&nbsp
-            <button id="fcoseButton" class="btn btn-primary btn-sm mb-2">fCoSE</button>&nbsp
-            <input type="checkbox" id="incremental" name="incremental">
-            <label for="incremental">Incremental</label><br>
-            <button id="draftButton" class="btn btn-outline-primary btn-sm">Draft</button>&nbsp
-            <button id="transformButton" class="btn btn-outline-primary btn-sm">Transform</button>&nbsp
-            <button id="enforceButton" class="btn btn-outline-primary btn-sm">Enforce</button>&nbsp
-            <button id="coseButton" class="btn btn-outline-primary btn-sm">Cose</button><br>
-            <hr class="line">
-            <button id="importConstraint" type="button" class="layoutButton" onclick="document.getElementById('inputConstraint').click();" data-toggle="tooltip" title="Import constraint file">Import Constraints</button>
-            <input id="inputConstraint" type='file' style="display: none" />
-            <button id="exportConstraint" type="button" class="layoutButton" data-toggle="tooltip" title="Export constraint file">Export Constraints</button>            
-            <div id="mySidepanel" class="sidepanel">
-              <table id="fixedNodeTable">
-                <tr>
-                  <td colspan="2"><b>Fixed Node Constraint</b></td>                   
-                </tr>
-                <tr>
-                  <td colspan="2" id="nodeListColumn"></td>                    
-                </tr>                
-                <tr>
-                  <td style = "width: 50%"> x: <input type="text" id="fixedNodeX" size="3" value="">&nbsp y: <input type="text" id="fixedNodeY" size="3" value=""></td>
-                  <td style = "width: 50%"><button id="fixedNode" class="constraintButton" >Add</button></td>                 
-                </tr>               
-              </table>
-              <hr class="line">
-              <table id="alignmentTable">
-                <tr>
-                  <td><b>Alignment Constraint</b></td><td></td>                  
-                </tr>
-                <tr id="verticalButton">
-                  <td><button id="verticalAlignment" class="constraintButtonLarge" >Add selected to ver. alignment</button></td><td></td>                  
-                </tr>  
-                <tr id="horizontalButton">
-                  <td><button id="horizontalAlignment" class="constraintButtonLarge" >Add selected to hor. alignment</button></td><td></td>                  
-                </tr>                
-                <tr>
-              </table>
-              <hr class="line">
-              <table id="relativePlacementTable">
-                <tr>
-                  <td colspan="5"><b>Relative Placement Constraint</b></td>                  
-                </tr>     
-                <tr>
-                  <td colspan="3" id="nodeListColumnRP1"></td>
-                </tr>
-                <tr>
-                  <td id="directionListColumn" style="width: 35%">                  
-                    <select id="directionList" style="background-color: #64ffee;">
-                      <option value="left-right">left-right</option>
-                      <option value="top-bottom">top-bottom</option>
-                    </select></td>                  
-                  <td style="width: 35%">gap: <input type="text" id="gap" size="3" value=""></td>
-                  <td style = "text-align: left"><button id="relativePlacement" class="constraintButton" >Add</button></td>                  
-                </tr>
-                <tr>
-                  <td colspan="3" id="nodeListColumnRP2"></td>
-                </tr>                
-              </table>              
-              <hr class="line">
-              <table id="constraintListTable" class="table-striped"> 
-                <tr>
-                  <th style="font-size: 0.9em; text-align: left; width:25%">Type</th>
-                  <th style="font-size: 0.9em; text-align: left; width:40%">Nodes</th>
-                  <th style="font-size: 0.9em; text-align: left;">Info</th>
-                </tr>
-              </table>              
-            </div>
+    <h1 class="ml-2">cytoscape-fcose demo (constraint)</h1>
+      <div style='width: 375px; position: absolute;'>          
+        <!-- File menu-->
+        <input id="inputFile" type='file' style="display: none" />
+        <input type="button" id="openFile" type="button" class="btn btn-primary btn-sm ml-2" data-toggle="tooltip" title="Load graphml file" value="Load Graph"/>&nbsp
+        <select id="sample" class="custom-select custom-select-sm ml-2" style="width:auto;">
+          <option value="sample1" selected="">sample1 - fixed</option>
+          <option value="sample2">sample2 - alignment</option>
+          <option value="sample3">sample3 - relative</option>
+          <option value="sample4">sample4 - hybrid</option>
+          <option value="sample5">unix-family-tree</option>
+          <option value="sample6">chalk-dependency</option>              
+          <option value="sample7">UW-sensor-network</option>
+        </select>
+        <!-- File Menu End -->
 
-          </div>
-          <div id="cy"></div>
+        <hr class="line">
+
+        <!-- Layout Menu-->
+        <button id="randomizeButton" class="btn btn-primary btn-sm mb-2 ml-2">Randomize</button>&nbsp
+        <button id="fcoseButton" class="btn btn-primary btn-sm mb-2">fCoSE</button>&nbsp
+    <!--    <button id="colaButton" class="btn btn-primary btn-sm mb-2">CoLa</button>&nbsp -->
+        <div class="custom-control custom-control-inline custom-checkbox">
+          <input type="checkbox" class="custom-control-input" id="incremental" name="incremental">
+          <label class="custom-control-label" for="incremental">Incremental</label>
+        </div><br>
+        <button id="draftButton" class="btn btn-outline-primary btn-sm ml-2">Draft</button>&nbsp
+        <button id="transformButton" class="btn btn-outline-primary btn-sm">Transform</button>&nbsp
+        <button id="enforceButton" class="btn btn-outline-primary btn-sm">Enforce</button>&nbsp
+        <button id="coseButton" class="btn btn-outline-primary btn-sm">CoSE</button><br>
+        <!-- Layout Menu End-->
+
+        <hr class="line">
+        <div id="mySidepanel" class="sidepanel">
+        <!-- Constraints Menu -->
+        <table id="ConstraintIOTable">
+          <tr>
+            <td style = "width: 25%"><h7 class="card-subtitle mt-1 text-muted"><b>Constraints</b></h7></td>
+            <td><button id="importConstraint" type="button" class="btn btn-primary btn-sm ml-1" onclick="document.getElementById('inputConstraint').click();" data-toggle="tooltip" title="Import constraint file">Import</button>
+              <input id="inputConstraint" type='file' style="display: none" /></td> 
+            <td><button id="exportConstraint" type="button" class="btn btn-primary btn-sm" data-toggle="tooltip" title="Export constraint file">Export</button></td> 
+            <td style = "width: 35%"></td>
+          </tr>
+        </table>
+        
+        <hr class="line">
+        
+        <!-- <button id="saveAsSVG" type="button" class="layoutButton" data-toggle="tooltip" title="Save graph as SVG file">Save as SVG</button> -->                       
+          <!-- Fixed Node Constraints -->
+          <form>
+            <div class="form-row">
+              <div class="form-group col-md-12 mb-2">
+                <h7 class="card-subtitle ml-2 mt-1 text-muted"><b>Fixed Node Constraint</b></h7>
+              </div>
+            </div>
+            <div class="form-row form-inline">
+              <div id="nodeListColumn" class="form-group col-md-4 ml-2 mr-3">
+              </div>
+              <div class="form-group col-md-5">
+                <label>x : </label>
+                <input type="text" class="form-control form-control-sm w-25 ml-1 mr-1" style="display:flex; flex-grow:1" id="fixedNodeX" value="">
+                <label>y : </label>
+                <input type="text" class="form-control form-control-sm w-25 ml-1 mr-1" style="display:flex; flex-grow:1" id="fixedNodeY" value=""> 
+              </div>
+              <div class="form-group col-md-2">
+                <input type="button" id="fixedNode" class="btn btn-primary btn-sm" value="Add"/>
+              </div>
+            </div>                
+          </form>
+
+          <hr class="line">
+
+          <!-- Alignment Constraints -->
+          <form>
+            <div class="form-row">
+              <div class="form-group col-md-12 mb-2">
+                <h7 class="card-subtitle ml-2 mt-1 text-muted"><b>Alignment Constraint</b></h7>
+              </div>
+            </div>
+            <div class="form-row form-inline mb-2">
+              <div class="form-group col-md-8">
+                <h7 class="card-subtitle ml-2 mt-1 text-muted">Selected Nodes Vertically</h7>
+              </div>
+              <div class="form-group col-md-3">
+                <input type="button" id="verticalAlignment" class="btn btn-primary btn-sm" value="Add"/>
+              </div>
+            </div>
+            <div class="form-row form-inline">
+              <div class="form-group col-md-8">
+                <h7 class="card-subtitle ml-2 mt-1 text-muted">Selected Nodes Horizontally</h7>
+              </div>
+              <div class="form-group col-md-3">
+                <input type="button" id="horizontalAlignment" class="btn btn-primary btn-sm" value="Add"/>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group col-md-12 mt-2 mb-0">
+                <span style="margin-left: 9px; font-size: 12px">Click on a node for selecting. Shift + click for extending selection.</span>
+              </div>
+            </div>            
+          </form>
+
+          <hr class="line">
+
+          <!-- Relative Placement Constraints -->
+          <form>
+            <div class="form-row">
+              <div class="form-group col-md-12 mb-2">
+                <h7 class="card-subtitle ml-2 mt-1 text-muted"><b>Relative Placement Constraint</b></h7>
+              </div>
+            </div>
+            <div class="form-row form-inline">
+              <div id="nodeListColumnRP1" class="form-group col-md-12 ml-2 mb-2"></div>
+            </div>
+            <div class="form-row form-inline mb-2">
+              <div class="form-group col-md-4">
+                <select id="directionList" class='custom-select custom-select-sm ml-2' style='width:auto;'>
+                  <option value="left-right">left-right</option>
+                  <option value="top-bottom">top-bottom</option>
+                </select>
+              </div>
+              <div class="form-group col-md-4">
+                <label>Gap: </label>
+                <input type="text" class="form-control form-control-sm w-50 ml-1" id="gap" value="">
+              </div>
+              <div class="form-group col-md-2">
+                <input type="button" id="relativePlacement" class="btn btn-primary btn-sm" value="Add"/>
+              </div>
+            </div>
+            <div class="form-row form-inline mb-2">
+              <div id="nodeListColumnRP2" class="form-group col-md-12 ml-2"></div>
+            </div>
+          </form>              
+
+          <hr class="line">
+
+          <table id="constraintListTable" class="table-striped"> 
+            <tr>
+              <th style="font-size: 0.9em; text-align: left; width:25%">Type</th>
+              <th style="font-size: 0.9em; text-align: left; width:40%">Nodes</th>
+              <th style="font-size: 0.9em; text-align: left;">Info</th>
+              <th style="font-size: 0.9em; text-align: left;"></th>
+            </tr>
+          </table>              
+        </div>
+        <!-- Constraints Menu End-->
+      </div>
+      <div id="cy"></div>
   </body>
 
 </html>
