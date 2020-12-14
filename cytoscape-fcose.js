@@ -328,6 +328,8 @@ var defaults = Object.freeze({
   uniformNodeDimensions: false,
   // Whether to pack disconnected components - valid only if randomize: true
   packComponents: true,
+  // Layout step - all, transformed, enforced - for debug purpose only
+  step: "all",
 
   /* spectral layout options */
 
@@ -369,14 +371,17 @@ var defaults = Object.freeze({
   // Initial cooling factor for incremental layout  
   initialEnergyOnIncremental: 0.3,
 
-  /* Constraint options */
+  /* constraint options */
 
-  // Fix required nodes to predefined positions 
-  fixedNodeConstraint: undefined, // [{nodeId: 'n1', position: {x: 100, y: 200}]
-  // Align required nodes in x/y direction
-  alignmentConstraint: undefined, // {vertical: [['n1', 'n2')], ['n3', 'n4']]}
+  // Fix required nodes to predefined positions
+  // [{nodeId: 'n1', position: {x: 100, y: 200}, {...}]
+  fixedNodeConstraint: undefined,
+  // Align required nodes in vertical/horizontal direction
+  // {vertical: [['n1', 'n2')], ['n3', 'n4']], horizontal: ['n2', 'n4']}
+  alignmentConstraint: undefined,
   // Place two nodes relatively in vertical/horizontal direction 
-  relativePlacementConstraint: undefined, //  [{top: 'n1', bottom: 'n2', gap: 25}]
+  // [{top: 'n1', bottom: 'n2', gap: 100}, {left: 'n3', right: 'n4', gap: 75}]
+  relativePlacementConstraint: undefined,
 
   /* layout event callbacks */
   ready: function ready() {}, // on layoutready
@@ -409,7 +414,6 @@ var Layout = function () {
       // if any constraint exists, set some options
       if (constraintExist) {
         // constraints work with these options
-        //      options.randomize = true;
         options.tile = false;
         options.packComponents = false;
       }

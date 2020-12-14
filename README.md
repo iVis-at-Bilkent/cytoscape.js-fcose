@@ -4,9 +4,9 @@ cytoscape-fcose
 
 ## Description
 
-fCoSE (fast Compound Spring Embedder) is a faster version of our earlier compound spring embedder algorithm named [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent), implemented as a Cytoscape.js extension by [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University ([demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo.html), [compound demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo-compound.html), [constraint demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/constraint-support/demo-constraint.html))
+fCoSE (fast Compound Spring Embedder) is a faster version of our earlier compound spring embedder algorithm named [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent), implemented as a Cytoscape.js extension by [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University ([demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo.html), [compound demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo-compound.html), [constraint demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo-constraint.html))
 
-fCoSE layout algorithm combines the speed of spectral layout with the aesthetics of force-directed layout. fCoSE runs up to 10 times as fast as CoSE while achieving similar aesthetics. In addition, fCoSE supports varying (non-uniform) node dimensions similar to its predecessor CoSE.
+fCoSE layout algorithm combines the speed of spectral layout with the aesthetics of force-directed layout. fCoSE runs up to 2 times as fast as CoSE while achieving similar aesthetics. In addition, fCoSE supports varying (non-uniform) node dimensions similar to its predecessor CoSE.
 
 Please cite the following when you use this layout until an fCoSE publication is available:
 
@@ -19,7 +19,7 @@ A. Civril, M. Magdon-Ismail, and E. Bocek-Rivele, "[SSDE: Fast Graph Drawing Usi
 ## Dependencies
 
  * Cytoscape.js ^3.2.0
- * cose-base ^1.0.0
+ * cose-base ^2.0.0
  * cytoscape-layout-utilities.js (optional for packing disconnected components) ^1.0.0
 
 
@@ -98,6 +98,8 @@ var defaultOptions = {
   uniformNodeDimensions: false,
   // Whether to pack disconnected components - valid only if randomize: true
   packComponents: true,
+  // Layout step - all, transformed, enforced - for debug purpose only
+  step: "all",
   
   /* spectral layout options */
   
@@ -137,7 +139,19 @@ var defaultOptions = {
   // Gravity range (constant)
   gravityRange: 3.8, 
   // Initial cooling factor for incremental layout  
-  initialEnergyOnIncremental: 0.3,  
+  initialEnergyOnIncremental: 0.3,
+
+  /* constraint options */
+
+  // Fix required nodes to predefined positions
+  // [{nodeId: 'n1', position: {x: 100, y: 200}, {...}]
+  fixedNodeConstraint: undefined,
+  // Align required nodes in vertical/horizontal direction
+  // {vertical: [['n1', 'n2')], ['n3', 'n4']], horizontal: ['n2', 'n4']}
+  alignmentConstraint: undefined,
+  // Place two nodes relatively in vertical/horizontal direction
+  // [{top: 'n1', bottom: 'n2', gap: 100}, {left: 'n3', right: 'n4', gap: 75}]
+  relativePlacementConstraint: undefined,
 
   /* layout event callbacks */
   ready: () => {}, // on layoutready

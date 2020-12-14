@@ -18,7 +18,7 @@
       <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
       <script src="https://raw.githack.com/iVis-at-Bilkent/layout-base/unstable/layout-base.js"></script> 
       <script src="https://raw.githack.com/iVis-at-Bilkent/cose-base/constraint-support/cose-base.js"></script>
-      <script src="cytoscape-fcose.js"></script>
+      <script src="../cytoscape-fcose.js"></script>
       
       <script src="demo-constraint-control.js" defer></script>
       
@@ -291,7 +291,10 @@
 
           <hr class="line">
 
-          <table id="constraintListTable" class="table-striped"> 
+          <table id="constraintListTable" class="table-striped">
+            <div class="form-group col-md-12 mt-1 mb-1" style="padding-left: 9px">
+              <span style="font-size: 12px">Hover a constraint row to see involved nodes.</span>
+            </div>            
             <tr>
               <th style="font-size: 0.9em; text-align: left; width:25%">Type</th>
               <th style="font-size: 0.9em; text-align: left; width:40%">Nodes</th>
