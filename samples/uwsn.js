@@ -36,7 +36,7 @@ uwsn = {
 				},
 				"group": "nodes",
 				"removed": false,
-				"selected": true,
+				"selected": false,
 				"selectable": true,
 				"locked": false,
 				"grabbable": true,
@@ -77,7 +77,7 @@ uwsn = {
 				},
 				"group": "nodes",
 				"removed": false,
-				"selected": true,
+				"selected": false,
 				"selectable": true,
 				"locked": false,
 				"grabbable": true,
@@ -118,7 +118,7 @@ uwsn = {
 				},
 				"group": "nodes",
 				"removed": false,
-				"selected": true,
+				"selected": false,
 				"selectable": true,
 				"locked": false,
 				"grabbable": true,
@@ -2204,6 +2204,7 @@ uwsn = {
 	      "style": {
 	        "shape": "ellipse",
 	        "font-size": 14,
+	        "background-color": "#fddbc7"
 	      }
 	    },
 	    {
@@ -2215,9 +2216,17 @@ uwsn = {
 	    {
 	      "selector": "node[class = 'unspecified entity']",
 	      "style": {
-	        "shape": "ellipse"
+	        "shape": "ellipse",
+	        "background-color": "#f7f7f7"
 	      }
-	    },	    
+	    },
+	    {
+	      "selector": "node[class = 'nucleic acid feature']",
+	      "style": {
+	        "shape": "rectangle",
+	        "background-color": "#f4a582",	        
+	      }
+	    },	    	    	   
 	    {
 	      "selector": ":parent",
 	      "style": {
@@ -2256,7 +2265,6 @@ uwsn = {
 	      "selector": "edge:selected",
 	      "style": {
 	        "line-color": "rgb(255,0,0)",
-	        "label": "data(id)",
 	        "font-size": "13px",
 	        "text-opacity": "1",
 	        "text-rotation": "autorotate",
@@ -2268,14 +2276,6 @@ uwsn = {
 	      }
 	    },
 	    {
-	      "selector": "edge[class = 'necessary stimulation']",
-	      "style": {
-	        "target-arrow-shape": "triangle-cross",
-	        "target-arrow-color": "rgb(58,126,207)",
-	        "target-arrow-fill": "hollow"
-	      }
-	    },
-	    {
 	      "selector": "edge[class = 'production']",
 	      "style": {
 	        "target-arrow-shape": "triangle",
@@ -2283,21 +2283,12 @@ uwsn = {
 	      }
 	    },
 	    {
-	      "selector": "edge[class = 'catalysis']",
-	      "style": {
-	        "target-arrow-shape": "circle",
-	        "target-arrow-color": "rgb(58,126,207)",
-	        "target-arrow-fill": "hollow"
-	      }
-	    },
-	    {
-	      "selector": "edge[class = 'stimulation']",
+	      "selector": "edge:selected[class = 'production']",
 	      "style": {
 	        "target-arrow-shape": "triangle",
-	        "target-arrow-color": "rgb(58,126,207)",
-	        "target-arrow-fill": "hollow"
+	        "target-arrow-color": "rgb(255,0,0)"
 	      }
-	    }
+	    },	    
 	  ],
 	"zoomingEnabled": true,
 	"userZoomingEnabled": true,

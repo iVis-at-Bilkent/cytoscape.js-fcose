@@ -1221,19 +1221,22 @@ chalk = {
 	    {
 	      "selector": "node[class = 'simple chemical']",
 	      "style": {
-	        "shape": "ellipse"
+	        "shape": "ellipse",
+	        "background-color": "#c7eae5"
 	      }
 	    },
 	    {
 	      "selector": "node[class = 'macromolecule']",
 	      "style": {
-	        "shape": "roundrectangle"
+	        "shape": "roundrectangle",
+	        "background-color": "#dfc27d"
 	      }
 	    },
 	    {
 	      "selector": "node[class = 'unspecified entity']",
 	      "style": {
-	        "shape": "ellipse"
+	        "shape": "ellipse",
+	        "background-color": "#f5f5f5"
 	      }
 	    },	    
 	    {
@@ -1257,7 +1260,7 @@ chalk = {
 	    {
 	      "selector": "node:selected",
 	      "style": {
-	        "background-color": "rgb(255,0,0)",
+	        "background-color": "#F08080",
 	        "border-color": "#d67614"
 	      }
 	    },
@@ -1267,14 +1270,15 @@ chalk = {
 	        "curve-style": "bezier",
 	        "width": "2px",
 	        "line-color": "rgb(58,126,207)",
-	        "opacity": "1"
+	        "opacity": "1",
+        	"target-arrow-shape": "triangle",
+        	"target-arrow-color": "rgb(58,126,207)",
 	      }
 	    },
 	    {
 	      "selector": "edge:selected",
 	      "style": {
 	        "line-color": "rgb(255,0,0)",
-	        "label": "data(id)",
 	        "font-size": "13px",
 	        "text-opacity": "1",
 	        "text-rotation": "autorotate",
@@ -1282,38 +1286,9 @@ chalk = {
 	        "font-weight": "bold",
 	        "text-background-shape": "roundrectangle",
 	        "text-background-opacity": "1",
-	        "text-background-padding": "2px"
-	      }
-	    },
-	    {
-	      "selector": "edge[class = 'necessary stimulation']",
-	      "style": {
-	        "target-arrow-shape": "triangle-cross",
-	        "target-arrow-color": "rgb(58,126,207)",
-	        "target-arrow-fill": "hollow"
-	      }
-	    },
-	    {
-	      "selector": "edge[class = 'production']",
-	      "style": {
+	        "text-background-padding": "2px",
+	        "target-arrow-color": "rgb(255,0,0)",
 	        "target-arrow-shape": "triangle",
-	        "target-arrow-color": "rgb(58,126,207)"
-	      }
-	    },
-	    {
-	      "selector": "edge[class = 'catalysis']",
-	      "style": {
-	        "target-arrow-shape": "circle",
-	        "target-arrow-color": "rgb(58,126,207)",
-	        "target-arrow-fill": "hollow"
-	      }
-	    },
-	    {
-	      "selector": "edge[class = 'stimulation']",
-	      "style": {
-	        "target-arrow-shape": "triangle",
-	        "target-arrow-color": "rgb(58,126,207)",
-	        "target-arrow-fill": "hollow"
 	      }
 	    }
 	  ],

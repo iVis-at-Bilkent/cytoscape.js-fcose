@@ -27,17 +27,18 @@
       <!-- <script src="cytoscape-cola.js"></script> -->      
       
       <script src="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-layout-utilities/unstable/cytoscape-layout-utilities.js"></script>
+      <script src="https://unpkg.com/cytoscape-view-utilities/cytoscape-view-utilities.js"></script>
       <script src="https://unpkg.com/cytoscape-graphml/cytoscape-graphml.js"></script>  <!-- graphml - for demo purpose only--> 	
       <script src="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-layvo/unstable/cytoscape-layvo.js"></script> <!-- For quality metrics -->
       <script src="https://raw.githack.com/kinimesi/cytoscape-svg/master/cytoscape-svg.js"></script> <!-- For svg export -->
       
       <!-- We use a workaround here to be able to debug real world files in local by keeping json content as js variable. -->
-      <script type="text/javascript" src="samples/chalk.js"></script>
-      <script type="text/javascript" src="samples/chalk_constraints.js"></script>
       <script type="text/javascript" src="samples/unix.js"></script>
       <script type="text/javascript" src="samples/unix_constraints.js"></script>
+      <script type="text/javascript" src="samples/chalk.js"></script>
+      <script type="text/javascript" src="samples/chalk_constraints.js"></script>      
       <script type="text/javascript" src="samples/uwsn.js"></script>
-      <script type="text/javascript" src="samples/uwsn_constraints.js"></script>
+      <script type="text/javascript" src="samples/uwsn_constraints.js"></script>   
 
       <style>
         body {
@@ -50,7 +51,7 @@
           width: auto;
           height: 95%;
           z-index: 999;
-          margin-left: 425px;
+          margin-left: 375px;
           right: 0px;
         }
 
@@ -201,7 +202,7 @@
         
         <hr class="line">
         
-        <!-- <button id="saveAsSVG" type="button" class="layoutButton" data-toggle="tooltip" title="Save graph as SVG file">Save as SVG</button> -->                       
+        <!-- <button id="saveAsSVG" type="button" class="layoutButton" data-toggle="tooltip" title="Save graph as SVG file">Save as SVG</button> -->                      
           <!-- Fixed Node Constraints -->
           <form>
             <div class="form-row">

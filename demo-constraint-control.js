@@ -250,7 +250,6 @@ document.getElementById("saveAsSVG").addEventListener("click", function(){
     let blob = new Blob([svgContent], {type:"image/svg+xml;charset=utf-8"});
     saveAs(blob, "graph.svg");
 });
-*/
 
 // see http://stackoverflow.com/questions/16245767/creating-a-blob-from-a-base64-string-in-javascript
 let b64toBlob = function(b64Data, contentType, sliceSize) {
@@ -276,6 +275,7 @@ let b64toBlob = function(b64Data, contentType, sliceSize) {
   var blob = new Blob(byteArrays, {type: contentType});
   return blob;
 }
+*/
 
 // Sample File Changer
 let sampleFileNames = {
@@ -284,7 +284,7 @@ let sampleFileNames = {
     "sample6" : chalk,
     "sample6_constraints" : chalk_constraints,    
     "sample7" : uwsn,
-    "sample7_constraints" : uwsn_constraints,
+    "sample7_constraints" : uwsn_constraints 
 };
 
 document.getElementById("sample").addEventListener("change", function(){
@@ -366,7 +366,7 @@ document.getElementById("sample").addEventListener("change", function(){
             'width': node.data('bbox').w,
             'height': node.data('bbox').h,
             "border-width": node.data('border-width'),
-            //"border-color": node.data('border-color'),
+//            "border-color": node.data('border-color'),
           });
 
           if (node.data('class') === 'process' || node.data('class') === 'association' || node.data('class') === "dissociation") {
@@ -377,7 +377,7 @@ document.getElementById("sample").addEventListener("change", function(){
           } else {
             node.style({
               'background-image': node.data('background-image'),
-              'background-color': node.data('background-color'),
+//              'background-color': node.data('background-color'),
               'background-opacity': node.data('background-opacity'),
               'background-fit': 'contain',
               'background-position-x': '50%',
@@ -443,7 +443,7 @@ let options = {
   animationDuration: 1000,
   animationEasing: undefined,
   fit: true,
-  padding: 20,
+  padding: 30,
   nodeDimensionsIncludeLabels: false,
   uniformNodeDimensions: false,
   packComponents: true,
@@ -494,9 +494,9 @@ document.getElementById("fcoseButton").addEventListener("click", function(){
     document.getElementById("fixedNodeX").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("x"));
     document.getElementById("fixedNodeY").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("y"));
   });
-  let start = performance.now();
+//  let start = performance.now();
   layout.run();
-  console.log((performance.now() - start) + " ms" );
+//  console.log((performance.now() - start) + " ms" );
 });
 
 /*
@@ -599,7 +599,7 @@ document.getElementById("enforceButton").addEventListener("click", function(){
 document.getElementById("coseButton").addEventListener("click", function(){
   let finalOptions = Object.assign({}, options);
   
-  if(document.getElementById("sample").value == "sample5"){
+  if(document.getElementById("sample").value == "sample6"){
     finalOptions.nestingFactor = 0.3;
     finalOptions.gravityRangeCompound = 0;
     finalOptions.gravityCompound = 3.0;
@@ -805,7 +805,7 @@ document.getElementById("relativePlacement").addEventListener("click", function(
       addToHistory("Relative", [nodeId1, nodeId2], 't-b - ' + ((document.getElementById("gap").value) ? (parseInt(document.getElementById("gap").value)) : parseInt(cy.getElementById(nodeId1).height()/2 + cy.getElementById(nodeId2).height()/2 + 50)));
     }
   }
-});  
+});
 
 let addToHistory = function( constraintType, nodeIds, constraintInfo) {
   
@@ -817,7 +817,7 @@ let addToHistory = function( constraintType, nodeIds, constraintInfo) {
   cell1.innerHTML = constraintType;
   
   if(constraintType == 'Fixed'){
-    cell2.innerHTML = nodeIds[0];
+    cell2.innerHTML = (cy.getElementById(nodeIds[0]).css('label') ? cy.getElementById(nodeIds[0]).css('label') : nodeIds);
     cell3.innerHTML = "x: "+constraintInfo.x+" y: "+constraintInfo.y;
   }
   else if(constraintType == 'Alignment'){
@@ -859,6 +859,25 @@ let addToHistory = function( constraintType, nodeIds, constraintInfo) {
   xSymbol.innerHTML = '&times';
   button.appendChild(xSymbol);
   cell4.appendChild(button);
+  
+  let instance = cy.viewUtilities({
+    highlightStyles: [
+      { node: { 'background-color': '#F08080', 'border-color': '#d67614'}, edge: {} }
+    ]
+  });  
+  
+  let rowToHighlight = $('#constraintListTable').find('tr').eq(row.rowIndex);  
+  
+  let collectionToHighlight = cy.collection();
+  nodeIds.forEach(function(id){
+    collectionToHighlight = collectionToHighlight.union(cy.getElementById(id));
+  });
+  
+  rowToHighlight.hover(function() {
+    instance.highlight(collectionToHighlight.nodes(), 0);
+  }, function() {
+    instance.removeHighlights(collectionToHighlight.nodes());
+  });
 };
 
 // Delete Row Elements
@@ -946,7 +965,7 @@ let clearConstraintListTable = function() {
   }
 };
 
-let fillConstraintListTableFromConstraints = function (arrowShape) {
+let fillConstraintListTableFromConstraints = function () {
   if(constraints.fixedNodeConstraint){
     constraints.fixedNodeConstraint.forEach(function(constraint){
       addToHistory("Fixed", [constraint.nodeId], constraint.position);
