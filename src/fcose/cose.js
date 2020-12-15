@@ -80,7 +80,7 @@ let coseLayout = function(options, spectralResult){
         if(theChild.isParent()){
           let labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false }).w;          
           let labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false }).h;
-          let labelPos = theChild.css("text-halign");
+          let labelPos = theChild.css("text-valign");
           theNode.labelWidth = labelWidth;
           theNode.labelHeight = labelHeight;
           theNode.labelPos = labelPos;          
@@ -117,7 +117,23 @@ let coseLayout = function(options, spectralResult){
         e1.id = edge.id();
       }
     }
-  };   
+  }; 
+  
+  // transfer cytoscape constraints to cose layout
+  let processConstraints = function(layout, options){
+    // get nodes to be fixed
+    if(options.fixedNodeConstraint){
+      layout.constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
+    }
+    // get nodes to be aligned
+    if(options.alignmentConstraint){
+      layout.constraints["alignmentConstraint"] = options.alignmentConstraint;
+    }
+    // get nodes to be relatively placed
+    if(options.relativePlacementConstraint){
+      layout.constraints["relativePlacementConstraint"] = options.relativePlacementConstraint;
+    }  
+  };
   
   /**** Apply postprocessing ****/
     
@@ -159,14 +175,45 @@ let coseLayout = function(options, spectralResult){
 
   CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
   LayoutConstants.DEFAULT_UNIFORM_LEAF_NODE_SIZES = options.uniformNodeDimensions;
-  CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = options.randomize ? true : false;
+
+  // This part is for demo purpose and will change during release
+  if(options.step == "transformed"){
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;
+    CoSEConstants.ENFORCE_CONSTRAINTS = false;
+    CoSEConstants.APPLY_LAYOUT = false;
+  }
+  if(options.step == "enforced"){
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
+    CoSEConstants.ENFORCE_CONSTRAINTS = true;
+    CoSEConstants.APPLY_LAYOUT = false;
+  }
+  if(options.step == "all"){
+    if(options.randomize)
+      CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;
+    else
+      CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
+    CoSEConstants.ENFORCE_CONSTRAINTS = true;
+    CoSEConstants.APPLY_LAYOUT = true;
+  }
+  if(!options.step){
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
+    CoSEConstants.ENFORCE_CONSTRAINTS = false;
+    CoSEConstants.APPLY_LAYOUT = true;
+  }
+  
+  if(options.randomize && !(options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint)){
+    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = true;
+  }
+  else{
+    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = false;
+  }
 
   let coseLayout = new CoSELayout();
   let gm = coseLayout.newGraphManager(); 
 
   processChildrenList(gm.addRoot(), aux.getTopMostNodes(nodes), coseLayout, options);
-
   processEdges(coseLayout, gm, edges);
+  processConstraints(coseLayout, options);
 
   coseLayout.runLayout();
   

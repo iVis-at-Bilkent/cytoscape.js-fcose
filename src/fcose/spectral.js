@@ -3,6 +3,8 @@
 */
 
 const aux = require('./auxiliary');
+const Matrix = require('cose-base').layoutBase.Matrix;
+const SVD = require('cose-base').layoutBase.SVD;
 
 // main function that spectral layout is processed
 let spectralLayout = function(options){
@@ -166,7 +168,7 @@ let spectralLayout = function(options){
   // perform the SVD algorithm and apply a regularization step
   let sample = function(){
 
-    let SVDResult = aux.svd(PHI);
+    let SVDResult = SVD.svd(PHI);
 
     let a_q = SVDResult.S;
     let a_u = SVDResult.U;
@@ -187,7 +189,7 @@ let spectralLayout = function(options){
       }
     }
 
-    INV = aux.multMat(aux.multMat(a_v, a_Sig), aux.transpose(a_u));
+    INV = Matrix.multMat(Matrix.multMat(a_v, a_Sig), Matrix.transpose(a_u));
 
   };
 
@@ -209,8 +211,8 @@ let spectralLayout = function(options){
       Y2[i] = Math.random();
     }
 
-    Y1 = aux.normalize(Y1);
-    Y2 = aux.normalize(Y2);
+    Y1 = Matrix.normalize(Y1);
+    Y2 = Matrix.normalize(Y2);
 
     let count = 0;
     // to keep track of the improvement ratio in power iteration
@@ -226,11 +228,11 @@ let spectralLayout = function(options){
         V1[i] = Y1[i];
       }
 
-      Y1 = aux.multGamma(aux.multL(aux.multGamma(V1), C, INV));
-      theta1 = aux.dotProduct(V1, Y1);
-      Y1 = aux.normalize(Y1);
+      Y1 = Matrix.multGamma(Matrix.multL(Matrix.multGamma(V1), C, INV));
+      theta1 = Matrix.dotProduct(V1, Y1);
+      Y1 = Matrix.normalize(Y1);
 
-      current = aux.dotProduct(V1, Y1);
+      current = Matrix.dotProduct(V1, Y1);
 
       temp = Math.abs(current/previous);
 
@@ -254,12 +256,12 @@ let spectralLayout = function(options){
         V2[i] = Y2[i];
       }
 
-      V2 = aux.minusOp(V2, aux.multCons(V1, (aux.dotProduct(V1, V2))));
-      Y2 = aux.multGamma(aux.multL(aux.multGamma(V2), C, INV));
-      theta2 = aux.dotProduct(V2, Y2);
-      Y2 = aux.normalize(Y2);
+      V2 = Matrix.minusOp(V2, Matrix.multCons(V1, (Matrix.dotProduct(V1, V2))));
+      Y2 = Matrix.multGamma(Matrix.multL(Matrix.multGamma(V2), C, INV));
+      theta2 = Matrix.dotProduct(V2, Y2);
+      Y2 = Matrix.normalize(Y2);
 
-      current = aux.dotProduct(V2, Y2);
+      current = Matrix.dotProduct(V2, Y2);
 
       temp = Math.abs(current/previous);
 
@@ -280,8 +282,8 @@ let spectralLayout = function(options){
     // V2 now contains theta2's eigenvector
 
     //populate the two vectors
-    xCoords = aux.multCons(V1, Math.sqrt(Math.abs(theta1)));
-    yCoords = aux.multCons(V2, Math.sqrt(Math.abs(theta2)));
+    xCoords = Matrix.multCons(V1, Math.sqrt(Math.abs(theta1)));
+    yCoords = Matrix.multCons(V2, Math.sqrt(Math.abs(theta2)));
 
   };
 
@@ -343,7 +345,7 @@ let spectralLayout = function(options){
       eleIndex = nodeIndexes.get(ele.id());
 
     ele.neighborhood().nodes().forEach(function(node){
-      if(eles.intersection(ele.edgesWith(node))){
+      if(eles.intersection(ele.edgesWith(node)).length > 0){
         if(node.isParent())
           allNodesNeighborhood[eleIndex].push(parentChildMap.get(node.id()));       
         else
@@ -388,11 +390,20 @@ let spectralLayout = function(options){
 
     /**** Apply spectral layout ****/
 
-    allBFS(samplingType);  
-    sample();
-    powerIteration();
+    if(options.step == "initial" || options.step == "all"){
+      allBFS(samplingType);  
+      sample();
+      powerIteration();      
 
-    spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
+      spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
+    }
+    else{
+      nodeIndexes.forEach(function(value, key){
+        xCoords.push(cy.getElementById(key).position("x"));
+        yCoords.push(cy.getElementById(key).position("y"));
+      });
+      spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
+    }
     return spectralResult;
   }
   else {
