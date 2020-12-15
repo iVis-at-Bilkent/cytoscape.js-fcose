@@ -1,6 +1,6 @@
 {
   "name": "cytoscape-fcose",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "The fCoSE layout for Cytoscape.js by Bilkent with fast compound node placement",
   "main": "cytoscape-fcose.js",
   "author": {
@@ -51,6 +51,6 @@
     "cytoscape": "^3.2.0"
   },
   "dependencies": {
-    "cose-base": "https://github.com/iVis-at-Bilkent/cose-base#constraint-support"
+    "cose-base": "https://github.com/iVis-at-Bilkent/cose-base#unstable"
   }
 }
