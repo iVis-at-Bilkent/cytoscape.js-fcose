@@ -24,19 +24,20 @@ A. Civril, M. Magdon-Ismail, and E. Bocek-Rivele, "[SSDE: Fast Graph Drawing Usi
 
 ## Documentation
 
-fCoSE supports user-defined placement constraints as well as its full support for compound graphs. These constraints should be defined in simple nodes. Supported constraint types are:
+fCoSE supports user-defined placement constraints as well as its full support for compound graphs. These constraints may be defined for simple nodes. Supported constraint types are:
 
 * **Fixed node constraint:** The user may provide exact desired positions for a set of nodes called *fixed* nodes. For example, in order to position node *n1* to *(x: 100, y: 200)* and node *n2* to *(x: 200, y: -300)* as a result of the layout, ```fixedNodeConstraint``` option should be set as follows:   
 
 ```js
-fixedNodeConstraint: [{nodeId: 'n1', position: {x: 100, y: 200}}, {nodeId: 'n2', position: {x: 200, y: -300}}],
+fixedNodeConstraint: [{nodeId: 'n1', position: {x: 100, y: 200}},
+  {nodeId: 'n2', position: {x: 200, y: -300}}],
 ```
 
-* **Alignment constraint:** This constraint aims to align two or more nodes with respect to their centers vertically or horizontally. For example, for the vertical alignment of nodes *n1, n2, n3* and *n4, n5* and horizontal alignment of nodes *n2, n4* as a result of the layout, ```alignmentConstraint``` option should be set as follows:
+* **Alignment constraint:** This constraint aims to align two or more nodes with respect to their centers vertically or horizontally. For example, for the vertical alignment of nodes {*n1, n2, n3*} and {*n4, n5*}, and horizontal alignment of nodes {*n2, n4*} as a result of the layout, ```alignmentConstraint``` option should be set as follows:
 ```js
 alignmentConstraint: {vertical: [['n1', 'n2', 'n3'], ['n4', 'n5']], horizontal: [['n2', 'n4']]},
 ```
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;***Note:** Alignment constraints in a direction should be given in compact form (e.g. ```['n1', 'n2', 'n3']``` instead of ```['n1', 'n2'], ['n1', 'n3']```).* 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;***Note:** Alignment constraints in a direction must be given in a compact form. Example: ```['n1', 'n2', 'n3']``` instead of ```['n1', 'n2'], ['n1', 'n3']```.* 
 
 * **Relative placement constraint:** The user may constrain the position of a node relative to another node in either vertical or horizontal direction. For example, in order to position node *n1* to be above of node *n2* by at least 100 pixels and position node *n3* to be on the left of node *n4* by at least 75 pixels as a result of the layout, ```relativePlacementConstraint``` option should be set as follows: 
 
