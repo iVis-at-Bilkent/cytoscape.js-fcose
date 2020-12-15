@@ -843,35 +843,45 @@ let addToHistory = function( constraintType, nodeIds, constraintInfo) {
     cell3.innerHTML = constraintInfo;
   }
   
+  // needed for highlighting constrained nodes
+  let instance = cy.viewUtilities({
+    highlightStyles: [
+      { node: { 'background-color': '#F08080', 'border-color': '#d67614'}, edge: {} }
+    ]
+  });
+
+  let rowToHighlight = $('#constraintListTable').find('tr').eq(row.rowIndex);
+
+  let collectionToHighlight = cy.collection();
+  nodeIds.forEach(function(id){
+    collectionToHighlight = collectionToHighlight.union(cy.getElementById(id));
+  });
+
   // 'Delete' symbol
   let button = document.createElement('button');
   button.setAttribute('class','close');
   button.setAttribute('aria-label', 'Close');
   if(constraintType == 'Fixed')
-    button.onclick = function(event){ deleteRowElements(row, nodeIds); };
+    button.onclick = function(event){
+      deleteRowElements(row, nodeIds);
+      instance.removeHighlights(collectionToHighlight.nodes());
+    };
   else if(constraintType == 'Alignment')
-    button.onclick = function(event){ deleteRowElements(row, nodeIds, constraintInfo); };
+    button.onclick = function(event){
+      deleteRowElements(row, nodeIds, constraintInfo);
+      instance.removeHighlights(collectionToHighlight.nodes());
+    };
   else
-    button.onclick = function(event){ deleteRowElements(row, nodeIds, constraintInfo); };
+    button.onclick = function(event){
+      deleteRowElements(row, nodeIds, constraintInfo);
+      instance.removeHighlights(collectionToHighlight.nodes());
+    };
   let xSymbol = document.createElement('span');
   xSymbol.setAttribute('aria-hidden', 'true');
   xSymbol.style.color = "red";
   xSymbol.innerHTML = '&times';
   button.appendChild(xSymbol);
   cell4.appendChild(button);
-  
-  let instance = cy.viewUtilities({
-    highlightStyles: [
-      { node: { 'background-color': '#F08080', 'border-color': '#d67614'}, edge: {} }
-    ]
-  });  
-  
-  let rowToHighlight = $('#constraintListTable').find('tr').eq(row.rowIndex);  
-  
-  let collectionToHighlight = cy.collection();
-  nodeIds.forEach(function(id){
-    collectionToHighlight = collectionToHighlight.union(cy.getElementById(id));
-  });
   
   rowToHighlight.hover(function() {
     instance.highlight(collectionToHighlight.nodes(), 0);
