@@ -899,6 +899,9 @@ let deleteRowElements = function (row, nodeIds, info) {
         constraints.fixedNodeConstraint.splice(index, 1);
       }
     });
+    if (constraints.fixedNodeConstraint.length == 0) {
+      constraints.fixedNodeConstraint = undefined;
+    }
   } else if (constraintType == 'Alignment') {
     if (info == 'vertical') {
       constraints.alignmentConstraint.vertical.forEach(function (item, index) {

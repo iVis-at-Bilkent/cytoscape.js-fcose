@@ -134,19 +134,7 @@ class Layout {
       if(!packingEnabled){
         if(options.randomize){
           let result = spectralLayout(options);  // apply spectral layout        
-
-  //        // move graph to its original position because spectral moves it to origin
-  //        if(!options.fixedNodeConstraint) {
-  //          let boundingBox = options.eles.boundingBox();
-  //          let diffOnX = (boundingBox.x1 + boundingBox.w / 2) - (Math.max(...result.xCoords) + Math.min(...result.xCoords)) / 2;
-  //          let diffOnY = (boundingBox.y1 + boundingBox.h / 2) - (Math.max(...result.yCoords) + Math.min(...result.yCoords)) / 2;
-  //          result.xCoords = result.xCoords.map(x => x + diffOnX);
-  //          result.yCoords = result.yCoords.map(y => y + diffOnY);
-  //        }
-
           spectralResult.push(result);
-          xCoords = spectralResult[0]["xCoords"];
-          yCoords = spectralResult[0]["yCoords"];
         }
         // apply cose layout as postprocessing
         if(options.quality == "default" || options.quality == "proof"){  
@@ -282,6 +270,61 @@ class Layout {
           }
         }
       }
+      
+      // move graph to its original position because spectral moves it to origin
+      if(!options.fixedNodeConstraint) {
+        let minXCoord = Number.POSITIVE_INFINITY;
+        let maxXCoord = Number.NEGATIVE_INFINITY;
+        let minYCoord = Number.POSITIVE_INFINITY;
+        let maxYCoord = Number.NEGATIVE_INFINITY;
+        if(options.quality == "draft") {
+          spectralResult.forEach(function(result){
+            result.xCoords.forEach(function (value) {
+              if (value < minXCoord)
+                minXCoord = value;
+              if (value > maxXCoord)
+                maxXCoord = value;              
+            });
+            result.yCoords.forEach(function (value) {
+              if (value < minYCoord)
+                minYCoord = value;
+              if (value > maxYCoord)
+                maxYCoord = value;              
+            });            
+          });
+          let boundingBox = options.eles.boundingBox();
+          let diffOnX = (boundingBox.x1 + boundingBox.w / 2) - (maxXCoord + minXCoord) / 2;
+          let diffOnY = (boundingBox.y1 + boundingBox.h / 2) - (maxYCoord + minYCoord) / 2;
+          spectralResult.forEach(function(result){
+            result.xCoords = result.xCoords.map(x => x + diffOnX);
+            result.yCoords = result.yCoords.map(y => y + diffOnY);
+          });
+        }
+        else {
+          coseResult.forEach(function(result){
+            Object.keys(result).forEach(function (item) {
+              let node = result[item];
+              if (node.getCenterX() < minXCoord)
+                minXCoord = node.getCenterX();
+              if (node.getCenterX() > maxXCoord)
+                maxXCoord = node.getCenterX();
+              if (node.getCenterY() < minYCoord)
+                minYCoord = node.getCenterY();
+              if (node.getCenterY() > maxYCoord)
+                maxYCoord = node.getCenterY();              
+            });
+          });
+          let boundingBox = options.eles.boundingBox();
+          let diffOnX = (boundingBox.x1 + boundingBox.w / 2) - (maxXCoord + minXCoord) / 2;
+          let diffOnY = (boundingBox.y1 + boundingBox.h / 2) - (maxYCoord + minYCoord) / 2;
+          coseResult.forEach(function(result, index){
+            Object.keys(result).forEach(function (item) {
+              let node = result[item];
+              node.setCenter(node.getCenterX() + diffOnX, node.getCenterY() + diffOnY);
+            });
+          });          
+        }
+      }      
     }
     
     // get each element's calculated position
