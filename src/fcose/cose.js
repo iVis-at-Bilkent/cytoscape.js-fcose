@@ -78,12 +78,10 @@ let coseLayout = function(options, spectralResult){
       //Attach the label properties to compound if labels will be included in node dimensions  
       if(options.nodeDimensionsIncludeLabels){
         if(theChild.isParent()){
-          let labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false }).w;          
-          let labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false }).h;
-          let labelPos = theChild.css("text-valign");
-          theNode.labelWidth = labelWidth;
-          theNode.labelHeight = labelHeight;
-          theNode.labelPos = labelPos;          
+          theNode.labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false, includeOverlays: false }).w;
+          theNode.labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false, includeOverlays: false }).h;
+          theNode.labelPosVertical = theChild.css("text-valign");
+          theNode.labelPosHorizontal = theChild.css("text-halign");          
         }
       }
 
