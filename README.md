@@ -28,23 +28,26 @@ fCoSE supports user-defined placement constraints as well as its full support fo
 
 * **Fixed node constraint:** The user may provide exact desired positions for a set of nodes called *fixed* nodes. For example, in order to position node *n1* to *(x: 100, y: 200)* and node *n2* to *(x: 200, y: -300)* as a result of the layout, ```fixedNodeConstraint``` option should be set as follows:   
 
-```js
-fixedNodeConstraint: [{nodeId: 'n1', position: {x: 100, y: 200}},
-  {nodeId: 'n2', position: {x: 200, y: -300}}],
-```
+  ```js
+  fixedNodeConstraint: [{nodeId: 'n1', position: {x: 100, y: 200}},
+    {nodeId: 'n2', position: {x: 200, y: -300}}],
+  ```
 
 * **Alignment constraint:** This constraint aims to align two or more nodes with respect to their centers vertically or horizontally. For example, for the vertical alignment of nodes {*n1, n2, n3*} and {*n4, n5*}, and horizontal alignment of nodes {*n2, n4*} as a result of the layout, ```alignmentConstraint``` option should be set as follows:
-```js
-alignmentConstraint: {vertical: [['n1', 'n2', 'n3'], ['n4', 'n5']], horizontal: [['n2', 'n4']]},
-```
+  ```js
+  alignmentConstraint: {vertical: [['n1', 'n2', 'n3'], ['n4', 'n5']], horizontal: [['n2', 'n4']]},
+  ```
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;***Note:** Alignment constraints in a direction must be given in a compact form. Example: ```['n1', 'n2', 'n3']``` instead of ```['n1', 'n2'], ['n1', 'n3']```.* 
 
 * **Relative placement constraint:** The user may constrain the position of a node relative to another node in either vertical or horizontal direction. For example, in order to position node *n1* to be above of node *n2* by at least 100 pixels and position node *n3* to be on the left of node *n4* by at least 75 pixels as a result of the layout, ```relativePlacementConstraint``` option should be set as follows: 
 
-```js
-relativePlacementConstraint: [{top: 'n1', bottom: 'n2', gap: 100}, {left: 'n3', right: 'n4', gap: 75}],
-```
+  ```js
+  relativePlacementConstraint: [{top: 'n1', bottom: 'n2', gap: 100}, 
+     {left: 'n3', right: 'n4', gap: 75}],
+  ```
 
+You can see constraint support in action in the following videos: [fixed node](https://youtu.be/OTke5XQXzQA), [alignment](https://youtu.be/XCj_-_cTuRc), [relative placement](https://youtu.be/k0PmRliwdmo), [hybrid](https://youtu.be/cS3rkTyIMqU), [real life graphs](https://youtu.be/S7aIr9cNKbI). Constraints can also be added [incrementally](https://youtu.be/mxRKGvzM900) on a given layout. 
+<p align="center"><img src="demo/incrementalConstraints.gif" width="748"></p>
 
 ## Usage instructions
 
