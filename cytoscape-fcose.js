@@ -328,7 +328,7 @@ var defaults = Object.freeze({
   uniformNodeDimensions: false,
   // Whether to pack disconnected components - valid only if randomize: true
   packComponents: true,
-  // Layout step - all, transformed, enforced - for debug purpose only
+  // Layout step - all, transformed, enforced, cose - for debug purpose only
   step: "all",
 
   /* spectral layout options */
@@ -860,14 +860,14 @@ var coseLayout = function coseLayout(options, spectralResult) {
     CoSEConstants.ENFORCE_CONSTRAINTS = true;
     CoSEConstants.APPLY_LAYOUT = false;
   }
+  if (options.step == "cose") {
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
+    CoSEConstants.ENFORCE_CONSTRAINTS = false;
+    CoSEConstants.APPLY_LAYOUT = true;
+  }
   if (options.step == "all") {
     if (options.randomize) CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;else CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
     CoSEConstants.ENFORCE_CONSTRAINTS = true;
-    CoSEConstants.APPLY_LAYOUT = true;
-  }
-  if (!options.step) {
-    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
-    CoSEConstants.ENFORCE_CONSTRAINTS = false;
     CoSEConstants.APPLY_LAYOUT = true;
   }
 
@@ -1322,7 +1322,7 @@ var spectralLayout = function spectralLayout(options) {
 
     /**** Apply spectral layout ****/
 
-    if (options.step == "initial" || options.step == "all") {
+    if (options.quality == "draft" || options.step == "all") {
       allBFS(samplingType);
       sample();
       powerIteration();

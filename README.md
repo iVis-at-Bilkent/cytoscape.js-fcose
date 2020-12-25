@@ -121,7 +121,7 @@ var defaultOptions = {
   uniformNodeDimensions: false,
   // Whether to pack disconnected components - valid only if randomize: true
   packComponents: true,
-  // Layout step - all, transformed, enforced - for debug purpose only
+  // Layout step - all, transformed, enforced, cose - for debug purpose only
   step: "all",
   
   /* spectral layout options */

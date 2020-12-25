@@ -2239,17 +2239,10 @@ uwsn = {
 	      }
 	    },
 	    {
-	      "selector": ":parent:selected",
-	      "style": {
-	        "background-opacity": "0.65",
-	        "border-color": "#d67614"
-	      }
-	    },
-	    {
 	      "selector": "node:selected",
 	      "style": {
-	        "background-color": "rgb(255,0,0)",
-	        "border-color": "#d67614"
+	        "background-color": "#33ff00",
+	        "border-color": "#22ee00"
 	      }
 	    },
 	    {
@@ -2264,11 +2257,11 @@ uwsn = {
 	    {
 	      "selector": "edge:selected",
 	      "style": {
-	        "line-color": "rgb(255,0,0)",
+	        "line-color": "#33ff00",
 	        "font-size": "13px",
 	        "text-opacity": "1",
 	        "text-rotation": "autorotate",
-	        "color": "rgb(255,0,0)",
+	        "color": "#33ff00",
 	        "font-weight": "bold",
 	        "text-background-shape": "roundrectangle",
 	        "text-background-opacity": "1",
@@ -2286,7 +2279,7 @@ uwsn = {
 	      "selector": "edge:selected[class = 'production']",
 	      "style": {
 	        "target-arrow-shape": "triangle",
-	        "target-arrow-color": "rgb(255,0,0)"
+	        "target-arrow-color": "#33ff00"
 	      }
 	    },	    
 	  ],

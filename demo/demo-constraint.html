@@ -77,7 +77,7 @@
           float: left;
           top: auto;
           left: 0;
-          background-color: #77ffff;
+          background-color: #d9fbff;
           overflow-x: hidden; /* Disable horizontal scroll */
           padding-top: 10px; /* Place content 10px from the top */
           padding-bottom: 10px; /* Place content 10px from the bottom */
@@ -124,9 +124,30 @@
           border-radius: 3px;
           border-width: 1px;         
         }
+        
         .btn-group-sm>.btn, .btn-sm { 
-          font-size: 13px
+          font-size: 13px;
+          background-color: #7d8991;
+          border-color: #7d8991;
         }
+        
+        .btn-primary:hover, .btn-primary:focus, .btn-primary:active, .btn-primary.active, .open>.dropdown-toggle.btn-primary {
+            color: #fff;
+            background-color: #60717d;
+            border-color: #60717d; /*set the color you want here*/
+        }  
+        
+        .btn-outline-primary:hover, .btn-outline-primary:focus, .btn-outline-primary:active, .btn-outline-primary.active, .open>.dropdown-toggle.btn-primary {
+            color: #fff;
+            background-color: #60717d;
+            border-color: #60717d; /*set the color you want here*/
+        }        
+        
+        .btn-outline-primary{ 
+          font-size: 13px;
+          background-color: #ffffff;
+          color: #7d8991;
+        }        
         
         .form-control-sm { 
           font-size: 13px
@@ -152,6 +173,12 @@
           padding-top: 2px;
         }
         
+        .custom-control-input:checked~.custom-control-label::before {
+            color: #fff;
+            border-color: #7d8991;
+            background-color: #7d8991;
+        }        
+        
       </style>
   </head>
   <body>
@@ -165,6 +192,7 @@
           <option value="sample2">sample2 - alignment</option>
           <option value="sample3">sample3 - relative</option>
           <option value="sample4">sample4 - hybrid</option>
+          <option value="sample4">sample5</option>
           <option value="sample5">unix-family-tree</option>
           <option value="sample6">chalk-dependency</option>              
           <option value="sample7">UW-sensor-network</option>

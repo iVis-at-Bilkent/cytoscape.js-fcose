@@ -3,54 +3,6 @@ chalk = {
 		"nodes": [
 			{
 				"data": {
-					"id": "nwtN_80eb137f-5cd7-4584-9acc-87cc5698d255",
-					"bbox": {
-						"x": 503.796484757312,
-						"y": 149.75074733690965,
-						"w": 141.2687438947998,
-						"h": 150.88798454198337
-					},
-					"originalW": 169.2687438947998,
-					"originalH": 178.88798454198337,
-					"class": "compartment",
-					"label": "chalk",
-					"statesandinfos": [],
-					"language": "PD",
-					"border-width": 3.25,
-					"border-color": "#555555",
-					"background-color": "#f5f5f5",
-					"background-opacity": 0.5,
-					"background-image-opacity": "",
-					"text-wrap": "wrap",
-					"font-size": 11,
-					"font-family": "Helvetica",
-					"font-style": "normal",
-					"font-weight": "bold",
-					"color": "#000000",
-					"ports": [],
-					"background-image": "",
-					"background-fit": "",
-					"background-position-x": "",
-					"background-position-y": "",
-					"background-width": "",
-					"background-height": "",
-					"infoboxCalculated": true,
-					"auxunitlayouts": {}
-				},
-				"position": {
-					"x": 503.796484757312,
-					"y": 149.75074733690965
-				},
-				"group": "nodes",
-				"removed": false,
-				"selected": false,
-				"selectable": true,
-				"locked": false,
-				"grabbable": true,
-				"classes": ""
-			},
-			{
-				"data": {
 					"id": "nwtN_00dcd31b-2631-4af1-980b-4493dc7d43f7",
 					"bbox": {
 						"x": 506.4608860015869,
@@ -65,7 +17,7 @@ chalk = {
 					"statesandinfos": [],
 					"parent": "nwtN_80eb137f-5cd7-4584-9acc-87cc5698d255",
 					"language": "PD",
-					"border-width": 3.25,
+					"border-width": 2.25,
 					"border-color": "#555555",
 					"background-color": "#f5f5f5",
 					"background-opacity": 0.5,
@@ -89,6 +41,54 @@ chalk = {
 				"position": {
 					"x": 506.4608860015869,
 					"y": 105.05675506591797
+				},
+				"group": "nodes",
+				"removed": false,
+				"selected": false,
+				"selectable": true,
+				"locked": false,
+				"grabbable": true,
+				"classes": ""
+			},		
+			{
+				"data": {
+					"id": "nwtN_80eb137f-5cd7-4584-9acc-87cc5698d255",
+					"bbox": {
+						"x": 503.796484757312,
+						"y": 149.75074733690965,
+						"w": 141.2687438947998,
+						"h": 150.88798454198337
+					},
+					"originalW": 169.2687438947998,
+					"originalH": 178.88798454198337,
+					"class": "compartment",
+					"label": "chalk",
+					"statesandinfos": [],
+					"language": "PD",
+					"border-width": 2.25,
+					"border-color": "#555555",
+					"background-color": "#f5f5f5",
+					"background-opacity": 0.5,
+					"background-image-opacity": "",
+					"text-wrap": "wrap",
+					"font-size": 11,
+					"font-family": "Helvetica",
+					"font-style": "normal",
+					"font-weight": "bold",
+					"color": "#000000",
+					"ports": [],
+					"background-image": "",
+					"background-fit": "",
+					"background-position-x": "",
+					"background-position-y": "",
+					"background-width": "",
+					"background-height": "",
+					"infoboxCalculated": true,
+					"auxunitlayouts": {}
+				},
+				"position": {
+					"x": 503.796484757312,
+					"y": 149.75074733690965
 				},
 				"group": "nodes",
 				"removed": false,
@@ -254,7 +254,7 @@ chalk = {
 					"label": "ansi-styles",
 					"statesandinfos": [],
 					"language": "PD",
-					"border-width": 3.25,
+					"border-width": 2.25,
 					"border-color": "#555555",
 					"background-color": "#f5f5f5",
 					"background-opacity": 0.5,
@@ -349,7 +349,7 @@ chalk = {
 					"label": "escape-string-regexp",
 					"statesandinfos": [],
 					"language": "PD",
-					"border-width": 3.25,
+					"border-width": 2.25,
 					"border-color": "#555555",
 					"background-color": "#f5f5f5",
 					"background-opacity": 0.5,
@@ -444,7 +444,7 @@ chalk = {
 					"label": "supports-color",
 					"statesandinfos": [],
 					"language": "PD",
-					"border-width": 3.25,
+					"border-width": 2.25,
 					"border-color": "#555555",
 					"background-color": "#f5f5f5",
 					"background-opacity": 0.5,
@@ -539,7 +539,7 @@ chalk = {
 					"label": "has-flag",
 					"statesandinfos": [],
 					"language": "PD",
-					"border-width": 3.25,
+					"border-width": 2.25,
 					"border-color": "#555555",
 					"background-color": "#f5f5f5",
 					"background-opacity": 0.5,
@@ -634,7 +634,7 @@ chalk = {
 					"label": "color-convert",
 					"statesandinfos": [],
 					"language": "PD",
-					"border-width": 3.25,
+					"border-width": 2.25,
 					"border-color": "#555555",
 					"background-color": "#f5f5f5",
 					"background-opacity": 0.5,
@@ -823,7 +823,7 @@ chalk = {
 					"label": "color-name",
 					"statesandinfos": [],
 					"language": "PD",
-					"border-width": 3.25,
+					"border-width": 2.25,
 					"border-color": "#555555",
 					"background-color": "#f5f5f5",
 					"background-opacity": 0.5,
@@ -1251,17 +1251,10 @@ chalk = {
 	      }
 	    },
 	    {
-	      "selector": ":parent:selected",
-	      "style": {
-	        "background-opacity": "0.65",
-	        "border-color": "#d67614"
-	      }
-	    },
-	    {
 	      "selector": "node:selected",
 	      "style": {
-	        "background-color": "#F08080",
-	        "border-color": "#d67614"
+	        "background-color": "#33ff00",
+	        "border-color": "#22ee00"
 	      }
 	    },
 	    {
@@ -1278,16 +1271,16 @@ chalk = {
 	    {
 	      "selector": "edge:selected",
 	      "style": {
-	        "line-color": "rgb(255,0,0)",
+	        "line-color": "#33ff00",
 	        "font-size": "13px",
 	        "text-opacity": "1",
 	        "text-rotation": "autorotate",
-	        "color": "rgb(255,0,0)",
+	        "color": "#33ff00",
 	        "font-weight": "bold",
 	        "text-background-shape": "roundrectangle",
 	        "text-background-opacity": "1",
 	        "text-background-padding": "2px",
-	        "target-arrow-color": "rgb(255,0,0)",
+	        "target-arrow-color": "#33ff00",
 	        "target-arrow-shape": "triangle",
 	      }
 	    }
