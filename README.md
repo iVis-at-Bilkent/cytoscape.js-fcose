@@ -6,39 +6,14 @@ cytoscape-fcose
 
 fCoSE (fast Compound Spring Embedder) is a faster version of our earlier compound spring embedder algorithm named [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent), implemented as a Cytoscape.js extension by [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University.
 
-<html>
-<style>
-a.demolink {
-  text-decoration: none;
-  color: #ff6584;
-}
-table.demotable {
-  align: center;
-  margin-left: auto;
-  margin-right: auto;
-  margin-bottom: 10px;
-}
-td.demobutton {
-  background-color: #c0c0c0;
-  color: #ff6584;
-  text-align: center;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 10px;
-  margin-bottom: 30px;
-  padding: 7px 10px;
-  line-height: 0.9;
-  border-radius: 4px 18px 4px 18px;
-}
-</style>
-
-<table class="demotable">
+<table style="  align: center; margin-left: auto; margin-right: auto; margin-bottom: 10px;">
 <tr>
-  <td class="demobutton"><a class="demolink" href="demo/demo.html">DEMO<br />simple</a></td>
+  <td style="  background-color: #c0c0c0; color: #ff6584; text-align: center; line-height: 1; border-radius: 4px 18px 4px 18px;"><a style="text-decoration: none; color: #ff6584;" href="demo/demo.html" title="Simple Demo">DEMO<br />simple</a></td>
   <td/>
-  <td class="demobutton"><a class="demolink" href="demo/compound.html">DEMO<br />compound</a></td>
+  <td style="  background-color: #c0c0c0; color: #ff6584; text-align: center; line-height: 1; border-radius: 4px 18px 4px 18px;"><a style="text-decoration: none; color: #ff6584;" href="demo/compound.html" title="Compound Demo">DEMO<br />compound</a></td>
   <td/>
-  <td class="demobutton"><a class="demolink" href="demo/constraint.html">DEMO<br />constraint</a></td>
+  <td style="  background-color: #c0c0c0; color: #ff6584; text-align: center; line-height: 1; border-radius: 4px 18px 4px 18px;"><a style="text-decoration: none; color: #ff6584;" href="demo/constraint.html" title="Constraint Demo">DEMO<br />constraint</a></td>
+  <td/>
 </tr>
 </table>
 </html>
