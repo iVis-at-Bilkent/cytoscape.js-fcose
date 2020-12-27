@@ -6,7 +6,7 @@ cytoscape-fcose
 
 fCoSE (fast Compound Spring Embedder) is a faster version of our earlier compound spring embedder algorithm named [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent), implemented as a Cytoscape.js extension by [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University.
 
-<table align="center">
+<table align="center" border="0px">
 <tr>
   <td align="center"><a href="demo/demo.html" title="Simple Demo">DEMO (simple)</a></td>
   <td/>
