@@ -6,16 +6,12 @@ cytoscape-fcose
 
 fCoSE (fast Compound Spring Embedder) is a faster version of our earlier compound spring embedder algorithm named [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent), implemented as a Cytoscape.js extension by [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University.
 
-<table align="center" border="0px">
-<tr>
-  <td align="center"><a href="demo/demo.html" title="Simple Demo">DEMO (simple)</a></td>
-  <td/>
-  <td align="center"><a href="demo/demo-compound.html" title="Compound Demo">DEMO (compound)</a></td>
-  <td/>
-  <td align="center"><a href="demo/demo-constraint.html" title="Constraint Demo">DEMO (constraint)</a></td>
-</tr>
-</table>
-</html>
+<p align="center"> <a href="demo/demo.html" title="Simple Demo">DEMO (simple)</a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="demo/demo-compound.html" title="Compound Demo">DEMO (compound)</a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="demo/demo-constraint.html" title="Constraint Demo">DEMO (constraint)</a>
+</p>
 
 fCoSE layout algorithm combines the speed of spectral layout with the aesthetics of force-directed layout. fCoSE runs up to 2 times as fast as CoSE while achieving similar aesthetics.
 
