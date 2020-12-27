@@ -4,7 +4,42 @@ cytoscape-fcose
 
 ## Description
 
-fCoSE (fast Compound Spring Embedder) is a faster version of our earlier compound spring embedder algorithm named [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent), implemented as a Cytoscape.js extension by [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University ([demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo.html), [compound demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo-compound.html), [constraint demo](https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo-constraint.html))
+fCoSE (fast Compound Spring Embedder) is a faster version of our earlier compound spring embedder algorithm named [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent), implemented as a Cytoscape.js extension by [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University.
+
+<style>
+a.demolink {
+  text-decoration: none;
+  color: #ff6584;
+}
+table.demotable {
+  align: center;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 10px;
+}
+td.demobutton {
+  background-color: #c0c0c0;
+  color: #ff6584;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 10px;
+  margin-bottom: 30px;
+  padding: 7px 10px;
+  line-height: 0.9;
+  border-radius: 4px 18px 4px 18px;
+}
+</style>
+
+<table class="demotable">
+<tr>
+  <td class="demobutton"><a class="demolink" href="demo/demo.html">DEMO<br />simple</a></td>
+  <td/>
+  <td class="demobutton"><a class="demolink" href="demo/compound.html">DEMO<br />compound</a></td>
+  <td/>
+  <td class="demobutton"><a class="demolink" href="demo/constraint.html">DEMO<br />constraint</a></td>
+</tr>
+</table>
 
 fCoSE layout algorithm combines the speed of spectral layout with the aesthetics of force-directed layout. fCoSE runs up to 2 times as fast as CoSE while achieving similar aesthetics.
 
