@@ -50,11 +50,11 @@ const defaults = Object.freeze({
   /* CoSE layout options */
   
   // Node repulsion (non overlapping) multiplier
-  nodeRepulsion: 4500,
+  nodeRepulsion: node => 4500,
   // Ideal edge (non nested) length
-  idealEdgeLength: 50,
+  idealEdgeLength: edge => 50,
   // Divisor to compute edge forces
-  edgeElasticity: 0.45,
+  edgeElasticity: edge => 0.45,
   // Nesting factor (multiplier) to compute ideal edge length for nested edges
   nestingFactor: 0.1,
   // Gravity force (constant)

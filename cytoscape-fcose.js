@@ -345,11 +345,17 @@ var defaults = Object.freeze({
   /* CoSE layout options */
 
   // Node repulsion (non overlapping) multiplier
-  nodeRepulsion: 4500,
+  nodeRepulsion: function nodeRepulsion(node) {
+    return 4500;
+  },
   // Ideal edge (non nested) length
-  idealEdgeLength: 50,
+  idealEdgeLength: function idealEdgeLength(edge) {
+    return 50;
+  },
   // Divisor to compute edge forces
-  edgeElasticity: 0.45,
+  edgeElasticity: function edgeElasticity(edge) {
+    return 0.45;
+  },
   // Nesting factor (multiplier) to compute ideal edge length for nested edges
   nestingFactor: 0.1,
   // Gravity force (constant)
@@ -730,6 +736,18 @@ var coseLayout = function coseLayout(options, spectralResult) {
     yCoords = spectralResult["yCoords"];
   }
 
+  var isFn = function isFn(fn) {
+    return typeof fn === 'function';
+  };
+
+  var optFn = function optFn(opt, ele) {
+    if (isFn(opt)) {
+      return opt(ele);
+    } else {
+      return opt;
+    }
+  };
+
   /**** Postprocessing functions ****/
 
   // transfer cytoscape nodes to cose nodes
@@ -758,8 +776,9 @@ var coseLayout = function coseLayout(options, spectralResult) {
       } else {
         theNode = parent.add(new CoSENode(this.graphManager));
       }
-      // Attach id to the layout node
+      // Attach id to the layout node and repulsion value
       theNode.id = theChild.data("id");
+      theNode.nodeRepulsion = optFn(options.nodeRepulsion, theChild);
       // Attach the paddings of cy node to layout node
       theNode.paddingLeft = parseInt(theChild.css('padding'));
       theNode.paddingTop = parseInt(theChild.css('padding'));
@@ -797,6 +816,8 @@ var coseLayout = function coseLayout(options, spectralResult) {
 
   // transfer cytoscape edges to cose edges
   var processEdges = function processEdges(layout, gm, edges) {
+    var idealLengthTotal = 0;
+    var edgeCount = 0;
     for (var i = 0; i < edges.length; i++) {
       var edge = edges[i];
       var sourceNode = idToLNode[edge.data("source")];
@@ -804,7 +825,21 @@ var coseLayout = function coseLayout(options, spectralResult) {
       if (sourceNode !== targetNode && sourceNode.getEdgesBetween(targetNode).length == 0) {
         var e1 = gm.add(layout.newEdge(), sourceNode, targetNode);
         e1.id = edge.id();
+        e1.idealLength = optFn(options.idealEdgeLength, edge);
+        e1.edgeElasticity = optFn(options.edgeElasticity, edge);
+        idealLengthTotal += e1.idealLength;
+        edgeCount++;
       }
+    }
+    // we need to update the ideal edge length constant with the avg. ideal length value after processing edges
+    // in case there is no edge, use other options
+    if (options.idealEdgeLength != null) {
+      if (edges.length > 0) CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = idealLengthTotal / edgeCount;else if (!isFn(options.idealEdgeLength)) // in case there is no edge, but option gives a value to use
+        CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = options.idealEdgeLength;else // in case there is no edge and we cannot get a value from option (because it's a function)
+        CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = 50;
+      // we need to update these constant values based on the ideal edge length constant
+      CoSEConstants.MIN_REPULSION_DIST = FDLayoutConstants.MIN_REPULSION_DIST = FDLayoutConstants.DEFAULT_EDGE_LENGTH / 10.0;
+      CoSEConstants.DEFAULT_RADIAL_SEPARATION = FDLayoutConstants.DEFAULT_EDGE_LENGTH;
     }
   };
 
@@ -825,10 +860,6 @@ var coseLayout = function coseLayout(options, spectralResult) {
   };
 
   /**** Apply postprocessing ****/
-
-  if (options.nodeRepulsion != null) CoSEConstants.DEFAULT_REPULSION_STRENGTH = FDLayoutConstants.DEFAULT_REPULSION_STRENGTH = options.nodeRepulsion;
-  if (options.idealEdgeLength != null) CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = options.idealEdgeLength;
-  if (options.edgeElasticity != null) CoSEConstants.DEFAULT_SPRING_STRENGTH = FDLayoutConstants.DEFAULT_SPRING_STRENGTH = options.edgeElasticity;
   if (options.nestingFactor != null) CoSEConstants.PER_LEVEL_IDEAL_EDGE_LENGTH_FACTOR = FDLayoutConstants.PER_LEVEL_IDEAL_EDGE_LENGTH_FACTOR = options.nestingFactor;
   if (options.gravity != null) CoSEConstants.DEFAULT_GRAVITY_STRENGTH = FDLayoutConstants.DEFAULT_GRAVITY_STRENGTH = options.gravity;
   if (options.numIter != null) CoSEConstants.MAX_ITERATIONS = FDLayoutConstants.MAX_ITERATIONS = options.numIter;
@@ -849,7 +880,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
   CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
   LayoutConstants.DEFAULT_UNIFORM_LEAF_NODE_SIZES = options.uniformNodeDimensions;
 
-  // This part is for demo purpose and will change during release
+  // This part is for debug/demo purpose
   if (options.step == "transformed") {
     CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;
     CoSEConstants.ENFORCE_CONSTRAINTS = false;
