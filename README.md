@@ -21,6 +21,8 @@ Furthermore, fCoSE also supports a fairly rich set of constraint types (i.e., fi
 
 <p align="center"><img src="demo/incrementalConstraints.gif" width="800"></p>
 
+You can see constraint support in action in the following videos: [fixed node](https://youtu.be/OTke5XQXzQA), [alignment](https://youtu.be/XCj_-_cTuRc), [relative placement](https://youtu.be/k0PmRliwdmo), [hybrid](https://youtu.be/cS3rkTyIMqU), [real life graphs](https://youtu.be/S7aIr9cNKbI). Constraints can also be added [incrementally](https://youtu.be/mxRKGvzM900) on a given layout. 
+
 Please cite the following when you use this layout until an fCoSE publication is available:
 
 U. Dogrusoz, E. Giral, A. Cetintas, A. Civril, and E. Demir, "[A Layout Algorithm For Undirected Compound Graphs](http://www.sciencedirect.com/science/article/pii/S0020025508004799)", Information Sciences, 179, pp. 980-994, 2009.
@@ -56,8 +58,6 @@ fCoSE supports user-defined placement constraints as well as its full support fo
   relativePlacementConstraint: [{top: 'n1', bottom: 'n2', gap: 100}, 
      {left: 'n3', right: 'n4', gap: 75}],
   ```
-
-You can see constraint support in action in the following videos: [fixed node](https://youtu.be/OTke5XQXzQA), [alignment](https://youtu.be/XCj_-_cTuRc), [relative placement](https://youtu.be/k0PmRliwdmo), [hybrid](https://youtu.be/cS3rkTyIMqU), [real life graphs](https://youtu.be/S7aIr9cNKbI). Constraints can also be added [incrementally](https://youtu.be/mxRKGvzM900) on a given layout. 
 
 ## Usage instructions
 
