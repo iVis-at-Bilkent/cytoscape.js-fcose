@@ -51,6 +51,6 @@
     "cytoscape": "^3.2.0"
   },
   "dependencies": {
-    "cose-base": "^1.0.0"
+    "cose-base": "^2.0.0"
   }
 }
