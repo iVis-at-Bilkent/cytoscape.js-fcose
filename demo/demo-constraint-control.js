@@ -652,6 +652,10 @@ document.getElementById("coseButton").addEventListener("click", function(){
     finalOptions.gravityRangeCompound = 0;
     finalOptions.gravityCompound = 3.0;
   }
+  
+  if(document.getElementById("sample").value == "sample8"){
+    finalOptions.idealEdgeLength = 70; 
+  }   
 
   finalOptions.fixedNodeConstraint = constraints.fixedNodeConstraint ? constraints.fixedNodeConstraint : undefined;
   finalOptions.alignmentConstraint = constraints.alignmentConstraint ? constraints.alignmentConstraint : undefined;
