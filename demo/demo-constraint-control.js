@@ -115,8 +115,8 @@ let cy = window.cy = cytoscape({
   layout: {name: 'preset'},
   style: defaultStylesheet,
   elements: {
-    nodes: [
-      {data: {id: 'n1'}},    
+        nodes: [
+      {data: {id: 'n1'}},
       {data: {id: 'n2'}},
       {data: {id: 'n3', parent: 'n8'}},
       {data: {id: 'n5'}},
@@ -332,7 +332,11 @@ let sampleFileNames = {
     "sample6" : chalk,
     "sample6_constraints" : chalk_constraints,    
     "sample7" : uwsn,
-    "sample7_constraints" : uwsn_constraints 
+    "sample7_constraints" : uwsn_constraints,
+    "sample8" : call_graph,
+    "sample8_constraints" : callGraph_constraints,
+    "sample9" : wsn,
+    "sample9_constraints" : wsn_constraints,
 };
 
 document.getElementById("sample").addEventListener("change", function(){
@@ -499,7 +503,7 @@ let options = {
   padding: 30,
   nestingFactor: 0.1,
   gravityRangeCompound: 1.5,
-  gravityCompound: 1.0,
+  gravityCompound: 1.0
 };
 
 // Randomize
@@ -519,10 +523,14 @@ document.getElementById("fcoseButton").addEventListener("click", function(){
   finalOptions.randomize = !(document.getElementById("incremental").checked);
   
   if(document.getElementById("sample").value == "sample6"){
-    finalOptions.nestingFactor = 0.3;
+    finalOptions.nestingFactor = 0.4;
     finalOptions.gravityRangeCompound = 0;
     finalOptions.gravityCompound = 3.0;
   }
+  
+  if(document.getElementById("sample").value == "sample8"){
+    finalOptions.idealEdgeLength = 70; 
+  }  
   
   finalOptions.fixedNodeConstraint = constraints.fixedNodeConstraint ? constraints.fixedNodeConstraint : undefined;
   finalOptions.alignmentConstraint = constraints.alignmentConstraint ? constraints.alignmentConstraint : undefined;
@@ -640,10 +648,10 @@ document.getElementById("coseButton").addEventListener("click", function(){
   let finalOptions = Object.assign({}, options);
   
   if(document.getElementById("sample").value == "sample6"){
-    finalOptions.nestingFactor = 0.3;
+    finalOptions.nestingFactor = 0.4;
     finalOptions.gravityRangeCompound = 0;
     finalOptions.gravityCompound = 3.0;
-  }  
+  }
 
   finalOptions.fixedNodeConstraint = constraints.fixedNodeConstraint ? constraints.fixedNodeConstraint : undefined;
   finalOptions.alignmentConstraint = constraints.alignmentConstraint ? constraints.alignmentConstraint : undefined;
@@ -667,6 +675,8 @@ let onLoad = function(){
   for(let i = 0; i < simpleNodes.length; i++){
     let node = simpleNodes[i];
     let label = (node.data('label'))?(node.data('label')):(node.id());
+    if(label.length > 15)
+      label = label.substring(0, 12).concat("...");
     nodeList += "<option value='" + cy.nodes().not(":parent")[i].id() + "'>" + label + "</option>";
   }
   let listComponentForFixed = document.getElementById("nodeListColumn");
@@ -677,14 +687,18 @@ let onLoad = function(){
   let nodeListRP1 = "<select id='nodeListRP1' class='custom-select custom-select-sm' style='width:auto;' onchange='onSelectRP1()'>";
   for(let i = 0; i < simpleNodes.length; i++){
     let node = simpleNodes[i];
-    let label = (node.data('label'))?(node.data('label')):(node.id());    
+    let label = (node.data('label'))?(node.data('label')):(node.id()); 
+    if(label.length > 15)
+      label = label.substring(0, 12).concat("...");    
     nodeListRP1 += "<option value=" + cy.nodes().not(":parent")[i].id() + ">" + label + "</option>";
   }
 
   let nodeListRP2 = "<select id='nodeListRP2' class='custom-select custom-select-sm' style='width:auto;' onchange='onSelectRP2()'>";
   for(let i = 0; i < simpleNodes.length; i++){
     let node = simpleNodes[i];
-    let label = (node.data('label'))?(node.data('label')):(node.id());    
+    let label = (node.data('label'))?(node.data('label')):(node.id());
+    if(label.length > 15)
+      label = label.substring(0, 12).concat("...");    
     nodeListRP2 += "<option value=" + cy.nodes().not(":parent")[i].id() + ">" + label + "</option>";
   }            
 
@@ -858,16 +872,22 @@ let addToHistory = function( constraintType, nodeIds, constraintInfo) {
   cell1.innerHTML = constraintType;
   
   if(constraintType == 'Fixed'){
-    cell2.innerHTML = (cy.getElementById(nodeIds[0]).css('label') ? cy.getElementById(nodeIds[0]).css('label') : nodeIds);
+    let label = (cy.getElementById(nodeIds[0]).css('label') ? cy.getElementById(nodeIds[0]).css('label') : nodeIds);
+    if(label.length > 15)
+      label = label.substring(0, 12).concat("...");
+    cell2.innerHTML = label;
     cell3.innerHTML = "x: "+constraintInfo.x+" y: "+constraintInfo.y;
   }
   else if(constraintType == 'Alignment'){
     let nodeList = "";
     nodeIds.forEach(function(nodeId, index){
+      let label = (cy.getElementById(nodeId).css('label') ? cy.getElementById(nodeId).css('label') : nodeId);
+      if(label.length > 15)
+        label = label.substring(0, 12).concat("...");      
       if(index == 0)
-        nodeList += (cy.getElementById(nodeId).css('label') ? cy.getElementById(nodeId).css('label') : nodeId);
+        nodeList += label;
       else
-        nodeList += ' - ' + (cy.getElementById(nodeId).css('label') ? cy.getElementById(nodeId).css('label') : nodeId);
+        nodeList += ' - ' + label;
     });
     cell2.innerHTML = nodeList;
     cell3.innerHTML = constraintInfo;
@@ -875,10 +895,13 @@ let addToHistory = function( constraintType, nodeIds, constraintInfo) {
   else{
     let nodeList = "";
     nodeIds.forEach(function(nodeId, index){
+      let label = (cy.getElementById(nodeId).css('label') ? cy.getElementById(nodeId).css('label') : nodeId);
+      if(label.length > 15)
+        label = label.substring(0, 12).concat("...");       
       if(index == 0)
-        nodeList += (cy.getElementById(nodeId).css('label') ? cy.getElementById(nodeId).css('label') : nodeId);
+        nodeList += label;
       else
-        nodeList += ' - ' + (cy.getElementById(nodeId).css('label') ? cy.getElementById(nodeId).css('label') : nodeId);
+        nodeList += ' - ' + label;
     });
     cell2.innerHTML = nodeList;
     cell3.innerHTML = constraintInfo;
