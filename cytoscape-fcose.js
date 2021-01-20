@@ -97,130 +97,6 @@ var LinkedList = __webpack_require__(0).layoutBase.LinkedList;
 
 var auxiliary = {};
 
-auxiliary.multMat = function (array1, array2) {
-  var result = [];
-
-  for (var i = 0; i < array1.length; i++) {
-    result[i] = [];
-    for (var j = 0; j < array2[0].length; j++) {
-      result[i][j] = 0;
-      for (var k = 0; k < array1[0].length; k++) {
-        result[i][j] += array1[i][k] * array2[k][j];
-      }
-    }
-  }
-  return result;
-};
-
-auxiliary.multGamma = function (array) {
-  var result = [];
-  var sum = 0;
-
-  for (var i = 0; i < array.length; i++) {
-    sum += array[i];
-  }
-
-  sum *= -1 / array.length;
-
-  for (var _i = 0; _i < array.length; _i++) {
-    result[_i] = sum + array[_i];
-  }
-  return result;
-};
-
-auxiliary.multL = function (array, C, INV) {
-  var result = [];
-  var temp1 = [];
-  var temp2 = [];
-
-  // multiply by C^T
-  for (var i = 0; i < C[0].length; i++) {
-    var sum = 0;
-    for (var j = 0; j < C.length; j++) {
-      sum += -0.5 * C[j][i] * array[j];
-    }
-    temp1[i] = sum;
-  }
-  // multiply the result by INV
-  for (var _i2 = 0; _i2 < INV.length; _i2++) {
-    var _sum = 0;
-    for (var _j = 0; _j < INV.length; _j++) {
-      _sum += INV[_i2][_j] * temp1[_j];
-    }
-    temp2[_i2] = _sum;
-  }
-  // multiply the result by C
-  for (var _i3 = 0; _i3 < C.length; _i3++) {
-    var _sum2 = 0;
-    for (var _j2 = 0; _j2 < C[0].length; _j2++) {
-      _sum2 += C[_i3][_j2] * temp2[_j2];
-    }
-    result[_i3] = _sum2;
-  }
-
-  return result;
-};
-
-auxiliary.multCons = function (array, constant) {
-  var result = [];
-
-  for (var i = 0; i < array.length; i++) {
-    result[i] = array[i] * constant;
-  }
-
-  return result;
-};
-
-// assumes arrays have same size
-auxiliary.minusOp = function (array1, array2) {
-  var result = [];
-
-  for (var i = 0; i < array1.length; i++) {
-    result[i] = array1[i] - array2[i];
-  }
-
-  return result;
-};
-
-// assumes arrays have same size
-auxiliary.dotProduct = function (array1, array2) {
-  var product = 0;
-
-  for (var i = 0; i < array1.length; i++) {
-    product += array1[i] * array2[i];
-  }
-
-  return product;
-};
-
-auxiliary.mag = function (array) {
-  return Math.sqrt(this.dotProduct(array, array));
-};
-
-auxiliary.normalize = function (array) {
-  var result = [];
-  var magnitude = this.mag(array);
-
-  for (var i = 0; i < array.length; i++) {
-    result[i] = array[i] / magnitude;
-  }
-
-  return result;
-};
-
-auxiliary.transpose = function (array) {
-  var result = [];
-
-  for (var i = 0; i < array[0].length; i++) {
-    result[i] = [];
-    for (var j = 0; j < array.length; j++) {
-      result[i][j] = array[j][i];
-    }
-  }
-
-  return result;
-};
-
 // get the top most nodes
 auxiliary.getTopMostNodes = function (nodes) {
   var nodesMap = {};
@@ -279,7 +155,7 @@ auxiliary.connectComponents = function (cy, eles, topMostNodes, dummyNodes) {
       // Traverse all neighbors of this node
       var neighborNodes = cy.collection();
       currentNode.neighborhood().nodes().forEach(function (node) {
-        if (eles.intersection(currentNode.edgesWith(node))) {
+        if (eles.intersection(currentNode.edgesWith(node)).length > 0) {
           neighborNodes.merge(node);
         }
       });
@@ -400,639 +276,6 @@ auxiliary.calcBoundingBox = function (parentNode, xCoords, yCoords, nodeIndexes)
   return boundingBox;
 };
 
-/* Below singular value decomposition (svd) code including hypot function is adopted from https://github.com/dragonfly-ai/JamaJS
-   Some changes are applied to make the code compatible with the fcose code and to make it independent from Jama.
-   Input matrix is changed to a 2D array instead of Jama matrix. Matrix dimensions are taken according to 2D array instead of using Jama functions.
-   An object that includes singular value components is created for return. 
-   The types of input parameters of the hypot function are removed. 
-   let is used instead of var for the variable initialization.
-*/
-/*
-                               Apache License
-                           Version 2.0, January 2004
-                        http://www.apache.org/licenses/
-
-   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
-
-   1. Definitions.
-
-      "License" shall mean the terms and conditions for use, reproduction,
-      and distribution as defined by Sections 1 through 9 of this document.
-
-      "Licensor" shall mean the copyright owner or entity authorized by
-      the copyright owner that is granting the License.
-
-      "Legal Entity" shall mean the union of the acting entity and all
-      other entities that control, are controlled by, or are under common
-      control with that entity. For the purposes of this definition,
-      "control" means (i) the power, direct or indirect, to cause the
-      direction or management of such entity, whether by contract or
-      otherwise, or (ii) ownership of fifty percent (50%) or more of the
-      outstanding shares, or (iii) beneficial ownership of such entity.
-
-      "You" (or "Your") shall mean an individual or Legal Entity
-      exercising permissions granted by this License.
-
-      "Source" form shall mean the preferred form for making modifications,
-      including but not limited to software source code, documentation
-      source, and configuration files.
-
-      "Object" form shall mean any form resulting from mechanical
-      transformation or translation of a Source form, including but
-      not limited to compiled object code, generated documentation,
-      and conversions to other media types.
-
-      "Work" shall mean the work of authorship, whether in Source or
-      Object form, made available under the License, as indicated by a
-      copyright notice that is included in or attached to the work
-      (an example is provided in the Appendix below).
-
-      "Derivative Works" shall mean any work, whether in Source or Object
-      form, that is based on (or derived from) the Work and for which the
-      editorial revisions, annotations, elaborations, or other modifications
-      represent, as a whole, an original work of authorship. For the purposes
-      of this License, Derivative Works shall not include works that remain
-      separable from, or merely link (or bind by name) to the interfaces of,
-      the Work and Derivative Works thereof.
-
-      "Contribution" shall mean any work of authorship, including
-      the original version of the Work and any modifications or additions
-      to that Work or Derivative Works thereof, that is intentionally
-      submitted to Licensor for inclusion in the Work by the copyright owner
-      or by an individual or Legal Entity authorized to submit on behalf of
-      the copyright owner. For the purposes of this definition, "submitted"
-      means any form of electronic, verbal, or written communication sent
-      to the Licensor or its representatives, including but not limited to
-      communication on electronic mailing lists, source code control systems,
-      and issue tracking systems that are managed by, or on behalf of, the
-      Licensor for the purpose of discussing and improving the Work, but
-      excluding communication that is conspicuously marked or otherwise
-      designated in writing by the copyright owner as "Not a Contribution."
-
-      "Contributor" shall mean Licensor and any individual or Legal Entity
-      on behalf of whom a Contribution has been received by Licensor and
-      subsequently incorporated within the Work.
-
-   2. Grant of Copyright License. Subject to the terms and conditions of
-      this License, each Contributor hereby grants to You a perpetual,
-      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-      copyright license to reproduce, prepare Derivative Works of,
-      publicly display, publicly perform, sublicense, and distribute the
-      Work and such Derivative Works in Source or Object form.
-
-   3. Grant of Patent License. Subject to the terms and conditions of
-      this License, each Contributor hereby grants to You a perpetual,
-      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-      (except as stated in this section) patent license to make, have made,
-      use, offer to sell, sell, import, and otherwise transfer the Work,
-      where such license applies only to those patent claims licensable
-      by such Contributor that are necessarily infringed by their
-      Contribution(s) alone or by combination of their Contribution(s)
-      with the Work to which such Contribution(s) was submitted. If You
-      institute patent litigation against any entity (including a
-      cross-claim or counterclaim in a lawsuit) alleging that the Work
-      or a Contribution incorporated within the Work constitutes direct
-      or contributory patent infringement, then any patent licenses
-      granted to You under this License for that Work shall terminate
-      as of the date such litigation is filed.
-
-   4. Redistribution. You may reproduce and distribute copies of the
-      Work or Derivative Works thereof in any medium, with or without
-      modifications, and in Source or Object form, provided that You
-      meet the following conditions:
-
-      (a) You must give any other recipients of the Work or
-          Derivative Works a copy of this License; and
-
-      (b) You must cause any modified files to carry prominent notices
-          stating that You changed the files; and
-
-      (c) You must retain, in the Source form of any Derivative Works
-          that You distribute, all copyright, patent, trademark, and
-          attribution notices from the Source form of the Work,
-          excluding those notices that do not pertain to any part of
-          the Derivative Works; and
-
-      (d) If the Work includes a "NOTICE" text file as part of its
-          distribution, then any Derivative Works that You distribute must
-          include a readable copy of the attribution notices contained
-          within such NOTICE file, excluding those notices that do not
-          pertain to any part of the Derivative Works, in at least one
-          of the following places: within a NOTICE text file distributed
-          as part of the Derivative Works; within the Source form or
-          documentation, if provided along with the Derivative Works; or,
-          within a display generated by the Derivative Works, if and
-          wherever such third-party notices normally appear. The contents
-          of the NOTICE file are for informational purposes only and
-          do not modify the License. You may add Your own attribution
-          notices within Derivative Works that You distribute, alongside
-          or as an addendum to the NOTICE text from the Work, provided
-          that such additional attribution notices cannot be construed
-          as modifying the License.
-
-      You may add Your own copyright statement to Your modifications and
-      may provide additional or different license terms and conditions
-      for use, reproduction, or distribution of Your modifications, or
-      for any such Derivative Works as a whole, provided Your use,
-      reproduction, and distribution of the Work otherwise complies with
-      the conditions stated in this License.
-
-   5. Submission of Contributions. Unless You explicitly state otherwise,
-      any Contribution intentionally submitted for inclusion in the Work
-      by You to the Licensor shall be under the terms and conditions of
-      this License, without any additional terms or conditions.
-      Notwithstanding the above, nothing herein shall supersede or modify
-      the terms of any separate license agreement you may have executed
-      with Licensor regarding such Contributions.
-
-   6. Trademarks. This License does not grant permission to use the trade
-      names, trademarks, service marks, or product names of the Licensor,
-      except as required for reasonable and customary use in describing the
-      origin of the Work and reproducing the content of the NOTICE file.
-
-   7. Disclaimer of Warranty. Unless required by applicable law or
-      agreed to in writing, Licensor provides the Work (and each
-      Contributor provides its Contributions) on an "AS IS" BASIS,
-      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-      implied, including, without limitation, any warranties or conditions
-      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
-      PARTICULAR PURPOSE. You are solely responsible for determining the
-      appropriateness of using or redistributing the Work and assume any
-      risks associated with Your exercise of permissions under this License.
-
-   8. Limitation of Liability. In no event and under no legal theory,
-      whether in tort (including negligence), contract, or otherwise,
-      unless required by applicable law (such as deliberate and grossly
-      negligent acts) or agreed to in writing, shall any Contributor be
-      liable to You for damages, including any direct, indirect, special,
-      incidental, or consequential damages of any character arising as a
-      result of this License or out of the use or inability to use the
-      Work (including but not limited to damages for loss of goodwill,
-      work stoppage, computer failure or malfunction, or any and all
-      other commercial damages or losses), even if such Contributor
-      has been advised of the possibility of such damages.
-
-   9. Accepting Warranty or Additional Liability. While redistributing
-      the Work or Derivative Works thereof, You may choose to offer,
-      and charge a fee for, acceptance of support, warranty, indemnity,
-      or other liability obligations and/or rights consistent with this
-      License. However, in accepting such obligations, You may act only
-      on Your own behalf and on Your sole responsibility, not on behalf
-      of any other Contributor, and only if You agree to indemnify,
-      defend, and hold each Contributor harmless for any liability
-      incurred by, or claims asserted against, such Contributor by reason
-      of your accepting any such warranty or additional liability.
-
-   END OF TERMS AND CONDITIONS
-
-   APPENDIX: How to apply the Apache License to your work.
-
-      To apply the Apache License to your work, attach the following
-      boilerplate notice, with the fields enclosed by brackets "{}"
-      replaced with your own identifying information. (Don't include
-      the brackets!)  The text should be enclosed in the appropriate
-      comment syntax for the file format. We also recommend that a
-      file or class name and description of purpose be included on the
-      same "printed page" as the copyright notice for easier
-      identification within third-party archives.
-
-   Copyright {yyyy} {name of copyright owner}
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
-
-auxiliary.svd = function (A) {
-  this.U = null;
-  this.V = null;
-  this.s = null;
-  this.m = 0;
-  this.n = 0;
-  this.m = A.length;
-  this.n = A[0].length;
-  var nu = Math.min(this.m, this.n);
-  this.s = function (s) {
-    var a = [];
-    while (s-- > 0) {
-      a.push(0);
-    }return a;
-  }(Math.min(this.m + 1, this.n));
-  this.U = function (dims) {
-    var allocate = function allocate(dims) {
-      if (dims.length == 0) {
-        return 0;
-      } else {
-        var array = [];
-        for (var i = 0; i < dims[0]; i++) {
-          array.push(allocate(dims.slice(1)));
-        }
-        return array;
-      }
-    };
-    return allocate(dims);
-  }([this.m, nu]);
-  this.V = function (dims) {
-    var allocate = function allocate(dims) {
-      if (dims.length == 0) {
-        return 0;
-      } else {
-        var array = [];
-        for (var i = 0; i < dims[0]; i++) {
-          array.push(allocate(dims.slice(1)));
-        }
-        return array;
-      }
-    };
-    return allocate(dims);
-  }([this.n, this.n]);
-  var e = function (s) {
-    var a = [];
-    while (s-- > 0) {
-      a.push(0);
-    }return a;
-  }(this.n);
-  var work = function (s) {
-    var a = [];
-    while (s-- > 0) {
-      a.push(0);
-    }return a;
-  }(this.m);
-  var wantu = true;
-  var wantv = true;
-  var nct = Math.min(this.m - 1, this.n);
-  var nrt = Math.max(0, Math.min(this.n - 2, this.m));
-  for (var k = 0; k < Math.max(nct, nrt); k++) {
-    if (k < nct) {
-      this.s[k] = 0;
-      for (var i = k; i < this.m; i++) {
-        this.s[k] = auxiliary.hypot(this.s[k], A[i][k]);
-      }
-      ;
-      if (this.s[k] !== 0.0) {
-        if (A[k][k] < 0.0) {
-          this.s[k] = -this.s[k];
-        }
-        for (var _i4 = k; _i4 < this.m; _i4++) {
-          A[_i4][k] /= this.s[k];
-        }
-        ;
-        A[k][k] += 1.0;
-      }
-      this.s[k] = -this.s[k];
-    }
-    for (var j = k + 1; j < this.n; j++) {
-      if (function (lhs, rhs) {
-        return lhs && rhs;
-      }(k < nct, this.s[k] !== 0.0)) {
-        var t = 0;
-        for (var _i5 = k; _i5 < this.m; _i5++) {
-          t += A[_i5][k] * A[_i5][j];
-        }
-        ;
-        t = -t / A[k][k];
-        for (var _i6 = k; _i6 < this.m; _i6++) {
-          A[_i6][j] += t * A[_i6][k];
-        }
-        ;
-      }
-      e[j] = A[k][j];
-    }
-    ;
-    if (function (lhs, rhs) {
-      return lhs && rhs;
-    }(wantu, k < nct)) {
-      for (var _i7 = k; _i7 < this.m; _i7++) {
-        this.U[_i7][k] = A[_i7][k];
-      }
-      ;
-    }
-    if (k < nrt) {
-      e[k] = 0;
-      for (var _i8 = k + 1; _i8 < this.n; _i8++) {
-        e[k] = auxiliary.hypot(e[k], e[_i8]);
-      }
-      ;
-      if (e[k] !== 0.0) {
-        if (e[k + 1] < 0.0) {
-          e[k] = -e[k];
-        }
-        for (var _i9 = k + 1; _i9 < this.n; _i9++) {
-          e[_i9] /= e[k];
-        }
-        ;
-        e[k + 1] += 1.0;
-      }
-      e[k] = -e[k];
-      if (function (lhs, rhs) {
-        return lhs && rhs;
-      }(k + 1 < this.m, e[k] !== 0.0)) {
-        for (var _i10 = k + 1; _i10 < this.m; _i10++) {
-          work[_i10] = 0.0;
-        }
-        ;
-        for (var _j3 = k + 1; _j3 < this.n; _j3++) {
-          for (var _i11 = k + 1; _i11 < this.m; _i11++) {
-            work[_i11] += e[_j3] * A[_i11][_j3];
-          }
-          ;
-        }
-        ;
-        for (var _j4 = k + 1; _j4 < this.n; _j4++) {
-          var _t = -e[_j4] / e[k + 1];
-          for (var _i12 = k + 1; _i12 < this.m; _i12++) {
-            A[_i12][_j4] += _t * work[_i12];
-          }
-          ;
-        }
-        ;
-      }
-      if (wantv) {
-        for (var _i13 = k + 1; _i13 < this.n; _i13++) {
-          this.V[_i13][k] = e[_i13];
-        };
-      }
-    }
-  };
-  var p = Math.min(this.n, this.m + 1);
-  if (nct < this.n) {
-    this.s[nct] = A[nct][nct];
-  }
-  if (this.m < p) {
-    this.s[p - 1] = 0.0;
-  }
-  if (nrt + 1 < p) {
-    e[nrt] = A[nrt][p - 1];
-  }
-  e[p - 1] = 0.0;
-  if (wantu) {
-    for (var _j5 = nct; _j5 < nu; _j5++) {
-      for (var _i14 = 0; _i14 < this.m; _i14++) {
-        this.U[_i14][_j5] = 0.0;
-      }
-      ;
-      this.U[_j5][_j5] = 1.0;
-    };
-    for (var _k = nct - 1; _k >= 0; _k--) {
-      if (this.s[_k] !== 0.0) {
-        for (var _j6 = _k + 1; _j6 < nu; _j6++) {
-          var _t2 = 0;
-          for (var _i15 = _k; _i15 < this.m; _i15++) {
-            _t2 += this.U[_i15][_k] * this.U[_i15][_j6];
-          };
-          _t2 = -_t2 / this.U[_k][_k];
-          for (var _i16 = _k; _i16 < this.m; _i16++) {
-            this.U[_i16][_j6] += _t2 * this.U[_i16][_k];
-          };
-        };
-        for (var _i17 = _k; _i17 < this.m; _i17++) {
-          this.U[_i17][_k] = -this.U[_i17][_k];
-        };
-        this.U[_k][_k] = 1.0 + this.U[_k][_k];
-        for (var _i18 = 0; _i18 < _k - 1; _i18++) {
-          this.U[_i18][_k] = 0.0;
-        };
-      } else {
-        for (var _i19 = 0; _i19 < this.m; _i19++) {
-          this.U[_i19][_k] = 0.0;
-        };
-        this.U[_k][_k] = 1.0;
-      }
-    };
-  }
-  if (wantv) {
-    for (var _k2 = this.n - 1; _k2 >= 0; _k2--) {
-      if (function (lhs, rhs) {
-        return lhs && rhs;
-      }(_k2 < nrt, e[_k2] !== 0.0)) {
-        for (var _j7 = _k2 + 1; _j7 < nu; _j7++) {
-          var _t3 = 0;
-          for (var _i20 = _k2 + 1; _i20 < this.n; _i20++) {
-            _t3 += this.V[_i20][_k2] * this.V[_i20][_j7];
-          };
-          _t3 = -_t3 / this.V[_k2 + 1][_k2];
-          for (var _i21 = _k2 + 1; _i21 < this.n; _i21++) {
-            this.V[_i21][_j7] += _t3 * this.V[_i21][_k2];
-          };
-        };
-      }
-      for (var _i22 = 0; _i22 < this.n; _i22++) {
-        this.V[_i22][_k2] = 0.0;
-      };
-      this.V[_k2][_k2] = 1.0;
-    };
-  }
-  var pp = p - 1;
-  var iter = 0;
-  var eps = Math.pow(2.0, -52.0);
-  var tiny = Math.pow(2.0, -966.0);
-  while (p > 0) {
-    var _k3 = void 0;
-    var kase = void 0;
-    for (_k3 = p - 2; _k3 >= -1; _k3--) {
-      if (_k3 === -1) {
-        break;
-      }
-      if (Math.abs(e[_k3]) <= tiny + eps * (Math.abs(this.s[_k3]) + Math.abs(this.s[_k3 + 1]))) {
-        e[_k3] = 0.0;
-        break;
-      }
-    };
-    if (_k3 === p - 2) {
-      kase = 4;
-    } else {
-      var ks = void 0;
-      for (ks = p - 1; ks >= _k3; ks--) {
-        if (ks === _k3) {
-          break;
-        }
-        var _t4 = (ks !== p ? Math.abs(e[ks]) : 0.0) + (ks !== _k3 + 1 ? Math.abs(e[ks - 1]) : 0.0);
-        if (Math.abs(this.s[ks]) <= tiny + eps * _t4) {
-          this.s[ks] = 0.0;
-          break;
-        }
-      };
-      if (ks === _k3) {
-        kase = 3;
-      } else if (ks === p - 1) {
-        kase = 1;
-      } else {
-        kase = 2;
-        _k3 = ks;
-      }
-    }
-    _k3++;
-    switch (kase) {
-      case 1:
-        {
-          var f = e[p - 2];
-          e[p - 2] = 0.0;
-          for (var _j8 = p - 2; _j8 >= _k3; _j8--) {
-            var _t5 = auxiliary.hypot(this.s[_j8], f);
-            var cs = this.s[_j8] / _t5;
-            var sn = f / _t5;
-            this.s[_j8] = _t5;
-            if (_j8 !== _k3) {
-              f = -sn * e[_j8 - 1];
-              e[_j8 - 1] = cs * e[_j8 - 1];
-            }
-            if (wantv) {
-              for (var _i23 = 0; _i23 < this.n; _i23++) {
-                _t5 = cs * this.V[_i23][_j8] + sn * this.V[_i23][p - 1];
-                this.V[_i23][p - 1] = -sn * this.V[_i23][_j8] + cs * this.V[_i23][p - 1];
-                this.V[_i23][_j8] = _t5;
-              };
-            }
-          };
-        };
-        break;
-      case 2:
-        {
-          var _f = e[_k3 - 1];
-          e[_k3 - 1] = 0.0;
-          for (var _j9 = _k3; _j9 < p; _j9++) {
-            var _t6 = auxiliary.hypot(this.s[_j9], _f);
-            var _cs = this.s[_j9] / _t6;
-            var _sn = _f / _t6;
-            this.s[_j9] = _t6;
-            _f = -_sn * e[_j9];
-            e[_j9] = _cs * e[_j9];
-            if (wantu) {
-              for (var _i24 = 0; _i24 < this.m; _i24++) {
-                _t6 = _cs * this.U[_i24][_j9] + _sn * this.U[_i24][_k3 - 1];
-                this.U[_i24][_k3 - 1] = -_sn * this.U[_i24][_j9] + _cs * this.U[_i24][_k3 - 1];
-                this.U[_i24][_j9] = _t6;
-              };
-            }
-          };
-        };
-        break;
-      case 3:
-        {
-          var scale = Math.max(Math.max(Math.max(Math.max(Math.abs(this.s[p - 1]), Math.abs(this.s[p - 2])), Math.abs(e[p - 2])), Math.abs(this.s[_k3])), Math.abs(e[_k3]));
-          var sp = this.s[p - 1] / scale;
-          var spm1 = this.s[p - 2] / scale;
-          var epm1 = e[p - 2] / scale;
-          var sk = this.s[_k3] / scale;
-          var ek = e[_k3] / scale;
-          var b = ((spm1 + sp) * (spm1 - sp) + epm1 * epm1) / 2.0;
-          var c = sp * epm1 * (sp * epm1);
-          var shift = 0.0;
-          if (function (lhs, rhs) {
-            return lhs || rhs;
-          }(b !== 0.0, c !== 0.0)) {
-            shift = Math.sqrt(b * b + c);
-            if (b < 0.0) {
-              shift = -shift;
-            }
-            shift = c / (b + shift);
-          }
-          var _f2 = (sk + sp) * (sk - sp) + shift;
-          var g = sk * ek;
-          for (var _j10 = _k3; _j10 < p - 1; _j10++) {
-            var _t7 = auxiliary.hypot(_f2, g);
-            var _cs2 = _f2 / _t7;
-            var _sn2 = g / _t7;
-            if (_j10 !== _k3) {
-              e[_j10 - 1] = _t7;
-            }
-            _f2 = _cs2 * this.s[_j10] + _sn2 * e[_j10];
-            e[_j10] = _cs2 * e[_j10] - _sn2 * this.s[_j10];
-            g = _sn2 * this.s[_j10 + 1];
-            this.s[_j10 + 1] = _cs2 * this.s[_j10 + 1];
-            if (wantv) {
-              for (var _i25 = 0; _i25 < this.n; _i25++) {
-                _t7 = _cs2 * this.V[_i25][_j10] + _sn2 * this.V[_i25][_j10 + 1];
-                this.V[_i25][_j10 + 1] = -_sn2 * this.V[_i25][_j10] + _cs2 * this.V[_i25][_j10 + 1];
-                this.V[_i25][_j10] = _t7;
-              };
-            }
-            _t7 = auxiliary.hypot(_f2, g);
-            _cs2 = _f2 / _t7;
-            _sn2 = g / _t7;
-            this.s[_j10] = _t7;
-            _f2 = _cs2 * e[_j10] + _sn2 * this.s[_j10 + 1];
-            this.s[_j10 + 1] = -_sn2 * e[_j10] + _cs2 * this.s[_j10 + 1];
-            g = _sn2 * e[_j10 + 1];
-            e[_j10 + 1] = _cs2 * e[_j10 + 1];
-            if (wantu && _j10 < this.m - 1) {
-              for (var _i26 = 0; _i26 < this.m; _i26++) {
-                _t7 = _cs2 * this.U[_i26][_j10] + _sn2 * this.U[_i26][_j10 + 1];
-                this.U[_i26][_j10 + 1] = -_sn2 * this.U[_i26][_j10] + _cs2 * this.U[_i26][_j10 + 1];
-                this.U[_i26][_j10] = _t7;
-              };
-            }
-          };
-          e[p - 2] = _f2;
-          iter = iter + 1;
-        };
-        break;
-      case 4:
-        {
-          if (this.s[_k3] <= 0.0) {
-            this.s[_k3] = this.s[_k3] < 0.0 ? -this.s[_k3] : 0.0;
-            if (wantv) {
-              for (var _i27 = 0; _i27 <= pp; _i27++) {
-                this.V[_i27][_k3] = -this.V[_i27][_k3];
-              };
-            }
-          }
-          while (_k3 < pp) {
-            if (this.s[_k3] >= this.s[_k3 + 1]) {
-              break;
-            }
-            var _t8 = this.s[_k3];
-            this.s[_k3] = this.s[_k3 + 1];
-            this.s[_k3 + 1] = _t8;
-            if (wantv && _k3 < this.n - 1) {
-              for (var _i28 = 0; _i28 < this.n; _i28++) {
-                _t8 = this.V[_i28][_k3 + 1];
-                this.V[_i28][_k3 + 1] = this.V[_i28][_k3];
-                this.V[_i28][_k3] = _t8;
-              };
-            }
-            if (wantu && _k3 < this.m - 1) {
-              for (var _i29 = 0; _i29 < this.m; _i29++) {
-                _t8 = this.U[_i29][_k3 + 1];
-                this.U[_i29][_k3 + 1] = this.U[_i29][_k3];
-                this.U[_i29][_k3] = _t8;
-              };
-            }
-            _k3++;
-          };
-          iter = 0;
-          p--;
-        };
-        break;
-    }
-  };
-  var result = { U: this.U, V: this.V, S: this.s };
-  return result;
-};
-
-// sqrt(a^2 + b^2) without under/overflow.
-auxiliary.hypot = function (a, b) {
-  var r = void 0;
-  if (Math.abs(a) > Math.abs(b)) {
-    r = b / a;
-    r = Math.abs(a) * Math.sqrt(1 + r * r);
-  } else if (b != 0) {
-    r = a / b;
-    r = Math.abs(b) * Math.sqrt(1 + r * r);
-  } else {
-    r = 0.0;
-  }
-  return r;
-};
-
 module.exports = auxiliary;
 
 /***/ }),
@@ -1085,6 +328,8 @@ var defaults = Object.freeze({
   uniformNodeDimensions: false,
   // Whether to pack disconnected components - valid only if randomize: true
   packComponents: true,
+  // Layout step - all, transformed, enforced, cose - for debug purpose only
+  step: "all",
 
   /* spectral layout options */
 
@@ -1100,11 +345,17 @@ var defaults = Object.freeze({
   /* CoSE layout options */
 
   // Node repulsion (non overlapping) multiplier
-  nodeRepulsion: 4500,
+  nodeRepulsion: function nodeRepulsion(node) {
+    return 4500;
+  },
   // Ideal edge (non nested) length
-  idealEdgeLength: 50,
+  idealEdgeLength: function idealEdgeLength(edge) {
+    return 50;
+  },
   // Divisor to compute edge forces
-  edgeElasticity: 0.45,
+  edgeElasticity: function edgeElasticity(edge) {
+    return 0.45;
+  },
   // Nesting factor (multiplier) to compute ideal edge length for nested edges
   nestingFactor: 0.1,
   // Gravity force (constant)
@@ -1125,6 +376,18 @@ var defaults = Object.freeze({
   gravityRange: 3.8,
   // Initial cooling factor for incremental layout  
   initialEnergyOnIncremental: 0.3,
+
+  /* constraint options */
+
+  // Fix required nodes to predefined positions
+  // [{nodeId: 'n1', position: {x: 100, y: 200}, {...}]
+  fixedNodeConstraint: undefined,
+  // Align required nodes in vertical/horizontal direction
+  // {vertical: [['n1', 'n2')], ['n3', 'n4']], horizontal: ['n2', 'n4']}
+  alignmentConstraint: undefined,
+  // Place two nodes relatively in vertical/horizontal direction 
+  // [{top: 'n1', bottom: 'n2', gap: 100}, {left: 'n3', right: 'n4', gap: 75}]
+  relativePlacementConstraint: undefined,
 
   /* layout event callbacks */
   ready: function ready() {}, // on layoutready
@@ -1152,6 +415,15 @@ var Layout = function () {
       var coseResult = [];
       var components = void 0;
 
+      var constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;
+
+      // if any constraint exists, set some options
+      if (constraintExist) {
+        // constraints work with these options
+        options.tile = false;
+        options.packComponents = false;
+      }
+
       // decide component packing is enabled or not
       var layUtil = void 0;
       var packingEnabled = false;
@@ -1161,145 +433,196 @@ var Layout = function () {
         packingEnabled = true;
       }
 
-      // if packing is not enabled, perform layout on the whole graph
-      if (!packingEnabled) {
-        if (options.randomize) {
-          // Apply spectral layout
-          spectralResult.push(spectralLayout(options));
-          xCoords = spectralResult[0]["xCoords"];
-          yCoords = spectralResult[0]["yCoords"];
-        }
-
-        // Apply cose layout as postprocessing
-        if (options.quality == "default" || options.quality == "proof") {
-          coseResult.push(coseLayout(options, spectralResult[0]));
-        }
-      } else {
-        // packing is enabled
-        var topMostNodes = aux.getTopMostNodes(options.eles.nodes());
-        components = aux.connectComponents(cy, options.eles, topMostNodes);
-
-        //send each component to spectral layout
-        if (options.randomize) {
-          components.forEach(function (component) {
-            options.eles = component;
-            spectralResult.push(spectralLayout(options));
-          });
-        }
-
-        if (options.quality == "default" || options.quality == "proof") {
-          var toBeTiledNodes = cy.collection();
-          if (options.tile) {
-            // behave nodes to be tiled as one component
-            var nodeIndexes = new Map();
-            var _xCoords = [];
-            var _yCoords = [];
-            var count = 0;
-            var tempSpectralResult = { nodeIndexes: nodeIndexes, xCoords: _xCoords, yCoords: _yCoords };
-            var indexesToBeDeleted = [];
-            components.forEach(function (component, index) {
-              if (component.edges().length == 0) {
-                component.nodes().forEach(function (node, i) {
-                  toBeTiledNodes.merge(component.nodes()[i]);
-                  if (!node.isParent()) {
-                    tempSpectralResult.nodeIndexes.set(component.nodes()[i].id(), count++);
-                    tempSpectralResult.xCoords.push(component.nodes()[0].position().x);
-                    tempSpectralResult.yCoords.push(component.nodes()[0].position().y);
-                  }
-                });
-                indexesToBeDeleted.push(index);
-              }
-            });
-            if (toBeTiledNodes.length > 1) {
-              components.push(toBeTiledNodes);
-              spectralResult.push(tempSpectralResult);
-              for (var i = indexesToBeDeleted.length - 1; i >= 0; i--) {
-                components.splice(indexesToBeDeleted[i], 1);
-                spectralResult.splice(indexesToBeDeleted[i], 1);
-              };
-            }
+      if (eles.nodes().length > 0) {
+        // if packing is not enabled, perform layout on the whole graph
+        if (!packingEnabled) {
+          if (options.randomize) {
+            var result = spectralLayout(options); // apply spectral layout        
+            spectralResult.push(result);
           }
-          components.forEach(function (component, index) {
-            // send each component to cose layout
-            options.eles = component;
-            coseResult.push(coseLayout(options, spectralResult[index]));
-          });
-        }
-
-        // packing
-        var subgraphs = [];
-        components.forEach(function (component, index) {
-          var nodeIndexes = void 0;
-          if (options.quality == "draft") {
-            nodeIndexes = spectralResult[index].nodeIndexes;
+          // apply cose layout as postprocessing
+          if (options.quality == "default" || options.quality == "proof") {
+            coseResult.push(coseLayout(options, spectralResult[0]));
           }
-          var subgraph = {};
-          subgraph.nodes = [];
-          subgraph.edges = [];
-          var nodeIndex = void 0;
-          component.nodes().forEach(function (node) {
-            if (options.quality == "draft") {
-              if (!node.isParent()) {
-                nodeIndex = nodeIndexes.get(node.id());
-                subgraph.nodes.push({ x: spectralResult[index].xCoords[nodeIndex] - node.boundingbox().w / 2, y: spectralResult[index].yCoords[nodeIndex] - node.boundingbox().h / 2, width: node.boundingbox().w, height: node.boundingbox().h });
-              } else {
-                var parentInfo = aux.calcBoundingBox(node, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
-                subgraph.nodes.push({ x: parentInfo.topLeftX, y: parentInfo.topLeftY, width: parentInfo.width, height: parentInfo.height });
-              }
-            } else {
-              subgraph.nodes.push({ x: coseResult[index][node.id()].getLeft(), y: coseResult[index][node.id()].getTop(), width: coseResult[index][node.id()].getWidth(), height: coseResult[index][node.id()].getHeight() });
-            }
-          });
-          component.edges().forEach(function (edge) {
-            var source = edge.source();
-            var target = edge.target();
-            if (options.quality == "draft") {
-              var sourceNodeIndex = nodeIndexes.get(source.id());
-              var targetNodeIndex = nodeIndexes.get(target.id());
-              var sourceCenter = [];
-              var targetCenter = [];
-              if (source.isParent()) {
-                var parentInfo = aux.calcBoundingBox(source, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
-                sourceCenter.push(parentInfo.topLeftX + parentInfo.width / 2);
-                sourceCenter.push(parentInfo.topLeftY + parentInfo.height / 2);
-              } else {
-                sourceCenter.push(spectralResult[index].xCoords[sourceNodeIndex]);
-                sourceCenter.push(spectralResult[index].yCoords[sourceNodeIndex]);
-              }
-              if (target.isParent()) {
-                var _parentInfo = aux.calcBoundingBox(target, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
-                targetCenter.push(_parentInfo.topLeftX + _parentInfo.width / 2);
-                targetCenter.push(_parentInfo.topLeftY + _parentInfo.height / 2);
-              } else {
-                targetCenter.push(spectralResult[index].xCoords[targetNodeIndex]);
-                targetCenter.push(spectralResult[index].yCoords[targetNodeIndex]);
-              }
-              subgraph.edges.push({ startX: sourceCenter[0], startY: sourceCenter[1], endX: targetCenter[0], endY: targetCenter[1] });
-            } else {
-              subgraph.edges.push({ startX: coseResult[index][source.id()].getCenterX(), startY: coseResult[index][source.id()].getCenterY(), endX: coseResult[index][target.id()].getCenterX(), endY: coseResult[index][target.id()].getCenterY() });
-            }
-          });
-          subgraphs.push(subgraph);
-        });
-        var shiftResult = layUtil.packComponents(subgraphs).shifts;
-        if (options.quality == "draft") {
-          spectralResult.forEach(function (result, index) {
-            var newXCoords = result.xCoords.map(function (x) {
-              return x + shiftResult[index].dx;
-            });
-            var newYCoords = result.yCoords.map(function (y) {
-              return y + shiftResult[index].dy;
-            });
-            result.xCoords = newXCoords;
-            result.yCoords = newYCoords;
-          });
         } else {
-          coseResult.forEach(function (result, index) {
-            Object.keys(result).forEach(function (item) {
-              var nodeRectangle = result[item];
-              nodeRectangle.setCenter(nodeRectangle.getCenterX() + shiftResult[index].dx, nodeRectangle.getCenterY() + shiftResult[index].dy);
+          // packing is enabled
+          var topMostNodes = aux.getTopMostNodes(options.eles.nodes());
+          components = aux.connectComponents(cy, options.eles, topMostNodes);
+
+          //send each component to spectral layout
+          if (options.randomize) {
+            components.forEach(function (component) {
+              options.eles = component;
+              spectralResult.push(spectralLayout(options));
             });
-          });
+          }
+
+          if (options.quality == "default" || options.quality == "proof") {
+            var toBeTiledNodes = cy.collection();
+            if (options.tile) {
+              // behave nodes to be tiled as one component
+              var nodeIndexes = new Map();
+              var _xCoords = [];
+              var _yCoords = [];
+              var count = 0;
+              var tempSpectralResult = { nodeIndexes: nodeIndexes, xCoords: _xCoords, yCoords: _yCoords };
+              var indexesToBeDeleted = [];
+              components.forEach(function (component, index) {
+                if (component.edges().length == 0) {
+                  component.nodes().forEach(function (node, i) {
+                    toBeTiledNodes.merge(component.nodes()[i]);
+                    if (!node.isParent()) {
+                      tempSpectralResult.nodeIndexes.set(component.nodes()[i].id(), count++);
+                      tempSpectralResult.xCoords.push(component.nodes()[0].position().x);
+                      tempSpectralResult.yCoords.push(component.nodes()[0].position().y);
+                    }
+                  });
+                  indexesToBeDeleted.push(index);
+                }
+              });
+              if (toBeTiledNodes.length > 1) {
+                components.push(toBeTiledNodes);
+                spectralResult.push(tempSpectralResult);
+                for (var i = indexesToBeDeleted.length - 1; i >= 0; i--) {
+                  components.splice(indexesToBeDeleted[i], 1);
+                  spectralResult.splice(indexesToBeDeleted[i], 1);
+                };
+              }
+            }
+            components.forEach(function (component, index) {
+              // send each component to cose layout
+              options.eles = component;
+              coseResult.push(coseLayout(options, spectralResult[index]));
+            });
+          }
+
+          // packing
+          if (components.length > 1) {
+            var subgraphs = [];
+            components.forEach(function (component, index) {
+              var nodeIndexes = void 0;
+              if (options.quality == "draft") {
+                nodeIndexes = spectralResult[index].nodeIndexes;
+              }
+              var subgraph = {};
+              subgraph.nodes = [];
+              subgraph.edges = [];
+              var nodeIndex = void 0;
+              component.nodes().forEach(function (node) {
+                if (options.quality == "draft") {
+                  if (!node.isParent()) {
+                    nodeIndex = nodeIndexes.get(node.id());
+                    subgraph.nodes.push({ x: spectralResult[index].xCoords[nodeIndex] - node.boundingbox().w / 2, y: spectralResult[index].yCoords[nodeIndex] - node.boundingbox().h / 2, width: node.boundingbox().w, height: node.boundingbox().h });
+                  } else {
+                    var parentInfo = aux.calcBoundingBox(node, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                    subgraph.nodes.push({ x: parentInfo.topLeftX, y: parentInfo.topLeftY, width: parentInfo.width, height: parentInfo.height });
+                  }
+                } else {
+                  subgraph.nodes.push({ x: coseResult[index][node.id()].getLeft(), y: coseResult[index][node.id()].getTop(), width: coseResult[index][node.id()].getWidth(), height: coseResult[index][node.id()].getHeight() });
+                }
+              });
+              component.edges().forEach(function (edge) {
+                var source = edge.source();
+                var target = edge.target();
+                if (options.quality == "draft") {
+                  var sourceNodeIndex = nodeIndexes.get(source.id());
+                  var targetNodeIndex = nodeIndexes.get(target.id());
+                  var sourceCenter = [];
+                  var targetCenter = [];
+                  if (source.isParent()) {
+                    var parentInfo = aux.calcBoundingBox(source, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                    sourceCenter.push(parentInfo.topLeftX + parentInfo.width / 2);
+                    sourceCenter.push(parentInfo.topLeftY + parentInfo.height / 2);
+                  } else {
+                    sourceCenter.push(spectralResult[index].xCoords[sourceNodeIndex]);
+                    sourceCenter.push(spectralResult[index].yCoords[sourceNodeIndex]);
+                  }
+                  if (target.isParent()) {
+                    var _parentInfo = aux.calcBoundingBox(target, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                    targetCenter.push(_parentInfo.topLeftX + _parentInfo.width / 2);
+                    targetCenter.push(_parentInfo.topLeftY + _parentInfo.height / 2);
+                  } else {
+                    targetCenter.push(spectralResult[index].xCoords[targetNodeIndex]);
+                    targetCenter.push(spectralResult[index].yCoords[targetNodeIndex]);
+                  }
+                  subgraph.edges.push({ startX: sourceCenter[0], startY: sourceCenter[1], endX: targetCenter[0], endY: targetCenter[1] });
+                } else {
+                  subgraph.edges.push({ startX: coseResult[index][source.id()].getCenterX(), startY: coseResult[index][source.id()].getCenterY(), endX: coseResult[index][target.id()].getCenterX(), endY: coseResult[index][target.id()].getCenterY() });
+                }
+              });
+              subgraphs.push(subgraph);
+            });
+            var shiftResult = layUtil.packComponents(subgraphs).shifts;
+            if (options.quality == "draft") {
+              spectralResult.forEach(function (result, index) {
+                var newXCoords = result.xCoords.map(function (x) {
+                  return x + shiftResult[index].dx;
+                });
+                var newYCoords = result.yCoords.map(function (y) {
+                  return y + shiftResult[index].dy;
+                });
+                result.xCoords = newXCoords;
+                result.yCoords = newYCoords;
+              });
+            } else {
+              coseResult.forEach(function (result, index) {
+                Object.keys(result).forEach(function (item) {
+                  var nodeRectangle = result[item];
+                  nodeRectangle.setCenter(nodeRectangle.getCenterX() + shiftResult[index].dx, nodeRectangle.getCenterY() + shiftResult[index].dy);
+                });
+              });
+            }
+          }
+        }
+
+        // move graph to its original position because spectral moves it to origin
+        if (!options.fixedNodeConstraint) {
+          var minXCoord = Number.POSITIVE_INFINITY;
+          var maxXCoord = Number.NEGATIVE_INFINITY;
+          var minYCoord = Number.POSITIVE_INFINITY;
+          var maxYCoord = Number.NEGATIVE_INFINITY;
+          if (options.quality == "draft") {
+            spectralResult.forEach(function (result) {
+              result.xCoords.forEach(function (value) {
+                if (value < minXCoord) minXCoord = value;
+                if (value > maxXCoord) maxXCoord = value;
+              });
+              result.yCoords.forEach(function (value) {
+                if (value < minYCoord) minYCoord = value;
+                if (value > maxYCoord) maxYCoord = value;
+              });
+            });
+            var boundingBox = options.eles.boundingBox();
+            var diffOnX = boundingBox.x1 + boundingBox.w / 2 - (maxXCoord + minXCoord) / 2;
+            var diffOnY = boundingBox.y1 + boundingBox.h / 2 - (maxYCoord + minYCoord) / 2;
+            spectralResult.forEach(function (result) {
+              result.xCoords = result.xCoords.map(function (x) {
+                return x + diffOnX;
+              });
+              result.yCoords = result.yCoords.map(function (y) {
+                return y + diffOnY;
+              });
+            });
+          } else {
+            coseResult.forEach(function (result) {
+              Object.keys(result).forEach(function (item) {
+                var node = result[item];
+                if (node.getCenterX() < minXCoord) minXCoord = node.getCenterX();
+                if (node.getCenterX() > maxXCoord) maxXCoord = node.getCenterX();
+                if (node.getCenterY() < minYCoord) minYCoord = node.getCenterY();
+                if (node.getCenterY() > maxYCoord) maxYCoord = node.getCenterY();
+              });
+            });
+            var _boundingBox = options.eles.boundingBox();
+            var _diffOnX = _boundingBox.x1 + _boundingBox.w / 2 - (maxXCoord + minXCoord) / 2;
+            var _diffOnY = _boundingBox.y1 + _boundingBox.h / 2 - (maxYCoord + minYCoord) / 2;
+            coseResult.forEach(function (result, index) {
+              Object.keys(result).forEach(function (item) {
+                var node = result[item];
+                node.setCenter(node.getCenterX() + _diffOnX, node.getCenterY() + _diffOnY);
+              });
+            });
+          }
         }
       }
 
@@ -1413,6 +736,18 @@ var coseLayout = function coseLayout(options, spectralResult) {
     yCoords = spectralResult["yCoords"];
   }
 
+  var isFn = function isFn(fn) {
+    return typeof fn === 'function';
+  };
+
+  var optFn = function optFn(opt, ele) {
+    if (isFn(opt)) {
+      return opt(ele);
+    } else {
+      return opt;
+    }
+  };
+
   /**** Postprocessing functions ****/
 
   // transfer cytoscape nodes to cose nodes
@@ -1441,8 +776,9 @@ var coseLayout = function coseLayout(options, spectralResult) {
       } else {
         theNode = parent.add(new CoSENode(this.graphManager));
       }
-      // Attach id to the layout node
+      // Attach id to the layout node and repulsion value
       theNode.id = theChild.data("id");
+      theNode.nodeRepulsion = optFn(options.nodeRepulsion, theChild);
       // Attach the paddings of cy node to layout node
       theNode.paddingLeft = parseInt(theChild.css('padding'));
       theNode.paddingTop = parseInt(theChild.css('padding'));
@@ -1452,12 +788,10 @@ var coseLayout = function coseLayout(options, spectralResult) {
       //Attach the label properties to compound if labels will be included in node dimensions  
       if (options.nodeDimensionsIncludeLabels) {
         if (theChild.isParent()) {
-          var labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false }).w;
-          var labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false }).h;
-          var labelPos = theChild.css("text-halign");
-          theNode.labelWidth = labelWidth;
-          theNode.labelHeight = labelHeight;
-          theNode.labelPos = labelPos;
+          theNode.labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false, includeOverlays: false }).w;
+          theNode.labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false, includeOverlays: false }).h;
+          theNode.labelPosVertical = theChild.css("text-valign");
+          theNode.labelPosHorizontal = theChild.css("text-halign");
         }
       }
 
@@ -1482,6 +816,8 @@ var coseLayout = function coseLayout(options, spectralResult) {
 
   // transfer cytoscape edges to cose edges
   var processEdges = function processEdges(layout, gm, edges) {
+    var idealLengthTotal = 0;
+    var edgeCount = 0;
     for (var i = 0; i < edges.length; i++) {
       var edge = edges[i];
       var sourceNode = idToLNode[edge.data("source")];
@@ -1489,15 +825,41 @@ var coseLayout = function coseLayout(options, spectralResult) {
       if (sourceNode !== targetNode && sourceNode.getEdgesBetween(targetNode).length == 0) {
         var e1 = gm.add(layout.newEdge(), sourceNode, targetNode);
         e1.id = edge.id();
+        e1.idealLength = optFn(options.idealEdgeLength, edge);
+        e1.edgeElasticity = optFn(options.edgeElasticity, edge);
+        idealLengthTotal += e1.idealLength;
+        edgeCount++;
       }
+    }
+    // we need to update the ideal edge length constant with the avg. ideal length value after processing edges
+    // in case there is no edge, use other options
+    if (options.idealEdgeLength != null) {
+      if (edges.length > 0) CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = idealLengthTotal / edgeCount;else if (!isFn(options.idealEdgeLength)) // in case there is no edge, but option gives a value to use
+        CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = options.idealEdgeLength;else // in case there is no edge and we cannot get a value from option (because it's a function)
+        CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = 50;
+      // we need to update these constant values based on the ideal edge length constant
+      CoSEConstants.MIN_REPULSION_DIST = FDLayoutConstants.MIN_REPULSION_DIST = FDLayoutConstants.DEFAULT_EDGE_LENGTH / 10.0;
+      CoSEConstants.DEFAULT_RADIAL_SEPARATION = FDLayoutConstants.DEFAULT_EDGE_LENGTH;
+    }
+  };
+
+  // transfer cytoscape constraints to cose layout
+  var processConstraints = function processConstraints(layout, options) {
+    // get nodes to be fixed
+    if (options.fixedNodeConstraint) {
+      layout.constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
+    }
+    // get nodes to be aligned
+    if (options.alignmentConstraint) {
+      layout.constraints["alignmentConstraint"] = options.alignmentConstraint;
+    }
+    // get nodes to be relatively placed
+    if (options.relativePlacementConstraint) {
+      layout.constraints["relativePlacementConstraint"] = options.relativePlacementConstraint;
     }
   };
 
   /**** Apply postprocessing ****/
-
-  if (options.nodeRepulsion != null) CoSEConstants.DEFAULT_REPULSION_STRENGTH = FDLayoutConstants.DEFAULT_REPULSION_STRENGTH = options.nodeRepulsion;
-  if (options.idealEdgeLength != null) CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = options.idealEdgeLength;
-  if (options.edgeElasticity != null) CoSEConstants.DEFAULT_SPRING_STRENGTH = FDLayoutConstants.DEFAULT_SPRING_STRENGTH = options.edgeElasticity;
   if (options.nestingFactor != null) CoSEConstants.PER_LEVEL_IDEAL_EDGE_LENGTH_FACTOR = FDLayoutConstants.PER_LEVEL_IDEAL_EDGE_LENGTH_FACTOR = options.nestingFactor;
   if (options.gravity != null) CoSEConstants.DEFAULT_GRAVITY_STRENGTH = FDLayoutConstants.DEFAULT_GRAVITY_STRENGTH = options.gravity;
   if (options.numIter != null) CoSEConstants.MAX_ITERATIONS = FDLayoutConstants.MAX_ITERATIONS = options.numIter;
@@ -1517,14 +879,41 @@ var coseLayout = function coseLayout(options, spectralResult) {
 
   CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
   LayoutConstants.DEFAULT_UNIFORM_LEAF_NODE_SIZES = options.uniformNodeDimensions;
-  CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = options.randomize ? true : false;
+
+  // This part is for debug/demo purpose
+  if (options.step == "transformed") {
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;
+    CoSEConstants.ENFORCE_CONSTRAINTS = false;
+    CoSEConstants.APPLY_LAYOUT = false;
+  }
+  if (options.step == "enforced") {
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
+    CoSEConstants.ENFORCE_CONSTRAINTS = true;
+    CoSEConstants.APPLY_LAYOUT = false;
+  }
+  if (options.step == "cose") {
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
+    CoSEConstants.ENFORCE_CONSTRAINTS = false;
+    CoSEConstants.APPLY_LAYOUT = true;
+  }
+  if (options.step == "all") {
+    if (options.randomize) CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;else CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
+    CoSEConstants.ENFORCE_CONSTRAINTS = true;
+    CoSEConstants.APPLY_LAYOUT = true;
+  }
+
+  if (options.randomize && !(options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint)) {
+    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = true;
+  } else {
+    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = false;
+  }
 
   var coseLayout = new CoSELayout();
   var gm = coseLayout.newGraphManager();
 
   processChildrenList(gm.addRoot(), aux.getTopMostNodes(nodes), coseLayout, options);
-
   processEdges(coseLayout, gm, edges);
+  processConstraints(coseLayout, options);
 
   coseLayout.runLayout();
 
@@ -1545,6 +934,8 @@ module.exports = { coseLayout: coseLayout };
 */
 
 var aux = __webpack_require__(1);
+var Matrix = __webpack_require__(0).layoutBase.Matrix;
+var SVD = __webpack_require__(0).layoutBase.SVD;
 
 // main function that spectral layout is processed
 var spectralLayout = function spectralLayout(options) {
@@ -1703,7 +1094,7 @@ var spectralLayout = function spectralLayout(options) {
   // perform the SVD algorithm and apply a regularization step
   var sample = function sample() {
 
-    var SVDResult = aux.svd(PHI);
+    var SVDResult = SVD.svd(PHI);
 
     var a_q = SVDResult.S;
     var a_u = SVDResult.U;
@@ -1724,7 +1115,7 @@ var spectralLayout = function spectralLayout(options) {
       }
     }
 
-    INV = aux.multMat(aux.multMat(a_v, a_Sig), aux.transpose(a_u));
+    INV = Matrix.multMat(Matrix.multMat(a_v, a_Sig), Matrix.transpose(a_u));
   };
 
   // calculate final coordinates 
@@ -1745,8 +1136,8 @@ var spectralLayout = function spectralLayout(options) {
       Y2[i] = Math.random();
     }
 
-    Y1 = aux.normalize(Y1);
-    Y2 = aux.normalize(Y2);
+    Y1 = Matrix.normalize(Y1);
+    Y2 = Matrix.normalize(Y2);
 
     var count = 0;
     // to keep track of the improvement ratio in power iteration
@@ -1762,11 +1153,11 @@ var spectralLayout = function spectralLayout(options) {
         V1[_i9] = Y1[_i9];
       }
 
-      Y1 = aux.multGamma(aux.multL(aux.multGamma(V1), C, INV));
-      theta1 = aux.dotProduct(V1, Y1);
-      Y1 = aux.normalize(Y1);
+      Y1 = Matrix.multGamma(Matrix.multL(Matrix.multGamma(V1), C, INV));
+      theta1 = Matrix.dotProduct(V1, Y1);
+      Y1 = Matrix.normalize(Y1);
 
-      current = aux.dotProduct(V1, Y1);
+      current = Matrix.dotProduct(V1, Y1);
 
       temp = Math.abs(current / previous);
 
@@ -1790,12 +1181,12 @@ var spectralLayout = function spectralLayout(options) {
         V2[_i11] = Y2[_i11];
       }
 
-      V2 = aux.minusOp(V2, aux.multCons(V1, aux.dotProduct(V1, V2)));
-      Y2 = aux.multGamma(aux.multL(aux.multGamma(V2), C, INV));
-      theta2 = aux.dotProduct(V2, Y2);
-      Y2 = aux.normalize(Y2);
+      V2 = Matrix.minusOp(V2, Matrix.multCons(V1, Matrix.dotProduct(V1, V2)));
+      Y2 = Matrix.multGamma(Matrix.multL(Matrix.multGamma(V2), C, INV));
+      theta2 = Matrix.dotProduct(V2, Y2);
+      Y2 = Matrix.normalize(Y2);
 
-      current = aux.dotProduct(V2, Y2);
+      current = Matrix.dotProduct(V2, Y2);
 
       temp = Math.abs(current / previous);
 
@@ -1816,8 +1207,8 @@ var spectralLayout = function spectralLayout(options) {
     // V2 now contains theta2's eigenvector
 
     //populate the two vectors
-    xCoords = aux.multCons(V1, Math.sqrt(Math.abs(theta1)));
-    yCoords = aux.multCons(V2, Math.sqrt(Math.abs(theta2)));
+    xCoords = Matrix.multCons(V1, Math.sqrt(Math.abs(theta1)));
+    yCoords = Matrix.multCons(V2, Math.sqrt(Math.abs(theta2)));
   };
 
   /**** Preparation for spectral layout (Preprocessing) ****/
@@ -1897,7 +1288,7 @@ var spectralLayout = function spectralLayout(options) {
     if (ele.isParent()) eleIndex = nodeIndexes.get(parentChildMap.get(ele.id()));else eleIndex = nodeIndexes.get(ele.id());
 
     ele.neighborhood().nodes().forEach(function (node) {
-      if (eles.intersection(ele.edgesWith(node))) {
+      if (eles.intersection(ele.edgesWith(node)).length > 0) {
         if (node.isParent()) allNodesNeighborhood[eleIndex].push(parentChildMap.get(node.id()));else allNodesNeighborhood[eleIndex].push(node.id());
       }
     });
@@ -1962,11 +1353,19 @@ var spectralLayout = function spectralLayout(options) {
 
     /**** Apply spectral layout ****/
 
-    allBFS(samplingType);
-    sample();
-    powerIteration();
+    if (options.quality == "draft" || options.step == "all") {
+      allBFS(samplingType);
+      sample();
+      powerIteration();
 
-    spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
+      spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
+    } else {
+      nodeIndexes.forEach(function (value, key) {
+        xCoords.push(cy.getElementById(key).position("x"));
+        yCoords.push(cy.getElementById(key).position("y"));
+      });
+      spectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
+    }
     return spectralResult;
   } else {
     var iterator = nodeIndexes.keys();

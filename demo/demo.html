@@ -6,6 +6,12 @@
     <title>cytoscape-fcose.js demo</title>
 
       <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+      
+      <!-- Bootstrap, popper, jQuery and filesaver - for demo purpose only -->
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
+      <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>      
+      <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">      
 
       <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
       <script src="https://unpkg.com/layout-base/layout-base.js"></script>
@@ -15,7 +21,7 @@
       <!-- for testing with local version of cytoscape.js -->
       <!--<script src="../cytoscape.js/build/cytoscape.js"></script>-->
 
-      <script src="cytoscape-fcose.js"></script>
+      <script src="../cytoscape-fcose.js"></script>
 
       <style>
         body {
@@ -28,7 +34,7 @@
           width: auto;
           height: 90%;
           z-index: 999;
-          margin-left: 300px;
+          margin-left: 290px;
           right: 0px;
         }
 
@@ -37,13 +43,13 @@
           color: #555;
           font-size: 15px;
           font-weight: bold;
-        }
-        
+          padding-top: 5px;
+        }        
         
         /* The sidepanel menu */
         .sidepanel {
           height: auto; /* Specify a height */
-          width: 310px; /* 0 width - change this with JavaScript */
+          width: 290px; /* 0 width - change this with JavaScript */
           position: absolute; /* Stay in place */
           z-index: 1000; /* Stay on top */
           float: left;
@@ -57,19 +63,21 @@
         }
 
         table{
-          margin-left:auto;
-          margin-right:auto;
+          margin-left: 4px;
+          margin-right: auto;
+          table-layout: fixed;
         }       
         
         /* The sidepanel links */
         table td {
           padding: 0px 8px 8px 8px;
           text-decoration: none;
-          font-size: 15px;
+          font-size: 13px;
           color: #555;
           transition: 0.3s;
+          vertical-align: middle;
         }
-
+        
         /* Style the button that is used to open the sidepanel */
         .button {
           font-size: 15px;
@@ -91,7 +99,43 @@
 
         .button:hover {
           background-color: #0f0;
+        }
+        
+        .btn-group-sm>.btn, .btn-sm { 
+          font-size: 13px;
+          background-color: #7d8991;
+          border-color: #7d8991;
+        }
+        
+        .btn-primary:hover, .btn-primary:focus, .btn-primary:active, .btn-primary.active, .open>.dropdown-toggle.btn-primary {
+            color: #fff;
+            background-color: #60717d;
+            border-color: #60717d; /*set the color you want here*/
+        }  
+        
+        .btn-outline-primary:hover, .btn-outline-primary:focus, .btn-outline-primary:active, .btn-outline-primary.active, .open>.dropdown-toggle.btn-primary {
+            color: #fff;
+            background-color: #60717d;
+            border-color: #60717d; /*set the color you want here*/
         }        
+        
+        .form-control-sm { 
+          font-size: 13px
+        }
+
+        .custom-select-sm {
+          font-size: 13px
+        }
+
+        .custom-control-label {
+          padding-top: 2px;
+        }
+        
+        .custom-control-input:checked~.custom-control-label::before {
+            color: #fff;
+            border-color: #7d8991;
+            background-color: #7d8991;
+        }         
       </style>
 
       <script>
@@ -271,7 +315,8 @@
               numIter: parseFloat(document.getElementById("numIter").value),
               tilingPaddingVertical: parseFloat(document.getElementById("tilingPaddingVertical").value),
               tilingPaddingHorizontal: parseFloat(document.getElementById("tilingPaddingHorizontal").value),
-              initialEnergyOnIncremental: document.getElementById("initialEnergyOnIncremental").value
+              initialEnergyOnIncremental: document.getElementById("initialEnergyOnIncremental").value,
+              step:"all"
             });
             
             layout.run();        
@@ -282,17 +327,17 @@
   </head>
 
   <body>
-          <h1>cytoscape-fcose demo</h1>
+          <h1 class="ml-2">cytoscape-fcose demo</h1>
           <div style='width: 300px; position: absolute;'>
-            <button id="randomizeButton" class="button">Randomize</button>&nbsp &nbsp
-            <button id="fcoseButton" class="button">fCoSE</button>
+            <button id="randomizeButton" class="btn btn-primary btn-sm mb-2 ml-2">Randomize</button>&nbsp
+            <button id="fcoseButton" class="btn btn-primary btn-sm mb-2">fCoSE</button>&nbsp
           
             <div id="mySidepanel" class="sidepanel">
               <table>
                 <tr>
                   <td><span class="add-on layout-text" title="Quality of the layout"> Quality </span></td>
                   <td>            
-                    <select id="quality">
+                    <select id="quality" class='custom-select custom-select-sm'>
                       <option value="draft">draft</option>
                       <option value="default" selected="">default</option>
                       <option value="proof">proof</option>
@@ -301,71 +346,96 @@
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Whether to enable incremental mode"> Incremental </span></td>
-                  <td><input id="randomize" class = "checkbox" type="checkbox"></td>
+                  <td>        
+                    <div class="custom-control custom-control-inline custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="randomize" name="incremental">
+                      <label class="custom-control-label" for="randomize"></label>
+                    </div>
+                  </td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Whether to perform animation after layout"> Animate </span></td>
-                  <td><input id="animate" class = "checkbox" type="checkbox" checked></td>
+                  <td>
+                    <div class="custom-control custom-control-inline custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="animate" name="animate" checked>
+                      <label class="custom-control-label" for="animate"></label>
+                    </div>                  
+                  </td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Whether nodes are of uniform dimensions"> Uniform Node Dimensions </span></td>
-                  <td><input id="uniformNodeDimensions" class = "checkbox" type="checkbox"></td>
+                  <td>
+                    <div class="custom-control custom-control-inline custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="uniformNodeDimensions" name="uniformNodeDimensions">
+                      <label class="custom-control-label" for="uniformNodeDimensions"></label>
+                    </div> 
+                  </td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Whether to pack components"> Pack Components to Window</span></td>
-                  <td><input id="packComponents" class = "checkbox" type="checkbox" checked></td>
+                  <td>
+                    <div class="custom-control custom-control-inline custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="packComponents" name="packComponents" checked>
+                      <label class="custom-control-label" for="packComponents"></label>
+                    </div>                     
+                  </td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Whether to tile disconnected nodes"> Tile Disconnected </span></td>
-                  <td><input id="tile" class = "checkbox" type="checkbox" checked></td>
+                  <td>
+                    <div class="custom-control custom-control-inline custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="tile" name="tile" checked>
+                      <label class="custom-control-label" for="tile"></label>
+                    </div>                     
+                  </td>
                 </tr>              
                 <tr>
                   <td><span class="add-on layout-text" title="Node repulsion (non overlapping) multiplier"> Node Repulsion </span></td>
-                  <td><input id="nodeRepulsion" class="textField" type="text" value="4500" maxlength=5 size="5"></td>
+                  <td><input id="nodeRepulsion" class="textField form-control form-control-sm" type="text" value="4500" maxlength=5 size="5"></td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Ideal (intra-graph) edge length"> Ideal Edge Length </span></td>
-                  <td><input id="idealEdgeLength" class="textField" type="text" value="50" maxlength=5 size="5"></td>
+                  <td><input id="idealEdgeLength" class="textField form-control form-control-sm" type="text" value="50" maxlength=5 size="5"></td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Divisor to compute edge forces"> Edge Elasticity </span></td>
-                  <td><input id="edgeElasticity" class="textField" type="text" value="0.45" maxlength=5 size="5"></td>
+                  <td><input id="edgeElasticity" class="textField form-control form-control-sm" type="text" value="0.45" maxlength=5 size="5"></td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Nesting factor (multiplier) to compute ideal edge length for inter-graph edges"> Nesting Factor </span></td>
-                  <td><input id="nestingFactor" class="textField" type="text" value="0.1" maxlength=5 size="5"></td>
+                  <td><input id="nestingFactor" class="textField form-control form-control-sm" type="text" value="0.1" maxlength=5 size="5"></td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Gravity force (constant)"> Gravity </span></td>
-                  <td><input id="gravity" class="textField" type="text" value="0.25" maxlength=5 size="5"></td>
+                  <td><input id="gravity" class="textField form-control form-control-sm" type="text" value="0.25" maxlength=5 size="5"></td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Gravity range (constant)"> Gravity Range </span></td>
-                  <td><input id="gravityRange" class="textField" type="text" value="3.8" maxlength=5 size="5"></td>
+                  <td><input id="gravityRange" class="textField form-control form-control-sm" type="text" value="3.8" maxlength=5 size="5"></td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Gravity force (constant) for compounds"> Compound Gravity </span></td>
-                  <td><input id="gravityCompound" class="textField" type="text" value="1" maxlength=5 size="5"></td>
+                  <td><input id="gravityCompound" class="textField form-control form-control-sm" type="text" value="1" maxlength=5 size="5"></td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Gravity range (constant) for compounds"> Compound Gravity Range </span></td>
-                  <td><input id="gravityRangeCompound" class="textField" type="text" value="1.5" maxlength=5 size="5"></td>
+                  <td><input id="gravityRangeCompound" class="textField form-control form-control-sm" type="text" value="1.5" maxlength=5 size="5"></td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Maximum number of iterations to perform"> Number of Iterations </span></td>
-                  <td><input id="numIter" class="textField" type="text" value="2500" size="5"></td>
+                  <td><input id="numIter" class="textField form-control form-control-sm" type="text" value="2500" size="5"></td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Amount of vertical space to put between degree zero nodes during tiling"> Tiling Vertical Padding </span></td>
-                  <td><input id="tilingPaddingVertical" class="textField" type="text" value="10" maxlength=5 size="5"></td>
+                  <td><input id="tilingPaddingVertical" class="textField form-control form-control-sm" type="text" value="10" maxlength=5 size="5"></td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Amount of horizontal space to put between degree zero nodes during tiling"> Tiling Horizontal Padding </span></td>
-                  <td><input id="tilingPaddingHorizontal" class="textField" type="text" value="10" maxlength=5 size="5"></td>
+                  <td><input id="tilingPaddingHorizontal" class="textField form-control form-control-sm" type="text" value="10" maxlength=5 size="5"></td>
                 </tr>
                 <tr>
                   <td><span class="add-on layout-text" title="Initial cooling factor for incremental layout"> Incremental Cooling Factor </span></td>
-                  <td><input id="initialEnergyOnIncremental" class="textField" type="text" value="0.3" maxlength=5 size="5"></td>
+                  <td><input id="initialEnergyOnIncremental" class="textField form-control form-control-sm" type="text" value="0.3" maxlength=5 size="5"></td>
                 </tr>               
               </table>
 

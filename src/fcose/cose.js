@@ -29,6 +29,16 @@ let coseLayout = function(options, spectralResult){
     yCoords = spectralResult["yCoords"];
   }
 
+  const isFn = fn => typeof fn === 'function';
+  
+  const optFn = ( opt, ele ) => {
+    if( isFn( opt ) ){
+      return opt( ele );
+    } else {
+      return opt;
+    }
+  };  
+
   /**** Postprocessing functions ****/
 
   // transfer cytoscape nodes to cose nodes
@@ -67,8 +77,9 @@ let coseLayout = function(options, spectralResult){
       else {
         theNode = parent.add(new CoSENode(this.graphManager));
       }
-      // Attach id to the layout node
+      // Attach id to the layout node and repulsion value
       theNode.id = theChild.data("id");
+      theNode.nodeRepulsion = optFn( options.nodeRepulsion, theChild );
       // Attach the paddings of cy node to layout node
       theNode.paddingLeft = parseInt( theChild.css('padding') );
       theNode.paddingTop = parseInt( theChild.css('padding') );
@@ -78,12 +89,10 @@ let coseLayout = function(options, spectralResult){
       //Attach the label properties to compound if labels will be included in node dimensions  
       if(options.nodeDimensionsIncludeLabels){
         if(theChild.isParent()){
-          let labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false }).w;          
-          let labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false }).h;
-          let labelPos = theChild.css("text-halign");
-          theNode.labelWidth = labelWidth;
-          theNode.labelHeight = labelHeight;
-          theNode.labelPos = labelPos;          
+          theNode.labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false, includeOverlays: false }).w;
+          theNode.labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false, includeOverlays: false }).h;
+          theNode.labelPosVertical = theChild.css("text-valign");
+          theNode.labelPosHorizontal = theChild.css("text-halign");          
         }
       }
 
@@ -108,6 +117,8 @@ let coseLayout = function(options, spectralResult){
 
   // transfer cytoscape edges to cose edges
   let processEdges = function(layout, gm, edges){
+    let idealLengthTotal = 0;
+    let edgeCount = 0;
     for (let i = 0; i < edges.length; i++) {
       let edge = edges[i];
       let sourceNode = idToLNode[edge.data("source")];
@@ -115,18 +126,44 @@ let coseLayout = function(options, spectralResult){
       if(sourceNode !== targetNode && sourceNode.getEdgesBetween(targetNode).length == 0){
         let e1 = gm.add(layout.newEdge(), sourceNode, targetNode);
         e1.id = edge.id();
+        e1.idealLength = optFn( options.idealEdgeLength, edge );
+        e1.edgeElasticity = optFn( options.edgeElasticity, edge );        
+        idealLengthTotal += e1.idealLength;
+        edgeCount++;
       }
     }
-  };   
+    // we need to update the ideal edge length constant with the avg. ideal length value after processing edges
+    // in case there is no edge, use other options
+    if (options.idealEdgeLength != null){
+      if (edges.length > 0)
+        CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = idealLengthTotal / edgeCount;
+      else if(!isFn(options.idealEdgeLength)) // in case there is no edge, but option gives a value to use
+        CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = options.idealEdgeLength;
+      else  // in case there is no edge and we cannot get a value from option (because it's a function)
+        CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = 50;
+      // we need to update these constant values based on the ideal edge length constant
+      CoSEConstants.MIN_REPULSION_DIST = FDLayoutConstants.MIN_REPULSION_DIST = FDLayoutConstants.DEFAULT_EDGE_LENGTH / 10.0;
+      CoSEConstants.DEFAULT_RADIAL_SEPARATION = FDLayoutConstants.DEFAULT_EDGE_LENGTH;
+    }
+  }; 
+  
+  // transfer cytoscape constraints to cose layout
+  let processConstraints = function(layout, options){
+    // get nodes to be fixed
+    if(options.fixedNodeConstraint){
+      layout.constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
+    }
+    // get nodes to be aligned
+    if(options.alignmentConstraint){
+      layout.constraints["alignmentConstraint"] = options.alignmentConstraint;
+    }
+    // get nodes to be relatively placed
+    if(options.relativePlacementConstraint){
+      layout.constraints["relativePlacementConstraint"] = options.relativePlacementConstraint;
+    }  
+  };
   
   /**** Apply postprocessing ****/
-    
-  if (options.nodeRepulsion != null)
-    CoSEConstants.DEFAULT_REPULSION_STRENGTH = FDLayoutConstants.DEFAULT_REPULSION_STRENGTH = options.nodeRepulsion;
-  if (options.idealEdgeLength != null)
-    CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = options.idealEdgeLength;
-  if (options.edgeElasticity != null)
-    CoSEConstants.DEFAULT_SPRING_STRENGTH = FDLayoutConstants.DEFAULT_SPRING_STRENGTH = options.edgeElasticity;
   if (options.nestingFactor != null)
     CoSEConstants.PER_LEVEL_IDEAL_EDGE_LENGTH_FACTOR = FDLayoutConstants.PER_LEVEL_IDEAL_EDGE_LENGTH_FACTOR = options.nestingFactor;
   if (options.gravity != null)
@@ -159,14 +196,45 @@ let coseLayout = function(options, spectralResult){
 
   CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
   LayoutConstants.DEFAULT_UNIFORM_LEAF_NODE_SIZES = options.uniformNodeDimensions;
-  CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = options.randomize ? true : false;
+
+  // This part is for debug/demo purpose
+  if(options.step == "transformed"){
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;
+    CoSEConstants.ENFORCE_CONSTRAINTS = false;
+    CoSEConstants.APPLY_LAYOUT = false;
+  }
+  if(options.step == "enforced"){
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
+    CoSEConstants.ENFORCE_CONSTRAINTS = true;
+    CoSEConstants.APPLY_LAYOUT = false;
+  }
+  if(options.step == "cose"){
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
+    CoSEConstants.ENFORCE_CONSTRAINTS = false;
+    CoSEConstants.APPLY_LAYOUT = true;
+  }  
+  if(options.step == "all"){
+    if(options.randomize)
+      CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;
+    else
+      CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
+    CoSEConstants.ENFORCE_CONSTRAINTS = true;
+    CoSEConstants.APPLY_LAYOUT = true;
+  }
+  
+  if(options.randomize && !(options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint)){
+    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = true;
+  }
+  else{
+    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = false;
+  }
 
   let coseLayout = new CoSELayout();
   let gm = coseLayout.newGraphManager(); 
 
   processChildrenList(gm.addRoot(), aux.getTopMostNodes(nodes), coseLayout, options);
-
   processEdges(coseLayout, gm, edges);
+  processConstraints(coseLayout, options);
 
   coseLayout.runLayout();
   

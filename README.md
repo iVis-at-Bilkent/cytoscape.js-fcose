@@ -4,9 +4,24 @@ cytoscape-fcose
 
 ## Description
 
-fCoSE (fast Compound Spring Embedder) is a faster version of our earlier compound spring embedder algorithm named [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent), implemented as a Cytoscape.js extension by [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University ([demo](https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo.html), [compound demo](https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo-compound.html))
+fCoSE (fast Compound Spring Embedder) is a faster version of our earlier compound spring embedder algorithm named [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent), implemented as a Cytoscape.js extension by [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University.
 
-fCoSE layout algorithm combines the speed of spectral layout with the aesthetics of force-directed layout. fCoSE runs up to 10 times as fast as CoSE while achieving similar aesthetics. In addition, fCoSE supports varying (non-uniform) node dimensions similar to its predecessor CoSE.
+<p align="center"> <a href="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo.html" title="Simple Demo">DEMO (simple)</a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo-compound.html" title="Compound Demo">DEMO (compound)</a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo-constraint.html" title="Constraint Demo">DEMO (constraint)</a>
+</p>
+
+fCoSE layout algorithm combines the speed of spectral layout with the aesthetics of force-directed layout. fCoSE runs up to 2 times as fast as CoSE while achieving similar aesthetics.
+
+<p align="center"><img src="demo/demo.gif" width="440"></p>
+
+Furthermore, fCoSE also supports a fairly rich set of constraint types (i.e., fixed position, vertical/horizontal alignment and relative placement).
+
+<p align="center"><img src="demo/incrementalConstraints.gif" width="800"></p>
+
+You can see constraint support in action in the following videos: [fixed node](https://youtu.be/OTke5XQXzQA), [alignment](https://youtu.be/XCj_-_cTuRc), [relative placement](https://youtu.be/k0PmRliwdmo), [hybrid](https://youtu.be/cS3rkTyIMqU), [real life graphs](https://youtu.be/S7aIr9cNKbI). Constraints can also be added [incrementally](https://youtu.be/mxRKGvzM900) on a given layout. 
 
 Please cite the following when you use this layout until an fCoSE publication is available:
 
@@ -14,14 +29,35 @@ U. Dogrusoz, E. Giral, A. Cetintas, A. Civril, and E. Demir, "[A Layout Algorith
 
 A. Civril, M. Magdon-Ismail, and E. Bocek-Rivele, "[SSDE: Fast Graph Drawing Using Sampled Spectral Distance Embedding](https://link.springer.com/chapter/10.1007/978-3-540-70904-6_5)", International Symposium on Graph Drawing, pp. 30-41, 2006.
 
-<p align="center"><img src="demo.gif" width="480"></p>
-
 ## Dependencies
 
  * Cytoscape.js ^3.2.0
- * cose-base ^1.0.0
+ * cose-base ^2.0.0
  * cytoscape-layout-utilities.js (optional for packing disconnected components) ^1.0.0
 
+## Documentation
+
+fCoSE supports user-defined placement constraints as well as its full support for compound graphs. These constraints may be defined for simple nodes. Supported constraint types are:
+
+* **Fixed node constraint:** The user may provide *exact* desired positions for a set of nodes called *fixed nodes*. For example, in order to position node *n1* to *(x: 100, y: 200)* and node *n2* to *(x: 200, y: -300)* as a result of the layout, ```fixedNodeConstraint``` option should be set as follows:   
+
+  ```js
+  fixedNodeConstraint: [{nodeId: 'n1', position: {x: 100, y: 200}},
+    {nodeId: 'n2', position: {x: 200, y: -300}}],
+  ```
+
+* **Alignment constraint:** This constraint aims to align two or more nodes (with respect to their centers) vertically or horizontally. For example, for the vertical alignment of nodes {*n1, n2, n3*} and {*n4, n5*}, and horizontal alignment of nodes {*n2, n4*} as a result of the layout, ```alignmentConstraint``` option should be set as follows:
+  ```js
+  alignmentConstraint: {vertical: [['n1', 'n2', 'n3'], ['n4', 'n5']], horizontal: [['n2', 'n4']]},
+  ```
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;***Note:** Alignment constraints in a direction must be given in most compact form. Example: ```['n1', 'n2', 'n3']``` instead of ```['n1', 'n2'], ['n1', 'n3']```.* 
+
+* **Relative placement constraint:** The user may constrain the position of a node relative to another node in either vertical or horizontal direction. For example, in order to position node *n1* to be above of node *n2* by at least 100 pixels and position node *n3* to be on the left of node *n4* by at least 75 pixels as a result of the layout, ```relativePlacementConstraint``` option should be set as follows: 
+
+  ```js
+  relativePlacementConstraint: [{top: 'n1', bottom: 'n2', gap: 100}, 
+     {left: 'n3', right: 'n4', gap: 75}],
+  ```
 
 ## Usage instructions
 
@@ -98,6 +134,8 @@ var defaultOptions = {
   uniformNodeDimensions: false,
   // Whether to pack disconnected components - valid only if randomize: true
   packComponents: true,
+  // Layout step - all, transformed, enforced, cose - for debug purpose only
+  step: "all",
   
   /* spectral layout options */
   
@@ -113,11 +151,11 @@ var defaultOptions = {
   /* incremental layout options */
   
   // Node repulsion (non overlapping) multiplier
-  nodeRepulsion: 4500,
+  nodeRepulsion: node => 4500,
   // Ideal edge (non nested) length
-  idealEdgeLength: 50,
+  idealEdgeLength: edge => 50,
   // Divisor to compute edge forces
-  edgeElasticity: 0.45,
+  edgeElasticity: edge => 0.45,
   // Nesting factor (multiplier) to compute ideal edge length for nested edges
   nestingFactor: 0.1,
   // Maximum number of iterations to perform
@@ -137,7 +175,19 @@ var defaultOptions = {
   // Gravity range (constant)
   gravityRange: 3.8, 
   // Initial cooling factor for incremental layout  
-  initialEnergyOnIncremental: 0.3,  
+  initialEnergyOnIncremental: 0.3,
+
+  /* constraint options */
+
+  // Fix desired nodes to predefined positions
+  // [{nodeId: 'n1', position: {x: 100, y: 200}}, {...}]
+  fixedNodeConstraint: undefined,
+  // Align desired nodes in vertical/horizontal direction
+  // {vertical: [['n1', 'n2'], [...]], horizontal: [['n2', 'n4'], [...]]}
+  alignmentConstraint: undefined,
+  // Place two nodes relatively in vertical/horizontal direction
+  // [{top: 'n1', bottom: 'n2', gap: 100}, {left: 'n3', right: 'n4', gap: 75}, {...}]
+  relativePlacementConstraint: undefined,
 
   /* layout event callbacks */
   ready: () => {}, // on layoutready
