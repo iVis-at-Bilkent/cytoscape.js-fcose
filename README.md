@@ -132,7 +132,7 @@ var defaultOptions = {
   nodeDimensionsIncludeLabels: false,
   // Whether or not simple nodes (non-compound nodes) are of uniform dimensions
   uniformNodeDimensions: false,
-  // Whether to pack disconnected components - valid only if randomize: true
+  // Whether to pack disconnected components - cytoscape-layout-utilities extension should be registered and initialized
   packComponents: true,
   // Layout step - all, transformed, enforced, cose - for debug purpose only
   step: "all",

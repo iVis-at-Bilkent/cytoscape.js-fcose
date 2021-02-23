@@ -427,10 +427,9 @@ var Layout = function () {
       // decide component packing is enabled or not
       var layUtil = void 0;
       var packingEnabled = false;
-      if (cy.layoutUtilities && options.packComponents && options.randomize) {
+      if (cy.layoutUtilities && options.packComponents) {
         layUtil = cy.layoutUtilities("get");
-        if (!layUtil) layUtil = cy.layoutUtilities();
-        packingEnabled = true;
+        if (layUtil) packingEnabled = true;
       }
 
       if (eles.nodes().length > 0) {

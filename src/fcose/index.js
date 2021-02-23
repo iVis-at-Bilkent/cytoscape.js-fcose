@@ -117,16 +117,15 @@ class Layout {
       // constraints work with these options
       options.tile = false;
       options.packComponents = false;
-    }    
+    }       
     
     // decide component packing is enabled or not
     let layUtil;
     let packingEnabled = false;
-    if(cy.layoutUtilities && options.packComponents && options.randomize){
+    if(cy.layoutUtilities && options.packComponents){
       layUtil = cy.layoutUtilities("get");
-      if(!layUtil)
-        layUtil = cy.layoutUtilities();
-      packingEnabled = true;
+      if(layUtil)
+        packingEnabled = true;      
     }
     
     if(eles.nodes().length > 0) {
