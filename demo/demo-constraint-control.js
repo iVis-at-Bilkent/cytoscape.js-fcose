@@ -94,8 +94,7 @@ let cy = window.cy = cytoscape({
   container: document.getElementById('cy'),
   ready: function(){              
     let layoutUtilities = this.layoutUtilities({
-      desiredAspectRatio: this.width()/this.height(),
-      componentSpacing: 30
+      desiredAspectRatio: this.width()/this.height()
     });
 
     this.nodes().forEach(function(node){
