@@ -333,12 +333,32 @@ class Layout {
           ele = i;
         }
         let pos;
+        let node;
         let theId = ele.data('id');
         coseResult.forEach(function(result){
           if (theId in result){
             pos = {x: result[theId].getRect().getCenterX(), y: result[theId].getRect().getCenterY()};
+            node = result[theId];
           }
         });
+        if(options.nodeDimensionsIncludeLabels){
+          if(node.labelWidth){
+            if(node.labelPosHorizontal == "left"){
+              pos.x += node.labelWidth/2;
+            }
+            else if(node.labelPosHorizontal == "right"){
+              pos.x -= node.labelWidth/2;
+            }
+          }
+          if(node.labelHeight){
+            if(node.labelPosVertical == "top"){
+              pos.y += node.labelHeight/2;
+            }
+            else if(node.labelPosVertical == "bottom"){
+              pos.y -= node.labelHeight/2;
+            }
+          }
+        }
         return {
           x: pos.x,
           y: pos.y
