@@ -895,6 +895,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
   CoSEConstants.TILING_PADDING_HORIZONTAL = typeof options.tilingPaddingHorizontal === 'function' ? options.tilingPaddingHorizontal.call() : options.tilingPaddingHorizontal;
 
   CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
+  CoSEConstants.PURE_INCREMENTAL = !options.randomize;
   LayoutConstants.DEFAULT_UNIFORM_LEAF_NODE_SIZES = options.uniformNodeDimensions;
 
   // This part is for debug/demo purpose
@@ -919,10 +920,10 @@ var coseLayout = function coseLayout(options, spectralResult) {
     CoSEConstants.APPLY_LAYOUT = true;
   }
 
-  if (options.randomize && !(options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint)) {
-    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = true;
-  } else {
+  if (options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint) {
     CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = false;
+  } else {
+    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = true;
   }
 
   var coseLayout = new CoSELayout();
