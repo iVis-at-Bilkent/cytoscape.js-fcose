@@ -271,7 +271,7 @@ class Layout {
       }
       
       // move graph to its original position because spectral moves it to origin
-      if(!options.fixedNodeConstraint) {
+      if(options.randomize && !options.fixedNodeConstraint) {
         let minXCoord = Number.POSITIVE_INFINITY;
         let maxXCoord = Number.NEGATIVE_INFINITY;
         let minYCoord = Number.POSITIVE_INFINITY;
