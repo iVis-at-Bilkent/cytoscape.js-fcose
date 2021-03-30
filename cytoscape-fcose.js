@@ -851,7 +851,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
     // we need to update the ideal edge length constant with the avg. ideal length value after processing edges
     // in case there is no edge, use other options
     if (options.idealEdgeLength != null) {
-      if (edges.length > 0) CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = idealLengthTotal / edgeCount;else if (!isFn(options.idealEdgeLength)) // in case there is no edge, but option gives a value to use
+      if (edgeCount > 0) CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = idealLengthTotal / edgeCount;else if (!isFn(options.idealEdgeLength)) // in case there is no edge, but option gives a value to use
         CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = options.idealEdgeLength;else // in case there is no edge and we cannot get a value from option (because it's a function)
         CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = 50;
       // we need to update these constant values based on the ideal edge length constant
