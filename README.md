@@ -21,7 +21,7 @@ Furthermore, fCoSE also supports a fairly rich set of constraint types (i.e., fi
 
 <p align="center"><img src="demo/incrementalConstraints.gif" width="800"></p>
 
-You can see constraint support in action in the following videos: [fixed node](https://youtu.be/OTke5XQXzQA), [alignment](https://youtu.be/XCj_-_cTuRc), [relative placement](https://youtu.be/k0PmRliwdmo), [hybrid](https://youtu.be/cS3rkTyIMqU), [real life graphs](https://youtu.be/S7aIr9cNKbI). Constraints can also be added [incrementally](https://youtu.be/mxRKGvzM900) on a given layout. 
+You can see constraint support in action in the following videos: [fixed node](https://youtu.be/yqO5-mH4RIc), [alignment](https://youtu.be/prrh_S31Jdk), [relative placement](https://youtu.be/-F3ZpvRN9kM), [hybrid](https://youtu.be/9RSNLt99iqs), [real life graphs](https://youtu.be/J8b6u3pJCBw). Constraints can also be added [incrementally](https://youtu.be/Rpnusdyvvjk) on a given layout. 
 
 Please cite the following when you use this layout until an fCoSE publication is available:
 
