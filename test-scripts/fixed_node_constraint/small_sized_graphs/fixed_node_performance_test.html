@@ -1,0 +1,121 @@
+<!DOCTYPE>
+
+<html>
+
+  <head>
+    <title>Fixed Node Performance Test</title>
+
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+
+    <script src="bundle.js"></script>
+
+    <!-- for testing with local version of cytoscape.js -->
+    <!--<script src="../cytoscape.js/build/cytoscape.js"></script>-->
+
+    <style>
+      body {
+        font-family: helvetica neue, helvetica, liberation sans, arial, sans-serif;
+        font-size: 14px;
+      }
+
+      #cy {
+        position: relative;
+        width: auto;
+        height: 90%;
+        z-index: 999;
+        margin-top: 65px;
+        margin-left: 350px;
+        right: 0px;
+      }
+
+      h1 {
+        opacity: 1;
+        color: #555;
+        font-size: 15px;
+        font-weight: bold;
+      }
+
+
+      /* The sidepanel menu */
+      .sidepanel {
+        height: 100px; /* Specify a height */
+        width: 310px; /* 0 width - change this with JavaScript */
+        position: absolute; /* Stay in place */
+        z-index: 1000; /* Stay on top */
+        float: left;
+        top: auto;
+        left: 0;
+        background-color: #b7ffff; /* Black*/
+        overflow-x: hidden; /* Disable horizontal scroll */
+        padding-top: 10px; /* Place content 10px from the top */
+        padding-bottom: 10px; /* Place content 10px from the bottom */
+        transition: 0s; /* 0.5 second transition effect to slide in the sidepanel */
+      }
+
+      table{
+        width: 350px;
+      }       
+
+      /* The sidepanel links */
+      table td {
+        padding: 0px 8px 8px 8px;
+        text-decoration: none;
+        font-size: 15px;
+        color: #555;
+        transition: 0.3s;
+      }
+
+      /* Style the button that is used to open the sidepanel */
+      .button {
+        font-size: 15px;
+        color: #555;
+        cursor: pointer;
+        background-color: #b7ffff;
+        padding: 5px 10px;
+        border: none;
+        margin-bottom: 5px;
+      }
+
+      .textField {
+        padding-left: 5px;
+      }
+
+      .checkbox {
+        margin-left: 0px;
+      }        
+
+      .button:hover {
+        background-color: #0f0;
+      }        
+    </style>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+
+      });
+
+    </script>
+  </head>
+
+  <body>
+    <h1>Fixed Node Performance Test</h1>
+    <div style='position: absolute;'>
+      <input id="inputFile" type='file' style="display: none" />
+      <button id="startTest" class="button">Start Test</button>&nbsp &nbsp
+      Constrained Node Ratio: &nbsp&nbsp<input style="width: 50" type="number" id="constrainedNodeRatio" min="0" max="100" value="50" step="1"> &nbsp&nbsp
+      <form>
+        <input type="radio" name="density" id="sparse" checked>Sparse graphs (Rome graphs)
+        <input type="radio" name="density" id="dense">Dense graphs (from networkrepository.com)
+      </form>
+      <table>
+        <tr>
+          <td>Processed file: </td>
+          <td><span id="processedFile"></span></td>          
+        </tr>
+      </table>      
+    </div>
+    <div id="cy"></div>      
+
+  </body>
+
+</html>
