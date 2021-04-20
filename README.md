@@ -15,7 +15,7 @@ Follow these steps to run the test scripts:
     * If you select one of the constraint-named folders:
     	*  You will see two subfolders: *small_sized_graphs* folder includes test script to measure the performance of fCoSE and CoLa on small-sized graphs. *medium_sized_graphs* folder includes test script to measure the performance of fCoSE on medium-sized graphs. Select the folder you want to run test.
     	*  Open the html file in a web browser. Select the constraint ratio and the graph dataset (Rome/Network Repository) you want to run test, and click on the *Start Test* button.
-    	*  When test finishes, test results will be downloaded in five evaluation metrics (*run time, avg. edge length, # of edge crossings, # of node overlaps and total area*).
+    	*  When test finishes, test results will be downloaded in six evaluation metrics (*run time, avg. edge length, # of edge crossings, # of node-edge overlaps, # of node-node overlaps and total area*).
     * If you select the folder named *fcose_cose*:
     	*  Open the html file in a web browser. Click on the *Start Test* button.
     	*  When test finishes, test result will be downloaded in one evaluation metric (*run time*) for fCoSE vs CoSE comparison.
