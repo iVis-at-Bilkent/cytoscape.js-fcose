@@ -56,8 +56,10 @@ fCoSE supports user-defined placement constraints as well as its full support fo
 
   ```js
   relativePlacementConstraint: [{top: 'n1', bottom: 'n2', gap: 100}, 
-     {left: 'n3', right: 'n4', gap: 75}],
+     {left: 'n3', right: 'n4', gap: 75},
+     {left: 'n5', right: 'n6'}],
   ```
+  The `gap` property is optional. If it is omitted, the gap length will be chosen automatically.
 
 ## Usage instructions
 
