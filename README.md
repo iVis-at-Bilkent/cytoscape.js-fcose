@@ -58,6 +58,7 @@ fCoSE supports user-defined placement constraints as well as its full support fo
   relativePlacementConstraint: [{top: 'n1', bottom: 'n2', gap: 100}, 
      {left: 'n3', right: 'n4', gap: 75}],
   ```
+  The `gap` property is optional. If it is omitted, average `idealEdgeLength` is used as the gap value.
 
 ## Usage instructions
 
