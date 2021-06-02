@@ -591,9 +591,26 @@ var Layout = function () {
       var coseResult = [];
       var components = void 0;
 
-      var constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;
+      // basic validity check for constraint inputs 
+      if (options.fixedNodeConstraint && (!Array.isArray(options.fixedNodeConstraint) || options.fixedNodeConstraint.length == 0)) {
+        options.fixedNodeConstraint = undefined;
+      }
+
+      if (options.alignmentConstraint) {
+        if (options.alignmentConstraint.vertical && (!Array.isArray(options.alignmentConstraint.vertical) || options.alignmentConstraint.vertical.length == 0)) {
+          options.alignmentConstraint.vertical = undefined;
+        }
+        if (options.alignmentConstraint.horizontal && (!Array.isArray(options.alignmentConstraint.horizontal) || options.alignmentConstraint.horizontal.length == 0)) {
+          options.alignmentConstraint.horizontal = undefined;
+        }
+      }
+
+      if (options.relativePlacementConstraint && (!Array.isArray(options.relativePlacementConstraint) || options.relativePlacementConstraint.length == 0)) {
+        options.relativePlacementConstraint = undefined;
+      }
 
       // if any constraint exists, set some options
+      var constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;
       if (constraintExist) {
         // constraints work with these options
         options.tile = false;
