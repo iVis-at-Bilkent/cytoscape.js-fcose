@@ -4,7 +4,7 @@ cytoscape-fcose
 
 ## Description
 
-fCoSE (fast Compound Spring Embedder) is a faster version of our earlier compound spring embedder algorithm named [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent), implemented as a Cytoscape.js extension by [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University.
+fCoSE (pron. "f-cosay", **f**ast **Co**mpound **S**pring **E**mbedder) is a faster version of our earlier compound spring embedder algorithm named [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent), implemented as a Cytoscape.js extension by [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University.
 
 <p align="center"> <a href="https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo/demo.html" title="Simple Demo">DEMO (simple)</a>
   &nbsp;&nbsp;&nbsp;&nbsp;
@@ -21,7 +21,7 @@ Furthermore, fCoSE also supports a fairly rich set of constraint types (i.e., fi
 
 <p align="center"><img src="demo/incrementalConstraints.gif" width="800"></p>
 
-You can see constraint support in action in the following videos: [fixed node](https://youtu.be/OTke5XQXzQA), [alignment](https://youtu.be/XCj_-_cTuRc), [relative placement](https://youtu.be/k0PmRliwdmo), [hybrid](https://youtu.be/cS3rkTyIMqU), [real life graphs](https://youtu.be/S7aIr9cNKbI). Constraints can also be added [incrementally](https://youtu.be/mxRKGvzM900) on a given layout. 
+You can see constraint support in action in the following videos: [fixed node](https://youtu.be/vRZVlwntzGY), [alignment](https://youtu.be/O5rddJ7DteU), [relative placement](https://youtu.be/Xcm87bT50RA), [hybrid](https://youtu.be/KRAQHmnTvUA), [real life graphs](https://youtu.be/vTPy9G2ALcI). Constraints can also be added [incrementally](https://youtu.be/DTm2WmzwP4k) on a given layout. 
 
 Please cite the following when you use this layout until an fCoSE publication is available:
 
