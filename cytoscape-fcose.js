@@ -1224,12 +1224,12 @@ var spectralLayout = function spectralLayout(options) {
 
   // form a parent-child map to keep representative node of each compound node  
   parentNodes.forEach(function (ele) {
-    var children = ele.children();
+    var children = ele.children().intersection(eles);
 
     //      let random = 0;
     while (children.nodes(":childless").length == 0) {
       //        random = Math.floor(Math.random() * children.nodes().length); // if all children are compound then proceed randomly
-      children = children.nodes()[0].children();
+      children = children.nodes()[0].children().intersection(eles);
     }
     //  select the representative node - we can apply different methods here
     //      random = Math.floor(Math.random() * children.nodes(":childless").length);
