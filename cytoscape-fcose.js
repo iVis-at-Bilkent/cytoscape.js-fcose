@@ -622,7 +622,8 @@ var Layout = function () {
       var packingEnabled = false;
       if (cy.layoutUtilities && options.packComponents) {
         layUtil = cy.layoutUtilities("get");
-        if (layUtil) packingEnabled = true;
+        if (!layUtil) layUtil = cy.layoutUtilities();
+        packingEnabled = true;
       }
 
       if (eles.nodes().length > 0) {
@@ -744,7 +745,7 @@ var Layout = function () {
               });
               subgraphs.push(subgraph);
             });
-            var shiftResult = layUtil.packComponents(subgraphs).shifts;
+            var shiftResult = layUtil.packComponents(subgraphs, options.randomize).shifts;
             if (options.quality == "draft") {
               spectralResult.forEach(function (result, index) {
                 var newXCoords = result.xCoords.map(function (x) {

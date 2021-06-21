@@ -142,8 +142,9 @@ class Layout {
     let packingEnabled = false;
     if(cy.layoutUtilities && options.packComponents){
       layUtil = cy.layoutUtilities("get");
-      if(layUtil)
-        packingEnabled = true;      
+      if(!layUtil)
+        layUtil = cy.layoutUtilities();        
+      packingEnabled = true;      
     }
     
     if(eles.nodes().length > 0) {
@@ -268,7 +269,7 @@ class Layout {
             });
             subgraphs.push(subgraph);
           });
-          let shiftResult = layUtil.packComponents(subgraphs).shifts;
+          let shiftResult = layUtil.packComponents(subgraphs, options.randomize).shifts;
           if(options.quality == "draft"){
             spectralResult.forEach(function(result, index){
               let newXCoords = result.xCoords.map(x => x + shiftResult[index].dx);
