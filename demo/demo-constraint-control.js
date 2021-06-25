@@ -94,8 +94,7 @@ let cy = window.cy = cytoscape({
   container: document.getElementById('cy'),
   ready: function(){              
     let layoutUtilities = this.layoutUtilities({
-      desiredAspectRatio: this.width()/this.height(),
-      componentSpacing: 30
+      desiredAspectRatio: this.width()/this.height()
     });
 
     this.nodes().forEach(function(node){
@@ -540,6 +539,7 @@ document.getElementById("fcoseButton").addEventListener("click", function(){
     document.getElementById("fixedNodeX").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("x"));
     document.getElementById("fixedNodeY").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("y"));
   });
+  cy.layoutUtilities("get").setOption("randomize", finalOptions.randomize);
 //  let start = performance.now();
   layout.run();
 //  console.log((performance.now() - start) + " ms" );
@@ -607,7 +607,8 @@ document.getElementById("draftButton").addEventListener("click", function(){
   layout.one("layoutstop", function( event ){
     document.getElementById("fixedNodeX").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("x"));
     document.getElementById("fixedNodeY").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("y"));
-  });            
+  });
+  cy.layoutUtilities("get").setOption("randomize", true);
   layout.run();
 });
 
@@ -667,7 +668,8 @@ document.getElementById("coseButton").addEventListener("click", function(){
   layout.one("layoutstop", function( event ){
     document.getElementById("fixedNodeX").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("x"));
     document.getElementById("fixedNodeY").value = Math.round(cy.getElementById(document.getElementById("nodeList").value).position("y"));
-  });            
+  });
+  cy.layoutUtilities("get").setOption("randomize", finalOptions.randomize);
   layout.run();
 });
 

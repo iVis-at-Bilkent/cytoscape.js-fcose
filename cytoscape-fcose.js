@@ -7,93 +7,44 @@
 		exports["cytoscapeFcose"] = factory(require("cose-base"));
 	else
 		root["cytoscapeFcose"] = factory(root["coseBase"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_0__) {
-return /******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId]) {
-/******/ 			return installedModules[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// identity function for calling harmony imports with the correct context
-/******/ 	__webpack_require__.i = function(value) { return value; };
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, {
-/******/ 				configurable: false,
-/******/ 				enumerable: true,
-/******/ 				get: getter
-/******/ 			});
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 6);
-/******/ })
-/************************************************************************/
-/******/ ([
-/* 0 */
-/***/ (function(module, exports) {
+})(self, function(__WEBPACK_EXTERNAL_MODULE__281__) {
+return /******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
 
-module.exports = __WEBPACK_EXTERNAL_MODULE_0__;
+/***/ 658:
+/***/ ((module) => {
+
+
+
+// Simple, internal Object.assign() polyfill for options objects etc.
+
+module.exports = Object.assign != null ? Object.assign.bind(Object) : function (tgt) {
+  for (var _len = arguments.length, srcs = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    srcs[_key - 1] = arguments[_key];
+  }
+
+  srcs.forEach(function (src) {
+    Object.keys(src).forEach(function (k) {
+      return tgt[k] = src[k];
+    });
+  });
+
+  return tgt;
+};
 
 /***/ }),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+/***/ 548:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
 
 
 /*
  * Auxiliary functions
  */
 
-var LinkedList = __webpack_require__(0).layoutBase.LinkedList;
+var LinkedList = __webpack_require__(281).layoutBase.LinkedList;
 
 var auxiliary = {};
 
@@ -279,10 +230,235 @@ auxiliary.calcBoundingBox = function (parentNode, xCoords, yCoords, nodeIndexes)
 module.exports = auxiliary;
 
 /***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+/***/ 816:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+
+
+/**
+  The implementation of the postprocessing part that applies CoSE layout over the spectral layout
+*/
+
+var aux = __webpack_require__(548);
+var CoSELayout = __webpack_require__(281).CoSELayout;
+var CoSENode = __webpack_require__(281).CoSENode;
+var PointD = __webpack_require__(281).layoutBase.PointD;
+var DimensionD = __webpack_require__(281).layoutBase.DimensionD;
+var LayoutConstants = __webpack_require__(281).layoutBase.LayoutConstants;
+var FDLayoutConstants = __webpack_require__(281).layoutBase.FDLayoutConstants;
+var CoSEConstants = __webpack_require__(281).CoSEConstants;
+
+// main function that cose layout is processed
+var coseLayout = function coseLayout(options, spectralResult) {
+
+  var eles = options.eles;
+  var nodes = eles.nodes();
+  var edges = eles.edges();
+
+  var nodeIndexes = void 0;
+  var xCoords = void 0;
+  var yCoords = void 0;
+  var idToLNode = {};
+
+  if (options.randomize) {
+    nodeIndexes = spectralResult["nodeIndexes"];
+    xCoords = spectralResult["xCoords"];
+    yCoords = spectralResult["yCoords"];
+  }
+
+  var isFn = function isFn(fn) {
+    return typeof fn === 'function';
+  };
+
+  var optFn = function optFn(opt, ele) {
+    if (isFn(opt)) {
+      return opt(ele);
+    } else {
+      return opt;
+    }
+  };
+
+  /**** Postprocessing functions ****/
+
+  // transfer cytoscape nodes to cose nodes
+  var processChildrenList = function processChildrenList(parent, children, layout, options) {
+    var size = children.length;
+    for (var i = 0; i < size; i++) {
+      var theChild = children[i];
+      var children_of_children = theChild.children();
+      var theNode = void 0;
+
+      var dimensions = theChild.layoutDimensions({
+        nodeDimensionsIncludeLabels: options.nodeDimensionsIncludeLabels
+      });
+
+      if (theChild.outerWidth() != null && theChild.outerHeight() != null) {
+        if (options.randomize) {
+          if (!theChild.isParent()) {
+            theNode = parent.add(new CoSENode(layout.graphManager, new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
+          } else {
+            var parentInfo = aux.calcBoundingBox(theChild, xCoords, yCoords, nodeIndexes);
+            theNode = parent.add(new CoSENode(layout.graphManager, new PointD(parentInfo.topLeftX, parentInfo.topLeftY), new DimensionD(parentInfo.width, parentInfo.height)));
+          }
+        } else {
+          theNode = parent.add(new CoSENode(layout.graphManager, new PointD(theChild.position('x') - dimensions.w / 2, theChild.position('y') - dimensions.h / 2), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
+        }
+      } else {
+        theNode = parent.add(new CoSENode(this.graphManager));
+      }
+      // Attach id to the layout node and repulsion value
+      theNode.id = theChild.data("id");
+      theNode.nodeRepulsion = optFn(options.nodeRepulsion, theChild);
+      // Attach the paddings of cy node to layout node
+      theNode.paddingLeft = parseInt(theChild.css('padding'));
+      theNode.paddingTop = parseInt(theChild.css('padding'));
+      theNode.paddingRight = parseInt(theChild.css('padding'));
+      theNode.paddingBottom = parseInt(theChild.css('padding'));
+
+      //Attach the label properties to both compound and simple nodes if labels will be included in node dimensions
+      //These properties will be used while updating bounds of compounds during iterations or tiling
+      //and will be used for simple nodes while transferring final positions to cytoscape
+      if (options.nodeDimensionsIncludeLabels) {
+        theNode.labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false, includeOverlays: false }).w;
+        theNode.labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false, includeOverlays: false }).h;
+        theNode.labelPosVertical = theChild.css("text-valign");
+        theNode.labelPosHorizontal = theChild.css("text-halign");
+      }
+
+      // Map the layout node
+      idToLNode[theChild.data("id")] = theNode;
+
+      if (isNaN(theNode.rect.x)) {
+        theNode.rect.x = 0;
+      }
+
+      if (isNaN(theNode.rect.y)) {
+        theNode.rect.y = 0;
+      }
+
+      if (children_of_children != null && children_of_children.length > 0) {
+        var theNewGraph = void 0;
+        theNewGraph = layout.getGraphManager().add(layout.newGraph(), theNode);
+        processChildrenList(theNewGraph, children_of_children, layout, options);
+      }
+    }
+  };
+
+  // transfer cytoscape edges to cose edges
+  var processEdges = function processEdges(layout, gm, edges) {
+    var idealLengthTotal = 0;
+    var edgeCount = 0;
+    for (var i = 0; i < edges.length; i++) {
+      var edge = edges[i];
+      var sourceNode = idToLNode[edge.data("source")];
+      var targetNode = idToLNode[edge.data("target")];
+      if (sourceNode !== targetNode && sourceNode.getEdgesBetween(targetNode).length == 0) {
+        var e1 = gm.add(layout.newEdge(), sourceNode, targetNode);
+        e1.id = edge.id();
+        e1.idealLength = optFn(options.idealEdgeLength, edge);
+        e1.edgeElasticity = optFn(options.edgeElasticity, edge);
+        idealLengthTotal += e1.idealLength;
+        edgeCount++;
+      }
+    }
+    // we need to update the ideal edge length constant with the avg. ideal length value after processing edges
+    // in case there is no edge, use other options
+    if (options.idealEdgeLength != null) {
+      if (edgeCount > 0) CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = idealLengthTotal / edgeCount;else if (!isFn(options.idealEdgeLength)) // in case there is no edge, but option gives a value to use
+        CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = options.idealEdgeLength;else // in case there is no edge and we cannot get a value from option (because it's a function)
+        CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = 50;
+      // we need to update these constant values based on the ideal edge length constant
+      CoSEConstants.MIN_REPULSION_DIST = FDLayoutConstants.MIN_REPULSION_DIST = FDLayoutConstants.DEFAULT_EDGE_LENGTH / 10.0;
+      CoSEConstants.DEFAULT_RADIAL_SEPARATION = FDLayoutConstants.DEFAULT_EDGE_LENGTH;
+    }
+  };
+
+  // transfer cytoscape constraints to cose layout
+  var processConstraints = function processConstraints(layout, options) {
+    // get nodes to be fixed
+    if (options.fixedNodeConstraint) {
+      layout.constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
+    }
+    // get nodes to be aligned
+    if (options.alignmentConstraint) {
+      layout.constraints["alignmentConstraint"] = options.alignmentConstraint;
+    }
+    // get nodes to be relatively placed
+    if (options.relativePlacementConstraint) {
+      layout.constraints["relativePlacementConstraint"] = options.relativePlacementConstraint;
+    }
+  };
+
+  /**** Apply postprocessing ****/
+  if (options.nestingFactor != null) CoSEConstants.PER_LEVEL_IDEAL_EDGE_LENGTH_FACTOR = FDLayoutConstants.PER_LEVEL_IDEAL_EDGE_LENGTH_FACTOR = options.nestingFactor;
+  if (options.gravity != null) CoSEConstants.DEFAULT_GRAVITY_STRENGTH = FDLayoutConstants.DEFAULT_GRAVITY_STRENGTH = options.gravity;
+  if (options.numIter != null) CoSEConstants.MAX_ITERATIONS = FDLayoutConstants.MAX_ITERATIONS = options.numIter;
+  if (options.gravityRange != null) CoSEConstants.DEFAULT_GRAVITY_RANGE_FACTOR = FDLayoutConstants.DEFAULT_GRAVITY_RANGE_FACTOR = options.gravityRange;
+  if (options.gravityCompound != null) CoSEConstants.DEFAULT_COMPOUND_GRAVITY_STRENGTH = FDLayoutConstants.DEFAULT_COMPOUND_GRAVITY_STRENGTH = options.gravityCompound;
+  if (options.gravityRangeCompound != null) CoSEConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = FDLayoutConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = options.gravityRangeCompound;
+  if (options.initialEnergyOnIncremental != null) CoSEConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = FDLayoutConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = options.initialEnergyOnIncremental;
+
+  if (options.quality == 'proof') LayoutConstants.QUALITY = 2;else LayoutConstants.QUALITY = 0;
+
+  CoSEConstants.NODE_DIMENSIONS_INCLUDE_LABELS = FDLayoutConstants.NODE_DIMENSIONS_INCLUDE_LABELS = LayoutConstants.NODE_DIMENSIONS_INCLUDE_LABELS = options.nodeDimensionsIncludeLabels;
+  CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = !options.randomize;
+  CoSEConstants.ANIMATE = FDLayoutConstants.ANIMATE = LayoutConstants.ANIMATE = options.animate;
+  CoSEConstants.TILE = options.tile;
+  CoSEConstants.TILING_PADDING_VERTICAL = typeof options.tilingPaddingVertical === 'function' ? options.tilingPaddingVertical.call() : options.tilingPaddingVertical;
+  CoSEConstants.TILING_PADDING_HORIZONTAL = typeof options.tilingPaddingHorizontal === 'function' ? options.tilingPaddingHorizontal.call() : options.tilingPaddingHorizontal;
+
+  CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
+  CoSEConstants.PURE_INCREMENTAL = !options.randomize;
+  LayoutConstants.DEFAULT_UNIFORM_LEAF_NODE_SIZES = options.uniformNodeDimensions;
+
+  // This part is for debug/demo purpose
+  if (options.step == "transformed") {
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;
+    CoSEConstants.ENFORCE_CONSTRAINTS = false;
+    CoSEConstants.APPLY_LAYOUT = false;
+  }
+  if (options.step == "enforced") {
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
+    CoSEConstants.ENFORCE_CONSTRAINTS = true;
+    CoSEConstants.APPLY_LAYOUT = false;
+  }
+  if (options.step == "cose") {
+    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
+    CoSEConstants.ENFORCE_CONSTRAINTS = false;
+    CoSEConstants.APPLY_LAYOUT = true;
+  }
+  if (options.step == "all") {
+    if (options.randomize) CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;else CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
+    CoSEConstants.ENFORCE_CONSTRAINTS = true;
+    CoSEConstants.APPLY_LAYOUT = true;
+  }
+
+  if (options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint) {
+    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = false;
+  } else {
+    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = true;
+  }
+
+  var coseLayout = new CoSELayout();
+  var gm = coseLayout.newGraphManager();
+
+  processChildrenList(gm.addRoot(), aux.getTopMostNodes(nodes), coseLayout, options);
+  processEdges(coseLayout, gm, edges);
+  processConstraints(coseLayout, options);
+
+  coseLayout.runLayout();
+
+  return idToLNode;
+};
+
+module.exports = { coseLayout: coseLayout };
+
+/***/ }),
+
+/***/ 212:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
 
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -293,13 +469,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
   The implementation of the fcose layout algorithm
 */
 
-var assign = __webpack_require__(3);
-var aux = __webpack_require__(1);
+var assign = __webpack_require__(658);
+var aux = __webpack_require__(548);
 
-var _require = __webpack_require__(5),
+var _require = __webpack_require__(657),
     spectralLayout = _require.spectralLayout;
 
-var _require2 = __webpack_require__(4),
+var _require2 = __webpack_require__(816),
     coseLayout = _require2.coseLayout;
 
 var defaults = Object.freeze({
@@ -415,9 +591,26 @@ var Layout = function () {
       var coseResult = [];
       var components = void 0;
 
-      var constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;
+      // basic validity check for constraint inputs 
+      if (options.fixedNodeConstraint && (!Array.isArray(options.fixedNodeConstraint) || options.fixedNodeConstraint.length == 0)) {
+        options.fixedNodeConstraint = undefined;
+      }
+
+      if (options.alignmentConstraint) {
+        if (options.alignmentConstraint.vertical && (!Array.isArray(options.alignmentConstraint.vertical) || options.alignmentConstraint.vertical.length == 0)) {
+          options.alignmentConstraint.vertical = undefined;
+        }
+        if (options.alignmentConstraint.horizontal && (!Array.isArray(options.alignmentConstraint.horizontal) || options.alignmentConstraint.horizontal.length == 0)) {
+          options.alignmentConstraint.horizontal = undefined;
+        }
+      }
+
+      if (options.relativePlacementConstraint && (!Array.isArray(options.relativePlacementConstraint) || options.relativePlacementConstraint.length == 0)) {
+        options.relativePlacementConstraint = undefined;
+      }
 
       // if any constraint exists, set some options
+      var constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;
       if (constraintExist) {
         // constraints work with these options
         options.tile = false;
@@ -427,7 +620,7 @@ var Layout = function () {
       // decide component packing is enabled or not
       var layUtil = void 0;
       var packingEnabled = false;
-      if (cy.layoutUtilities && options.packComponents && options.randomize) {
+      if (cy.layoutUtilities && options.packComponents) {
         layUtil = cy.layoutUtilities("get");
         if (!layUtil) layUtil = cy.layoutUtilities();
         packingEnabled = true;
@@ -552,7 +745,7 @@ var Layout = function () {
               });
               subgraphs.push(subgraph);
             });
-            var shiftResult = layUtil.packComponents(subgraphs).shifts;
+            var shiftResult = layUtil.packComponents(subgraphs, options.randomize).shifts;
             if (options.quality == "draft") {
               spectralResult.forEach(function (result, index) {
                 var newXCoords = result.xCoords.map(function (x) {
@@ -576,7 +769,7 @@ var Layout = function () {
         }
 
         // move graph to its original position because spectral moves it to origin
-        if (!options.fixedNodeConstraint) {
+        if (options.randomize && !options.fixedNodeConstraint) {
           var minXCoord = Number.POSITIVE_INFINITY;
           var maxXCoord = Number.NEGATIVE_INFINITY;
           var minYCoord = Number.POSITIVE_INFINITY;
@@ -633,12 +826,30 @@ var Layout = function () {
             ele = i;
           }
           var pos = void 0;
+          var node = void 0;
           var theId = ele.data('id');
           coseResult.forEach(function (result) {
             if (theId in result) {
               pos = { x: result[theId].getRect().getCenterX(), y: result[theId].getRect().getCenterY() };
+              node = result[theId];
             }
           });
+          if (options.nodeDimensionsIncludeLabels) {
+            if (node.labelWidth) {
+              if (node.labelPosHorizontal == "left") {
+                pos.x += node.labelWidth / 2;
+              } else if (node.labelPosHorizontal == "right") {
+                pos.x -= node.labelWidth / 2;
+              }
+            }
+            if (node.labelHeight) {
+              if (node.labelPosVertical == "top") {
+                pos.y += node.labelHeight / 2;
+              } else if (node.labelPosVertical == "bottom") {
+                pos.y -= node.labelHeight / 2;
+              }
+            }
+          }
           return {
             x: pos.x,
             y: pos.y
@@ -676,266 +887,19 @@ var Layout = function () {
 module.exports = Layout;
 
 /***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+/***/ 657:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-
-// Simple, internal Object.assign() polyfill for options objects etc.
-
-module.exports = Object.assign != null ? Object.assign.bind(Object) : function (tgt) {
-  for (var _len = arguments.length, srcs = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-    srcs[_key - 1] = arguments[_key];
-  }
-
-  srcs.forEach(function (src) {
-    Object.keys(src).forEach(function (k) {
-      return tgt[k] = src[k];
-    });
-  });
-
-  return tgt;
-};
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/**
-  The implementation of the postprocessing part that applies CoSE layout over the spectral layout
-*/
-
-var aux = __webpack_require__(1);
-var CoSELayout = __webpack_require__(0).CoSELayout;
-var CoSENode = __webpack_require__(0).CoSENode;
-var PointD = __webpack_require__(0).layoutBase.PointD;
-var DimensionD = __webpack_require__(0).layoutBase.DimensionD;
-var LayoutConstants = __webpack_require__(0).layoutBase.LayoutConstants;
-var FDLayoutConstants = __webpack_require__(0).layoutBase.FDLayoutConstants;
-var CoSEConstants = __webpack_require__(0).CoSEConstants;
-
-// main function that cose layout is processed
-var coseLayout = function coseLayout(options, spectralResult) {
-
-  var eles = options.eles;
-  var nodes = eles.nodes();
-  var edges = eles.edges();
-
-  var nodeIndexes = void 0;
-  var xCoords = void 0;
-  var yCoords = void 0;
-  var idToLNode = {};
-
-  if (options.randomize) {
-    nodeIndexes = spectralResult["nodeIndexes"];
-    xCoords = spectralResult["xCoords"];
-    yCoords = spectralResult["yCoords"];
-  }
-
-  var isFn = function isFn(fn) {
-    return typeof fn === 'function';
-  };
-
-  var optFn = function optFn(opt, ele) {
-    if (isFn(opt)) {
-      return opt(ele);
-    } else {
-      return opt;
-    }
-  };
-
-  /**** Postprocessing functions ****/
-
-  // transfer cytoscape nodes to cose nodes
-  var processChildrenList = function processChildrenList(parent, children, layout, options) {
-    var size = children.length;
-    for (var i = 0; i < size; i++) {
-      var theChild = children[i];
-      var children_of_children = theChild.children();
-      var theNode = void 0;
-
-      var dimensions = theChild.layoutDimensions({
-        nodeDimensionsIncludeLabels: options.nodeDimensionsIncludeLabels
-      });
-
-      if (theChild.outerWidth() != null && theChild.outerHeight() != null) {
-        if (options.randomize) {
-          if (!theChild.isParent()) {
-            theNode = parent.add(new CoSENode(layout.graphManager, new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
-          } else {
-            var parentInfo = aux.calcBoundingBox(theChild, xCoords, yCoords, nodeIndexes);
-            theNode = parent.add(new CoSENode(layout.graphManager, new PointD(parentInfo.topLeftX, parentInfo.topLeftY), new DimensionD(parentInfo.width, parentInfo.height)));
-          }
-        } else {
-          theNode = parent.add(new CoSENode(layout.graphManager, new PointD(theChild.position('x') - dimensions.w / 2, theChild.position('y') - dimensions.h / 2), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
-        }
-      } else {
-        theNode = parent.add(new CoSENode(this.graphManager));
-      }
-      // Attach id to the layout node and repulsion value
-      theNode.id = theChild.data("id");
-      theNode.nodeRepulsion = optFn(options.nodeRepulsion, theChild);
-      // Attach the paddings of cy node to layout node
-      theNode.paddingLeft = parseInt(theChild.css('padding'));
-      theNode.paddingTop = parseInt(theChild.css('padding'));
-      theNode.paddingRight = parseInt(theChild.css('padding'));
-      theNode.paddingBottom = parseInt(theChild.css('padding'));
-
-      //Attach the label properties to compound if labels will be included in node dimensions  
-      if (options.nodeDimensionsIncludeLabels) {
-        if (theChild.isParent()) {
-          theNode.labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false, includeOverlays: false }).w;
-          theNode.labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false, includeOverlays: false }).h;
-          theNode.labelPosVertical = theChild.css("text-valign");
-          theNode.labelPosHorizontal = theChild.css("text-halign");
-        }
-      }
-
-      // Map the layout node
-      idToLNode[theChild.data("id")] = theNode;
-
-      if (isNaN(theNode.rect.x)) {
-        theNode.rect.x = 0;
-      }
-
-      if (isNaN(theNode.rect.y)) {
-        theNode.rect.y = 0;
-      }
-
-      if (children_of_children != null && children_of_children.length > 0) {
-        var theNewGraph = void 0;
-        theNewGraph = layout.getGraphManager().add(layout.newGraph(), theNode);
-        processChildrenList(theNewGraph, children_of_children, layout, options);
-      }
-    }
-  };
-
-  // transfer cytoscape edges to cose edges
-  var processEdges = function processEdges(layout, gm, edges) {
-    var idealLengthTotal = 0;
-    var edgeCount = 0;
-    for (var i = 0; i < edges.length; i++) {
-      var edge = edges[i];
-      var sourceNode = idToLNode[edge.data("source")];
-      var targetNode = idToLNode[edge.data("target")];
-      if (sourceNode !== targetNode && sourceNode.getEdgesBetween(targetNode).length == 0) {
-        var e1 = gm.add(layout.newEdge(), sourceNode, targetNode);
-        e1.id = edge.id();
-        e1.idealLength = optFn(options.idealEdgeLength, edge);
-        e1.edgeElasticity = optFn(options.edgeElasticity, edge);
-        idealLengthTotal += e1.idealLength;
-        edgeCount++;
-      }
-    }
-    // we need to update the ideal edge length constant with the avg. ideal length value after processing edges
-    // in case there is no edge, use other options
-    if (options.idealEdgeLength != null) {
-      if (edges.length > 0) CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = idealLengthTotal / edgeCount;else if (!isFn(options.idealEdgeLength)) // in case there is no edge, but option gives a value to use
-        CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = options.idealEdgeLength;else // in case there is no edge and we cannot get a value from option (because it's a function)
-        CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = 50;
-      // we need to update these constant values based on the ideal edge length constant
-      CoSEConstants.MIN_REPULSION_DIST = FDLayoutConstants.MIN_REPULSION_DIST = FDLayoutConstants.DEFAULT_EDGE_LENGTH / 10.0;
-      CoSEConstants.DEFAULT_RADIAL_SEPARATION = FDLayoutConstants.DEFAULT_EDGE_LENGTH;
-    }
-  };
-
-  // transfer cytoscape constraints to cose layout
-  var processConstraints = function processConstraints(layout, options) {
-    // get nodes to be fixed
-    if (options.fixedNodeConstraint) {
-      layout.constraints["fixedNodeConstraint"] = options.fixedNodeConstraint;
-    }
-    // get nodes to be aligned
-    if (options.alignmentConstraint) {
-      layout.constraints["alignmentConstraint"] = options.alignmentConstraint;
-    }
-    // get nodes to be relatively placed
-    if (options.relativePlacementConstraint) {
-      layout.constraints["relativePlacementConstraint"] = options.relativePlacementConstraint;
-    }
-  };
-
-  /**** Apply postprocessing ****/
-  if (options.nestingFactor != null) CoSEConstants.PER_LEVEL_IDEAL_EDGE_LENGTH_FACTOR = FDLayoutConstants.PER_LEVEL_IDEAL_EDGE_LENGTH_FACTOR = options.nestingFactor;
-  if (options.gravity != null) CoSEConstants.DEFAULT_GRAVITY_STRENGTH = FDLayoutConstants.DEFAULT_GRAVITY_STRENGTH = options.gravity;
-  if (options.numIter != null) CoSEConstants.MAX_ITERATIONS = FDLayoutConstants.MAX_ITERATIONS = options.numIter;
-  if (options.gravityRange != null) CoSEConstants.DEFAULT_GRAVITY_RANGE_FACTOR = FDLayoutConstants.DEFAULT_GRAVITY_RANGE_FACTOR = options.gravityRange;
-  if (options.gravityCompound != null) CoSEConstants.DEFAULT_COMPOUND_GRAVITY_STRENGTH = FDLayoutConstants.DEFAULT_COMPOUND_GRAVITY_STRENGTH = options.gravityCompound;
-  if (options.gravityRangeCompound != null) CoSEConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = FDLayoutConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = options.gravityRangeCompound;
-  if (options.initialEnergyOnIncremental != null) CoSEConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = FDLayoutConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = options.initialEnergyOnIncremental;
-
-  if (options.quality == 'proof') LayoutConstants.QUALITY = 2;else LayoutConstants.QUALITY = 0;
-
-  CoSEConstants.NODE_DIMENSIONS_INCLUDE_LABELS = FDLayoutConstants.NODE_DIMENSIONS_INCLUDE_LABELS = LayoutConstants.NODE_DIMENSIONS_INCLUDE_LABELS = options.nodeDimensionsIncludeLabels;
-  CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = !options.randomize;
-  CoSEConstants.ANIMATE = FDLayoutConstants.ANIMATE = LayoutConstants.ANIMATE = options.animate;
-  CoSEConstants.TILE = options.tile;
-  CoSEConstants.TILING_PADDING_VERTICAL = typeof options.tilingPaddingVertical === 'function' ? options.tilingPaddingVertical.call() : options.tilingPaddingVertical;
-  CoSEConstants.TILING_PADDING_HORIZONTAL = typeof options.tilingPaddingHorizontal === 'function' ? options.tilingPaddingHorizontal.call() : options.tilingPaddingHorizontal;
-
-  CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
-  LayoutConstants.DEFAULT_UNIFORM_LEAF_NODE_SIZES = options.uniformNodeDimensions;
-
-  // This part is for debug/demo purpose
-  if (options.step == "transformed") {
-    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;
-    CoSEConstants.ENFORCE_CONSTRAINTS = false;
-    CoSEConstants.APPLY_LAYOUT = false;
-  }
-  if (options.step == "enforced") {
-    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
-    CoSEConstants.ENFORCE_CONSTRAINTS = true;
-    CoSEConstants.APPLY_LAYOUT = false;
-  }
-  if (options.step == "cose") {
-    CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
-    CoSEConstants.ENFORCE_CONSTRAINTS = false;
-    CoSEConstants.APPLY_LAYOUT = true;
-  }
-  if (options.step == "all") {
-    if (options.randomize) CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = true;else CoSEConstants.TRANSFORM_ON_CONSTRAINT_HANDLING = false;
-    CoSEConstants.ENFORCE_CONSTRAINTS = true;
-    CoSEConstants.APPLY_LAYOUT = true;
-  }
-
-  if (options.randomize && !(options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint)) {
-    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = true;
-  } else {
-    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = false;
-  }
-
-  var coseLayout = new CoSELayout();
-  var gm = coseLayout.newGraphManager();
-
-  processChildrenList(gm.addRoot(), aux.getTopMostNodes(nodes), coseLayout, options);
-  processEdges(coseLayout, gm, edges);
-  processConstraints(coseLayout, options);
-
-  coseLayout.runLayout();
-
-  return idToLNode;
-};
-
-module.exports = { coseLayout: coseLayout };
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
 
 
 /**
   The implementation of the spectral layout that is the first part of the fcose layout algorithm
 */
 
-var aux = __webpack_require__(1);
-var Matrix = __webpack_require__(0).layoutBase.Matrix;
-var SVD = __webpack_require__(0).layoutBase.SVD;
+var aux = __webpack_require__(548);
+var Matrix = __webpack_require__(281).layoutBase.Matrix;
+var SVD = __webpack_require__(281).layoutBase.SVD;
 
 // main function that spectral layout is processed
 var spectralLayout = function spectralLayout(options) {
@@ -1261,12 +1225,12 @@ var spectralLayout = function spectralLayout(options) {
 
   // form a parent-child map to keep representative node of each compound node  
   parentNodes.forEach(function (ele) {
-    var children = ele.children();
+    var children = ele.children().intersection(eles);
 
     //      let random = 0;
     while (children.nodes(":childless").length == 0) {
       //        random = Math.floor(Math.random() * children.nodes().length); // if all children are compound then proceed randomly
-      children = children.nodes()[0].children();
+      children = children.nodes()[0].children().intersection(eles);
     }
     //  select the representative node - we can apply different methods here
     //      random = Math.floor(Math.random() * children.nodes(":childless").length);
@@ -1389,13 +1353,13 @@ var spectralLayout = function spectralLayout(options) {
 module.exports = { spectralLayout: spectralLayout };
 
 /***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+/***/ 579:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 
-var impl = __webpack_require__(2);
+
+var impl = __webpack_require__(212);
 
 // registers the extension on a cytoscape lib ref
 var register = function register(cytoscape) {
@@ -1413,6 +1377,49 @@ if (typeof cytoscape !== 'undefined') {
 
 module.exports = register;
 
+/***/ }),
+
+/***/ 281:
+/***/ ((module) => {
+
+module.exports = __WEBPACK_EXTERNAL_MODULE__281__;
+
 /***/ })
-/******/ ]);
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __webpack_require__(579);
+/******/ 	
+/******/ 	return __webpack_exports__;
+/******/ })()
+;
 });

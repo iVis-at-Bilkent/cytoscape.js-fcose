@@ -4,13 +4,14 @@ cytoscape-fcose
 
 ## Description
 
-fCoSE (pron. "f-cosay", **f**ast **Co**mpound **S**pring **E**mbedder) is a faster version of our earlier compound spring embedder algorithm named [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent), implemented as a Cytoscape.js extension by [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University.
 
-<p align="center"> <a href="https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo/demo.html" title="Simple Demo">DEMO (simple)</a>
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo/demo-compound.html" title="Compound Demo">DEMO (compound)</a>
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo/demo-constraint.html" title="Constraint Demo">DEMO (constraint)</a>
+fCoSE (pron. "f-cosay", **f**ast **Co**mpound **S**pring **E**mbedder), is a faster version of our earlier compound spring embedder algorithm named [CoSE](https://github.com/cytoscape/cytoscape.js-cose-bilkent), implemented as a Cytoscape.js extension by [i-Vis Lab](http://cs.bilkent.edu.tr/~ivis/) in Bilkent University.
+
+Here are some demos: **simple**, **compound**, and **constraints**, respectively:
+<p align="center">
+<a href="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo.html" title="Simple"><img src="https://www.cs.bilkent.edu.tr/~ivis/images/demo1.png" height=42px></a> &emsp;
+<a href="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo-compound.html" title="Compound"><img src="https://www.cs.bilkent.edu.tr/~ivis/images/demo2.png" height=42px></a> &emsp;
+<a href="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo-constraint.html" title="Constraints"><img src="https://www.cs.bilkent.edu.tr/~ivis/images/demo3.png" height=42px></a>
 </p>
 
 fCoSE layout algorithm combines the speed of spectral layout with the aesthetics of force-directed layout. fCoSE runs up to 2 times as fast as CoSE while achieving similar aesthetics.
@@ -58,6 +59,7 @@ fCoSE supports user-defined placement constraints as well as its full support fo
   relativePlacementConstraint: [{top: 'n1', bottom: 'n2', gap: 100}, 
      {left: 'n3', right: 'n4', gap: 75}],
   ```
+  The `gap` property is optional. If it is omitted, average `idealEdgeLength` is used as the gap value.
 
 ## Usage instructions
 
@@ -132,7 +134,7 @@ var defaultOptions = {
   nodeDimensionsIncludeLabels: false,
   // Whether or not simple nodes (non-compound nodes) are of uniform dimensions
   uniformNodeDimensions: false,
-  // Whether to pack disconnected components - valid only if randomize: true
+  // Whether to pack disconnected components - cytoscape-layout-utilities extension should be registered and initialized
   packComponents: true,
   // Layout step - all, transformed, enforced, cose - for debug purpose only
   step: "all",
@@ -158,7 +160,7 @@ var defaultOptions = {
   edgeElasticity: edge => 0.45,
   // Nesting factor (multiplier) to compute ideal edge length for nested edges
   nestingFactor: 0.1,
-  // Maximum number of iterations to perform
+  // Maximum number of iterations to perform - this is a suggested value and might be adjusted by the algorithm as required
   numIter: 2500,
   // For enabling tiling
   tile: true,  
@@ -194,6 +196,9 @@ var defaultOptions = {
   stop: () => {} // on layoutstop
 };
 ```
+To be able to use `packComponents` option, `cytoscape-layout-utilities` extension should also be registered in the application.
+Packing related [options](https://github.com/iVis-at-Bilkent/cytoscape.js-layout-utilities#default-options) should be set via `cytoscape-layout-utilities` extension.
+If they are not set, fCoSE uses default options.
 
 
 ## Build targets

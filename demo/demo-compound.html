@@ -146,8 +146,7 @@
             
             ready: function(){
               let layoutUtilities = this.layoutUtilities({
-                desiredAspectRatio: this.width()/this.height(),
-                componentSpacing: 30
+                desiredAspectRatio: this.width()/this.height()
               });              
               this.nodes().forEach(function(node){
                 let size = Math.random()*120+30;

@@ -110,23 +110,41 @@ class Layout {
     let coseResult = [];
     let components;
     
-    let constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;
+    // basic validity check for constraint inputs 
+    if(options.fixedNodeConstraint && (!Array.isArray(options.fixedNodeConstraint) || options.fixedNodeConstraint.length == 0)){
+      options.fixedNodeConstraint = undefined;
+    }
+    
+    if(options.alignmentConstraint){
+      if(options.alignmentConstraint.vertical && (!Array.isArray(options.alignmentConstraint.vertical) || options.alignmentConstraint.vertical.length == 0)){
+        options.alignmentConstraint.vertical = undefined;
+      }
+      if(options.alignmentConstraint.horizontal && (!Array.isArray(options.alignmentConstraint.horizontal) || options.alignmentConstraint.horizontal.length == 0)){
+        options.alignmentConstraint.horizontal = undefined;
+      }      
+      
+    }
+    
+    if(options.relativePlacementConstraint && (!Array.isArray(options.relativePlacementConstraint) || options.relativePlacementConstraint.length == 0)){
+      options.relativePlacementConstraint = undefined;
+    }    
     
     // if any constraint exists, set some options
+    let constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;    
     if(constraintExist){    
       // constraints work with these options
       options.tile = false;
       options.packComponents = false;
-    }    
+    }       
     
     // decide component packing is enabled or not
     let layUtil;
     let packingEnabled = false;
-    if(cy.layoutUtilities && options.packComponents && options.randomize){
+    if(cy.layoutUtilities && options.packComponents){
       layUtil = cy.layoutUtilities("get");
       if(!layUtil)
-        layUtil = cy.layoutUtilities();
-      packingEnabled = true;
+        layUtil = cy.layoutUtilities();        
+      packingEnabled = true;      
     }
     
     if(eles.nodes().length > 0) {
@@ -251,7 +269,7 @@ class Layout {
             });
             subgraphs.push(subgraph);
           });
-          let shiftResult = layUtil.packComponents(subgraphs).shifts;
+          let shiftResult = layUtil.packComponents(subgraphs, options.randomize).shifts;
           if(options.quality == "draft"){
             spectralResult.forEach(function(result, index){
               let newXCoords = result.xCoords.map(x => x + shiftResult[index].dx);
@@ -272,7 +290,7 @@ class Layout {
       }
       
       // move graph to its original position because spectral moves it to origin
-      if(!options.fixedNodeConstraint) {
+      if(options.randomize && !options.fixedNodeConstraint) {
         let minXCoord = Number.POSITIVE_INFINITY;
         let maxXCoord = Number.NEGATIVE_INFINITY;
         let minYCoord = Number.POSITIVE_INFINITY;
@@ -334,12 +352,32 @@ class Layout {
           ele = i;
         }
         let pos;
+        let node;
         let theId = ele.data('id');
         coseResult.forEach(function(result){
           if (theId in result){
             pos = {x: result[theId].getRect().getCenterX(), y: result[theId].getRect().getCenterY()};
+            node = result[theId];
           }
         });
+        if(options.nodeDimensionsIncludeLabels){
+          if(node.labelWidth){
+            if(node.labelPosHorizontal == "left"){
+              pos.x += node.labelWidth/2;
+            }
+            else if(node.labelPosHorizontal == "right"){
+              pos.x -= node.labelWidth/2;
+            }
+          }
+          if(node.labelHeight){
+            if(node.labelPosVertical == "top"){
+              pos.y += node.labelHeight/2;
+            }
+            else if(node.labelPosVertical == "bottom"){
+              pos.y -= node.labelHeight/2;
+            }
+          }
+        }
         return {
           x: pos.x,
           y: pos.y

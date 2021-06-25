@@ -31,21 +31,22 @@
   "homepage": "https://github.com/iVis-at-Bilkent/cytoscape.js-fcose",
   "devDependencies": {
     "babel-core": "^6.24.1",
-    "babel-loader": "^7.0.0",
+    "babel-loader": "^7.1.4",
     "babel-preset-env": "^1.5.1",
-    "camelcase": "^4.1.0",
+    "camelcase": "^6.2.0",
     "chai": "4.0.2",
-    "cpy-cli": "^1.0.1",
-    "cross-env": "^5.0.0",
-    "eslint": "^6.8.0",
+    "cpy-cli": "^3.1.1",
+    "cross-env": "^7.0.3",
+    "eslint": "^7.26.0",
     "gh-pages": "^1.0.0",
-    "mocha": "3.4.2",
+    "mocha": "8.4.0",
     "npm-run-all": "^4.1.2",
-    "rimraf": "^2.6.3",
+    "rimraf": "^3.0.2",
     "update": "^0.7.4",
     "updater-license": "^1.0.0",
-    "webpack": "^2.6.1",
-    "webpack-dev-server": "^3.1.11"
+    "webpack": "^5.37.0",
+    "webpack-cli": "^4.7.0",
+    "webpack-dev-server": "^3.11.2"
   },
   "peerDependencies": {
     "cytoscape": "^3.2.0"

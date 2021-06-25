@@ -86,14 +86,14 @@ let coseLayout = function(options, spectralResult){
       theNode.paddingRight = parseInt( theChild.css('padding') );
       theNode.paddingBottom = parseInt( theChild.css('padding') );
 
-      //Attach the label properties to compound if labels will be included in node dimensions  
+      //Attach the label properties to both compound and simple nodes if labels will be included in node dimensions
+      //These properties will be used while updating bounds of compounds during iterations or tiling
+      //and will be used for simple nodes while transferring final positions to cytoscape
       if(options.nodeDimensionsIncludeLabels){
-        if(theChild.isParent()){
-          theNode.labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false, includeOverlays: false }).w;
-          theNode.labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false, includeOverlays: false }).h;
-          theNode.labelPosVertical = theChild.css("text-valign");
-          theNode.labelPosHorizontal = theChild.css("text-halign");          
-        }
+        theNode.labelWidth = theChild.boundingBox({ includeLabels: true, includeNodes: false, includeOverlays: false }).w;
+        theNode.labelHeight = theChild.boundingBox({ includeLabels: true, includeNodes: false, includeOverlays: false }).h;
+        theNode.labelPosVertical = theChild.css("text-valign");
+        theNode.labelPosHorizontal = theChild.css("text-halign");
       }
 
       // Map the layout node
@@ -135,7 +135,7 @@ let coseLayout = function(options, spectralResult){
     // we need to update the ideal edge length constant with the avg. ideal length value after processing edges
     // in case there is no edge, use other options
     if (options.idealEdgeLength != null){
-      if (edges.length > 0)
+      if (edgeCount > 0)
         CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = idealLengthTotal / edgeCount;
       else if(!isFn(options.idealEdgeLength)) // in case there is no edge, but option gives a value to use
         CoSEConstants.DEFAULT_EDGE_LENGTH = FDLayoutConstants.DEFAULT_EDGE_LENGTH = options.idealEdgeLength;
@@ -195,6 +195,7 @@ let coseLayout = function(options, spectralResult){
           typeof options.tilingPaddingHorizontal === 'function' ? options.tilingPaddingHorizontal.call() : options.tilingPaddingHorizontal;  
 
   CoSEConstants.DEFAULT_INCREMENTAL = FDLayoutConstants.DEFAULT_INCREMENTAL = LayoutConstants.DEFAULT_INCREMENTAL = true;
+  CoSEConstants.PURE_INCREMENTAL = !options.randomize;
   LayoutConstants.DEFAULT_UNIFORM_LEAF_NODE_SIZES = options.uniformNodeDimensions;
 
   // This part is for debug/demo purpose
@@ -222,11 +223,11 @@ let coseLayout = function(options, spectralResult){
     CoSEConstants.APPLY_LAYOUT = true;
   }
   
-  if(options.randomize && !(options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint)){
-    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = true;
+  if(options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint){
+    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = false;
   }
   else{
-    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = false;
+    CoSEConstants.TREE_REDUCTION_ON_INCREMENTAL = true;
   }
 
   let coseLayout = new CoSELayout();
