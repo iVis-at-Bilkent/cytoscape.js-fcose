@@ -7,7 +7,7 @@
 		exports["cytoscapeFcose"] = factory(require("cose-base"));
 	else
 		root["cytoscapeFcose"] = factory(root["coseBase"]);
-})(self, function(__WEBPACK_EXTERNAL_MODULE__281__) {
+})(this, function(__WEBPACK_EXTERNAL_MODULE__281__) {
 return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
