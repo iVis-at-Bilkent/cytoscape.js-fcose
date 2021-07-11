@@ -24,11 +24,11 @@ Furthermore, fCoSE also supports a fairly rich set of constraint types (i.e., fi
 
 You can see constraint support in action in the following videos: [fixed node](https://youtu.be/vRZVlwntzGY), [alignment](https://youtu.be/O5rddJ7DteU), [relative placement](https://youtu.be/Xcm87bT50RA), [hybrid](https://youtu.be/KRAQHmnTvUA), [real life graphs](https://youtu.be/vTPy9G2ALcI). Constraints can also be added [incrementally](https://youtu.be/DTm2WmzwP4k) on a given layout. 
 
-Please cite the following when you use this layout until an fCoSE publication is available:
+Please cite the following when you use this layout:
 
-U. Dogrusoz, E. Giral, A. Cetintas, A. Civril, and E. Demir, "[A Layout Algorithm For Undirected Compound Graphs](http://www.sciencedirect.com/science/article/pii/S0020025508004799)", Information Sciences, 179, pp. 980-994, 2009.
+H. Balci and U. Dogrusoz, "[fCoSE: a fast compound graph layout algorithm with constraint support](https://doi.org/10.1109/TVCG.2021.3095303)", IEEE Trans. on Visualization and Computer Graphics, to appear.
 
-A. Civril, M. Magdon-Ismail, and E. Bocek-Rivele, "[SSDE: Fast Graph Drawing Using Sampled Spectral Distance Embedding](https://link.springer.com/chapter/10.1007/978-3-540-70904-6_5)", International Symposium on Graph Drawing, pp. 30-41, 2006.
+U. Dogrusoz, E. Giral, A. Cetintas, A. Civril and E. Demir, "[A Layout Algorithm For Undirected Compound Graphs]
 
 ## Dependencies
 
