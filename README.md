@@ -26,9 +26,9 @@ You can see constraint support in action in the following videos: [fixed node](h
 
 Please cite the following when you use this layout:
 
-H. Balci, and U. Dogrusoz, "[fCoSE: a fast compound graph layout algorithm with constraint support](https://doi.org/10.1109/TVCG.2021.3095303)", IEEE Trans. on Visualization and Computer Graphics, to appear.
+H. Balci and U. Dogrusoz, "[fCoSE: a fast compound graph layout algorithm with constraint support](https://doi.org/10.1109/TVCG.2021.3095303)", IEEE Trans. on Visualization and Computer Graphics, to appear.
 
-U. Dogrusoz, E. Giral, A. Cetintas, A. Civril, and E. Demir, "[A Layout Algorithm For Undirected Compound Graphs](http://www.sciencedirect.com/science/article/pii/S0020025508004799)", Information Sciences, 179, pp. 980-994, 2009.
+U. Dogrusoz, E. Giral, A. Cetintas, A. Civril and E. Demir, "[A Layout Algorithm For Undirected Compound Graphs](http://www.sciencedirect.com/science/article/pii/S0020025508004799)", Information Sciences, 179, pp. 980-994, 2009.
 
 ## Dependencies
 
