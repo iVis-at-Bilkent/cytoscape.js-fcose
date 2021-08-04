@@ -178,6 +178,9 @@ let coseLayout = function(options, spectralResult){
     CoSEConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = FDLayoutConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = options.gravityRangeCompound;
   if (options.initialEnergyOnIncremental != null)
     CoSEConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = FDLayoutConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = options.initialEnergyOnIncremental;
+  
+  if (options.tilingCompareBy != null)
+    CoSEConstants.TILING_COMPARE_BY = options.tilingCompareBy;
 
   if(options.quality == 'proof')
     LayoutConstants.QUALITY = 2;

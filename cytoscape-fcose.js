@@ -399,6 +399,8 @@ var coseLayout = function coseLayout(options, spectralResult) {
   if (options.gravityRangeCompound != null) CoSEConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = FDLayoutConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = options.gravityRangeCompound;
   if (options.initialEnergyOnIncremental != null) CoSEConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = FDLayoutConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = options.initialEnergyOnIncremental;
 
+  if (options.tilingCompareBy != null) CoSEConstants.TILING_COMPARE_BY = options.tilingCompareBy;
+
   if (options.quality == 'proof') LayoutConstants.QUALITY = 2;else LayoutConstants.QUALITY = 0;
 
   CoSEConstants.NODE_DIMENSIONS_INCLUDE_LABELS = FDLayoutConstants.NODE_DIMENSIONS_INCLUDE_LABELS = LayoutConstants.NODE_DIMENSIONS_INCLUDE_LABELS = options.nodeDimensionsIncludeLabels;
@@ -540,6 +542,9 @@ var defaults = Object.freeze({
   numIter: 2500,
   // For enabling tiling
   tile: true,
+  // The function that specifies the criteria for comparing nodes while sorting them during tiling operation.
+  // Takes the node id as a parameter and the default tiling operation is perfomed when this option is not set.
+  tilingCompareBy: undefined,
   // Represents the amount of the vertical space to put between the zero degree members during the tiling operation(can also be a function)
   tilingPaddingVertical: 10,
   // Represents the amount of the horizontal space to put between the zero degree members during the tiling operation(can also be a function)

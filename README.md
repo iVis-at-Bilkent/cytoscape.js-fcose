@@ -163,7 +163,13 @@ var defaultOptions = {
   // Maximum number of iterations to perform - this is a suggested value and might be adjusted by the algorithm as required
   numIter: 2500,
   // For enabling tiling
-  tile: true,  
+  tile: true,
+  // The comparison function to be used while sorting nodes during tiling operation.
+  // Takes the ids of 2 nodes that will be compared as a parameter and the default tiling operation is performed when this option is not set.
+  // If ``tilingCompareBy(a,b)`` returns a value > than 0, sort b before a.
+  // If ``tilingCompareBy(a, b)`` returns a value ≤ 0, leave a and b in the same order.
+  // It works like ``compareFunction`` parameter of ``Array.prototype.sort()``
+  tilingCompareBy: undefined, 
   // Represents the amount of the vertical space to put between the zero degree members during the tiling operation(can also be a function)
   tilingPaddingVertical: 10,
   // Represents the amount of the horizontal space to put between the zero degree members during the tiling operation(can also be a function)

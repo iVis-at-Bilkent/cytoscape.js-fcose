@@ -62,7 +62,10 @@ const defaults = Object.freeze({
   // Maximum number of iterations to perform
   numIter: 2500,
   // For enabling tiling
-  tile: true,  
+  tile: true,
+  // The function that specifies the criteria for comparing nodes while sorting them during tiling operation.
+  // Takes the node id as a parameter and the default tiling operation is perfomed when this option is not set.
+  tilingCompareBy: undefined,  
   // Represents the amount of the vertical space to put between the zero degree members during the tiling operation(can also be a function)
   tilingPaddingVertical: 10,
   // Represents the amount of the horizontal space to put between the zero degree members during the tiling operation(can also be a function)
