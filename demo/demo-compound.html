@@ -308,6 +308,7 @@
               randomize: !(document.getElementById("randomize").checked),
               animate: document.getElementById("animate").checked,
               animationEasing: 'ease-out',
+              fit: document.getElementById("fit").checked,
               uniformNodeDimensions: document.getElementById("uniformNodeDimensions").checked,
               packComponents: document.getElementById("packComponents").checked,
               tile: document.getElementById("tile").checked,
@@ -367,6 +368,15 @@
                       <input type="checkbox" class="custom-control-input" id="animate" name="animate" checked>
                       <label class="custom-control-label" for="animate"></label>
                     </div>                  
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="add-on layout-text" title="Whether to fit the viewport to the repositioned nodes"> Fit </span></td>
+                  <td>
+                    <div class="custom-control custom-control-inline custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="fit" name="fit" checked>
+                      <label class="custom-control-label" for="fit"></label>
+                    </div>
                   </td>
                 </tr>
                 <tr>

@@ -112,6 +112,7 @@ class Layout {
     let yCoords;
     let coseResult = [];
     let components;
+    let componentCenters = [];
     
     // basic validity check for constraint inputs 
     if(options.fixedNodeConstraint && (!Array.isArray(options.fixedNodeConstraint) || options.fixedNodeConstraint.length == 0)){
@@ -153,20 +154,33 @@ class Layout {
     if(eles.nodes().length > 0) {
       // if packing is not enabled, perform layout on the whole graph
       if(!packingEnabled){
+        // store component center
+        let boundingBox = options.eles.boundingBox();
+        componentCenters.push({x: boundingBox.x1 + boundingBox.w / 2, y: boundingBox.y1 + boundingBox.h / 2});
+        // apply spectral layout
         if(options.randomize){
-          let result = spectralLayout(options);  // apply spectral layout        
+          let result = spectralLayout(options);
           spectralResult.push(result);
         }
         // apply cose layout as postprocessing
-        if(options.quality == "default" || options.quality == "proof"){  
+        if(options.quality == "default" || options.quality == "proof"){
           coseResult.push(coseLayout(options, spectralResult[0]));
-        }      
+          aux.relocateComponent(componentCenters[0], coseResult[0], options); // relocate center to original position
+        }
+        else{
+          aux.relocateComponent(componentCenters[0], spectralResult[0], options); // relocate center to original position
+        }
       }
       else{ // packing is enabled
         let topMostNodes = aux.getTopMostNodes(options.eles.nodes());
-        components = aux.connectComponents(cy, options.eles, topMostNodes); 
+        components = aux.connectComponents(cy, options.eles, topMostNodes);
+        // store component centers
+        components.forEach(function(component){
+          let boundingBox = component.boundingBox();
+          componentCenters.push({x: boundingBox.x1 + boundingBox.w / 2, y: boundingBox.y1 + boundingBox.h / 2});
+        });
 
-        //send each component to spectral layout
+        //send each component to spectral layout if randomized
         if(options.randomize){
           components.forEach(function(component){
             options.eles = component;
@@ -197,19 +211,28 @@ class Layout {
               }              
             });
             if(toBeTiledNodes.length > 1){
+              let boundingBox = toBeTiledNodes.boundingBox();
+              componentCenters.push({x: boundingBox.x1 + boundingBox.w / 2, y: boundingBox.y1 + boundingBox.h / 2});
               components.push(toBeTiledNodes);
               spectralResult.push(tempSpectralResult);
               for(let i = indexesToBeDeleted.length-1; i >= 0; i--){
                 components.splice(indexesToBeDeleted[i], 1);
                 spectralResult.splice(indexesToBeDeleted[i], 1);
+                componentCenters.splice(indexesToBeDeleted[i], 1);
               };
             }
           }
           components.forEach(function(component, index){ // send each component to cose layout
             options.eles = component;
             coseResult.push(coseLayout(options, spectralResult[index]));
+            aux.relocateComponent(componentCenters[index], coseResult[index], options); // relocate center to original position
           });  
-        }  
+        }
+        else {
+          components.forEach(function(component, index){
+            aux.relocateComponent(componentCenters[index], spectralResult[index], options); // relocate center to original position
+          });
+        }
 
         // packing
         if(components.length > 1){
@@ -291,61 +314,6 @@ class Layout {
           }
         }
       }
-      
-      // move graph to its original position because spectral moves it to origin
-      if(options.randomize && !options.fixedNodeConstraint) {
-        let minXCoord = Number.POSITIVE_INFINITY;
-        let maxXCoord = Number.NEGATIVE_INFINITY;
-        let minYCoord = Number.POSITIVE_INFINITY;
-        let maxYCoord = Number.NEGATIVE_INFINITY;
-        if(options.quality == "draft") {
-          spectralResult.forEach(function(result){
-            result.xCoords.forEach(function (value) {
-              if (value < minXCoord)
-                minXCoord = value;
-              if (value > maxXCoord)
-                maxXCoord = value;              
-            });
-            result.yCoords.forEach(function (value) {
-              if (value < minYCoord)
-                minYCoord = value;
-              if (value > maxYCoord)
-                maxYCoord = value;              
-            });            
-          });
-          let boundingBox = options.eles.boundingBox();
-          let diffOnX = (boundingBox.x1 + boundingBox.w / 2) - (maxXCoord + minXCoord) / 2;
-          let diffOnY = (boundingBox.y1 + boundingBox.h / 2) - (maxYCoord + minYCoord) / 2;
-          spectralResult.forEach(function(result){
-            result.xCoords = result.xCoords.map(x => x + diffOnX);
-            result.yCoords = result.yCoords.map(y => y + diffOnY);
-          });
-        }
-        else {
-          coseResult.forEach(function(result){
-            Object.keys(result).forEach(function (item) {
-              let node = result[item];
-              if (node.getCenterX() < minXCoord)
-                minXCoord = node.getCenterX();
-              if (node.getCenterX() > maxXCoord)
-                maxXCoord = node.getCenterX();
-              if (node.getCenterY() < minYCoord)
-                minYCoord = node.getCenterY();
-              if (node.getCenterY() > maxYCoord)
-                maxYCoord = node.getCenterY();              
-            });
-          });
-          let boundingBox = options.eles.boundingBox();
-          let diffOnX = (boundingBox.x1 + boundingBox.w / 2) - (maxXCoord + minXCoord) / 2;
-          let diffOnY = (boundingBox.y1 + boundingBox.h / 2) - (maxYCoord + minYCoord) / 2;
-          coseResult.forEach(function(result, index){
-            Object.keys(result).forEach(function (item) {
-              let node = result[item];
-              node.setCenter(node.getCenterX() + diffOnX, node.getCenterY() + diffOnY);
-            });
-          });          
-        }
-      }      
     }
     
     // get each element's calculated position

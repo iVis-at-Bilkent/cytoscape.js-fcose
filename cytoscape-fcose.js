@@ -7,7 +7,7 @@
 		exports["cytoscapeFcose"] = factory(require("cose-base"));
 	else
 		root["cytoscapeFcose"] = factory(root["coseBase"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE__281__) {
+})(this, function(__WEBPACK_EXTERNAL_MODULE__140__) {
 return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
@@ -40,11 +40,13 @@ module.exports = Object.assign != null ? Object.assign.bind(Object) : function (
 
 
 
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 /*
  * Auxiliary functions
  */
 
-var LinkedList = __webpack_require__(281).layoutBase.LinkedList;
+var LinkedList = __webpack_require__(140).layoutBase.LinkedList;
 
 var auxiliary = {};
 
@@ -138,7 +140,7 @@ auxiliary.connectComponents = function (cy, eles, topMostNodes, dummyNodes) {
         // connectedEdges() usually cached
         if (cmpt.has(e.source()) && cmpt.has(e.target())) {
           // has() is cheap
-          cmpt.merge(e); // forEach() only considers nodes -- sets N at call time
+          cmpt.merge(e);
         }
       });
     });
@@ -179,6 +181,93 @@ auxiliary.connectComponents = function (cy, eles, topMostNodes, dummyNodes) {
     }
   }
   return components;
+};
+
+// relocates componentResult to originalCenter if there is no fixedNodeConstraint
+auxiliary.relocateComponent = function (originalCenter, componentResult, options) {
+  if (!options.fixedNodeConstraint) {
+    var minXCoord = Number.POSITIVE_INFINITY;
+    var maxXCoord = Number.NEGATIVE_INFINITY;
+    var minYCoord = Number.POSITIVE_INFINITY;
+    var maxYCoord = Number.NEGATIVE_INFINITY;
+    if (options.quality == "draft") {
+      // calculate current bounding box
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = componentResult.nodeIndexes[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var _ref = _step.value;
+
+          var _ref2 = _slicedToArray(_ref, 2);
+
+          var key = _ref2[0];
+          var value = _ref2[1];
+
+          var cyNode = options.cy.getElementById(key);
+          if (cyNode) {
+            var nodeBB = cyNode.boundingBox();
+            var leftX = componentResult.xCoords[value] - nodeBB.w / 2;
+            var rightX = componentResult.xCoords[value] + nodeBB.w / 2;
+            var topY = componentResult.yCoords[value] - nodeBB.h / 2;
+            var bottomY = componentResult.yCoords[value] + nodeBB.h / 2;
+
+            if (leftX < minXCoord) minXCoord = leftX;
+            if (rightX > maxXCoord) maxXCoord = rightX;
+            if (topY < minYCoord) minYCoord = topY;
+            if (bottomY > maxYCoord) maxYCoord = bottomY;
+          }
+        }
+        // find difference between current and original center
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
+      }
+
+      var diffOnX = originalCenter.x - (maxXCoord + minXCoord) / 2;
+      var diffOnY = originalCenter.y - (maxYCoord + minYCoord) / 2;
+      // move component to original center
+      componentResult.xCoords = componentResult.xCoords.map(function (x) {
+        return x + diffOnX;
+      });
+      componentResult.yCoords = componentResult.yCoords.map(function (y) {
+        return y + diffOnY;
+      });
+    } else {
+      // calculate current bounding box
+      Object.keys(componentResult).forEach(function (item) {
+        var node = componentResult[item];
+        var leftX = node.getRect().x;
+        var rightX = node.getRect().x + node.getRect().width;
+        var topY = node.getRect().y;
+        var bottomY = node.getRect().y + node.getRect().height;
+
+        if (leftX < minXCoord) minXCoord = leftX;
+        if (rightX > maxXCoord) maxXCoord = rightX;
+        if (topY < minYCoord) minYCoord = topY;
+        if (bottomY > maxYCoord) maxYCoord = bottomY;
+      });
+      // find difference between current and original center
+      var _diffOnX = originalCenter.x - (maxXCoord + minXCoord) / 2;
+      var _diffOnY = originalCenter.y - (maxYCoord + minYCoord) / 2;
+      // move component to original center
+      Object.keys(componentResult).forEach(function (item) {
+        var node = componentResult[item];
+        node.setCenter(node.getCenterX() + _diffOnX, node.getCenterY() + _diffOnY);
+      });
+    }
+  }
 };
 
 auxiliary.calcBoundingBox = function (parentNode, xCoords, yCoords, nodeIndexes) {
@@ -241,13 +330,13 @@ module.exports = auxiliary;
 */
 
 var aux = __webpack_require__(548);
-var CoSELayout = __webpack_require__(281).CoSELayout;
-var CoSENode = __webpack_require__(281).CoSENode;
-var PointD = __webpack_require__(281).layoutBase.PointD;
-var DimensionD = __webpack_require__(281).layoutBase.DimensionD;
-var LayoutConstants = __webpack_require__(281).layoutBase.LayoutConstants;
-var FDLayoutConstants = __webpack_require__(281).layoutBase.FDLayoutConstants;
-var CoSEConstants = __webpack_require__(281).CoSEConstants;
+var CoSELayout = __webpack_require__(140).CoSELayout;
+var CoSENode = __webpack_require__(140).CoSENode;
+var PointD = __webpack_require__(140).layoutBase.PointD;
+var DimensionD = __webpack_require__(140).layoutBase.DimensionD;
+var LayoutConstants = __webpack_require__(140).layoutBase.LayoutConstants;
+var FDLayoutConstants = __webpack_require__(140).layoutBase.FDLayoutConstants;
+var CoSEConstants = __webpack_require__(140).CoSEConstants;
 
 // main function that cose layout is processed
 var coseLayout = function coseLayout(options, spectralResult) {
@@ -595,6 +684,7 @@ var Layout = function () {
       var yCoords = void 0;
       var coseResult = [];
       var components = void 0;
+      var componentCenters = [];
 
       // basic validity check for constraint inputs 
       if (options.fixedNodeConstraint && (!Array.isArray(options.fixedNodeConstraint) || options.fixedNodeConstraint.length == 0)) {
@@ -634,20 +724,32 @@ var Layout = function () {
       if (eles.nodes().length > 0) {
         // if packing is not enabled, perform layout on the whole graph
         if (!packingEnabled) {
+          // store component center
+          var boundingBox = options.eles.boundingBox();
+          componentCenters.push({ x: boundingBox.x1 + boundingBox.w / 2, y: boundingBox.y1 + boundingBox.h / 2 });
+          // apply spectral layout
           if (options.randomize) {
-            var result = spectralLayout(options); // apply spectral layout        
+            var result = spectralLayout(options);
             spectralResult.push(result);
           }
           // apply cose layout as postprocessing
           if (options.quality == "default" || options.quality == "proof") {
             coseResult.push(coseLayout(options, spectralResult[0]));
+            aux.relocateComponent(componentCenters[0], coseResult[0], options); // relocate center to original position
+          } else {
+            aux.relocateComponent(componentCenters[0], spectralResult[0], options); // relocate center to original position
           }
         } else {
           // packing is enabled
           var topMostNodes = aux.getTopMostNodes(options.eles.nodes());
           components = aux.connectComponents(cy, options.eles, topMostNodes);
+          // store component centers
+          components.forEach(function (component) {
+            var boundingBox = component.boundingBox();
+            componentCenters.push({ x: boundingBox.x1 + boundingBox.w / 2, y: boundingBox.y1 + boundingBox.h / 2 });
+          });
 
-          //send each component to spectral layout
+          //send each component to spectral layout if randomized
           if (options.randomize) {
             components.forEach(function (component) {
               options.eles = component;
@@ -679,11 +781,14 @@ var Layout = function () {
                 }
               });
               if (toBeTiledNodes.length > 1) {
+                var _boundingBox = toBeTiledNodes.boundingBox();
+                componentCenters.push({ x: _boundingBox.x1 + _boundingBox.w / 2, y: _boundingBox.y1 + _boundingBox.h / 2 });
                 components.push(toBeTiledNodes);
                 spectralResult.push(tempSpectralResult);
                 for (var i = indexesToBeDeleted.length - 1; i >= 0; i--) {
                   components.splice(indexesToBeDeleted[i], 1);
                   spectralResult.splice(indexesToBeDeleted[i], 1);
+                  componentCenters.splice(indexesToBeDeleted[i], 1);
                 };
               }
             }
@@ -691,6 +796,11 @@ var Layout = function () {
               // send each component to cose layout
               options.eles = component;
               coseResult.push(coseLayout(options, spectralResult[index]));
+              aux.relocateComponent(componentCenters[index], coseResult[index], options); // relocate center to original position
+            });
+          } else {
+            components.forEach(function (component, index) {
+              aux.relocateComponent(componentCenters[index], spectralResult[index], options); // relocate center to original position
             });
           }
 
@@ -770,56 +880,6 @@ var Layout = function () {
                 });
               });
             }
-          }
-        }
-
-        // move graph to its original position because spectral moves it to origin
-        if (options.randomize && !options.fixedNodeConstraint) {
-          var minXCoord = Number.POSITIVE_INFINITY;
-          var maxXCoord = Number.NEGATIVE_INFINITY;
-          var minYCoord = Number.POSITIVE_INFINITY;
-          var maxYCoord = Number.NEGATIVE_INFINITY;
-          if (options.quality == "draft") {
-            spectralResult.forEach(function (result) {
-              result.xCoords.forEach(function (value) {
-                if (value < minXCoord) minXCoord = value;
-                if (value > maxXCoord) maxXCoord = value;
-              });
-              result.yCoords.forEach(function (value) {
-                if (value < minYCoord) minYCoord = value;
-                if (value > maxYCoord) maxYCoord = value;
-              });
-            });
-            var boundingBox = options.eles.boundingBox();
-            var diffOnX = boundingBox.x1 + boundingBox.w / 2 - (maxXCoord + minXCoord) / 2;
-            var diffOnY = boundingBox.y1 + boundingBox.h / 2 - (maxYCoord + minYCoord) / 2;
-            spectralResult.forEach(function (result) {
-              result.xCoords = result.xCoords.map(function (x) {
-                return x + diffOnX;
-              });
-              result.yCoords = result.yCoords.map(function (y) {
-                return y + diffOnY;
-              });
-            });
-          } else {
-            coseResult.forEach(function (result) {
-              Object.keys(result).forEach(function (item) {
-                var node = result[item];
-                if (node.getCenterX() < minXCoord) minXCoord = node.getCenterX();
-                if (node.getCenterX() > maxXCoord) maxXCoord = node.getCenterX();
-                if (node.getCenterY() < minYCoord) minYCoord = node.getCenterY();
-                if (node.getCenterY() > maxYCoord) maxYCoord = node.getCenterY();
-              });
-            });
-            var _boundingBox = options.eles.boundingBox();
-            var _diffOnX = _boundingBox.x1 + _boundingBox.w / 2 - (maxXCoord + minXCoord) / 2;
-            var _diffOnY = _boundingBox.y1 + _boundingBox.h / 2 - (maxYCoord + minYCoord) / 2;
-            coseResult.forEach(function (result, index) {
-              Object.keys(result).forEach(function (item) {
-                var node = result[item];
-                node.setCenter(node.getCenterX() + _diffOnX, node.getCenterY() + _diffOnY);
-              });
-            });
           }
         }
       }
@@ -903,8 +963,8 @@ module.exports = Layout;
 */
 
 var aux = __webpack_require__(548);
-var Matrix = __webpack_require__(281).layoutBase.Matrix;
-var SVD = __webpack_require__(281).layoutBase.SVD;
+var Matrix = __webpack_require__(140).layoutBase.Matrix;
+var SVD = __webpack_require__(140).layoutBase.SVD;
 
 // main function that spectral layout is processed
 var spectralLayout = function spectralLayout(options) {
@@ -1384,10 +1444,10 @@ module.exports = register;
 
 /***/ }),
 
-/***/ 281:
+/***/ 140:
 /***/ ((module) => {
 
-module.exports = __WEBPACK_EXTERNAL_MODULE__281__;
+module.exports = __WEBPACK_EXTERNAL_MODULE__140__;
 
 /***/ })
 
