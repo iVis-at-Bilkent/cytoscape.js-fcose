@@ -4,7 +4,7 @@ authors:
 - family-names: "Balci"
   given-names: "Hasan"
   orcid: "https://orcid.org/0000-0001-8319-7758"
-- family-names: "Dıgrusoz"
+- family-names: "Dogrusoz"
   given-names: "Ugur"
   orcid: "https://orcid.org/0000-0002-7153-0784"
 title: "cytoscape.js-fcose"
@@ -17,11 +17,15 @@ preferred-citation:
   - family-names: "Balci"
     given-names: "Hasan"
     orcid: "https://orcid.org/0000-0001-8319-7758"
-  - family-names: "Dıgrusoz"
+  - family-names: "Dogrusoz"
     given-names: "Ugur"
     orcid: "https://orcid.org/0000-0002-7153-0784"
   doi: "10.1109/TVCG.2021.3095303"
   journal: "IEEE Transactions on Visualization and Computer Graphics"
-  title: "fCoSE: a fast compound graph layout algorithm with constraint support"
-  month: 7
-  year: 2021
+  title: "fCoSE: A Fast Compound Graph Layout Algorithm with Constraint Support"
+  issue: 12
+  volume: 28  
+  start: 4582 # First page number
+  end: 4593 # Last page number
+  month: 12
+  year: 2022
