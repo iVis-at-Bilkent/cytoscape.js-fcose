@@ -235,65 +235,79 @@ class Layout {
         }
 
         // packing
+        let componentsEvaluated = new Set();
         if(components.length > 1){
           let subgraphs = [];
+          let hiddenEles = eles.filter((ele) => {return ele.css('display') == 'none'});
           components.forEach(function(component, index){
             let nodeIndexes;
             if(options.quality == "draft"){
               nodeIndexes = spectralResult[index].nodeIndexes;
             }
-            let subgraph = {};
-            subgraph.nodes = [];
-            subgraph.edges = [];
-            let nodeIndex;
-            component.nodes().forEach(function (node) {
-              if(options.quality == "draft"){
-                if(!node.isParent()){
-                  nodeIndex = nodeIndexes.get(node.id());
-                  subgraph.nodes.push({x: spectralResult[index].xCoords[nodeIndex] - node.boundingbox().w/2, y: spectralResult[index].yCoords[nodeIndex] - node.boundingbox().h/2, width: node.boundingbox().w, height: node.boundingbox().h});
+            
+            if(component.nodes().not(hiddenEles).length > 0) {
+              let subgraph = {};
+              subgraph.edges = [];
+              subgraph.nodes = [];
+              let nodeIndex;
+              component.nodes().not(hiddenEles).forEach(function (node) {
+                if(options.quality == "draft"){
+                  if(!node.isParent()){
+                    nodeIndex = nodeIndexes.get(node.id());
+                    subgraph.nodes.push({x: spectralResult[index].xCoords[nodeIndex] - node.boundingbox().w/2, y: spectralResult[index].yCoords[nodeIndex] - node.boundingbox().h/2, width: node.boundingbox().w, height: node.boundingbox().h});
+                  }
+                  else{
+                    let parentInfo = aux.calcBoundingBox(node, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                    subgraph.nodes.push({x: parentInfo.topLeftX, y: parentInfo.topLeftY, width: parentInfo.width, height: parentInfo.height});
+                  }
                 }
                 else{
-                  let parentInfo = aux.calcBoundingBox(node, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
-                  subgraph.nodes.push({x: parentInfo.topLeftX, y: parentInfo.topLeftY, width: parentInfo.width, height: parentInfo.height});
+                  if(coseResult[index][node.id()]) {
+                    subgraph.nodes.push({x: coseResult[index][node.id()].getLeft(), y: coseResult[index][node.id()].getTop(), width: coseResult[index][node.id()].getWidth(), height: coseResult[index][node.id()].getHeight()});
+                  }
                 }
+              });
+              component.edges().forEach(function (edge) {
+                let source = edge.source();
+                let target = edge.target();
+                if(source.css("display") != "none" && target.css("display") != "none") {
+                  if(options.quality == "draft"){
+                    let sourceNodeIndex = nodeIndexes.get(source.id());
+                    let targetNodeIndex = nodeIndexes.get(target.id());
+                    let sourceCenter = [];
+                    let targetCenter = [];
+                    if(source.isParent()){
+                      let parentInfo = aux.calcBoundingBox(source, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                      sourceCenter.push(parentInfo.topLeftX + parentInfo.width / 2);
+                      sourceCenter.push(parentInfo.topLeftY + parentInfo.height / 2);
+                    }
+                    else{
+                      sourceCenter.push(spectralResult[index].xCoords[sourceNodeIndex]);
+                      sourceCenter.push(spectralResult[index].yCoords[sourceNodeIndex]);
+                    }
+                    if(target.isParent()){
+                      let parentInfo = aux.calcBoundingBox(target, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                      targetCenter.push(parentInfo.topLeftX + parentInfo.width / 2);
+                      targetCenter.push(parentInfo.topLeftY + parentInfo.height / 2);
+                    }
+                    else{
+                      targetCenter.push(spectralResult[index].xCoords[targetNodeIndex]);
+                      targetCenter.push(spectralResult[index].yCoords[targetNodeIndex]);
+                    }
+                    subgraph.edges.push({startX: sourceCenter[0], startY: sourceCenter[1], endX: targetCenter[0], endY: targetCenter[1]});
+                  }
+                  else{
+                    if(coseResult[index][source.id()] && coseResult[index][target.id()]) {
+                      subgraph.edges.push({startX: coseResult[index][source.id()].getCenterX(), startY: coseResult[index][source.id()].getCenterY(), endX: coseResult[index][target.id()].getCenterX(), endY: coseResult[index][target.id()].getCenterY()});
+                    }
+                  }
+                }
+              });
+              if(subgraph.nodes.length > 0) {
+                subgraphs.push(subgraph);
+                componentsEvaluated.add(index);
               }
-              else{
-                subgraph.nodes.push({x: coseResult[index][node.id()].getLeft(), y: coseResult[index][node.id()].getTop(), width: coseResult[index][node.id()].getWidth(), height: coseResult[index][node.id()].getHeight()});
-              }
-            });
-            component.edges().forEach(function (edge) {
-              let source = edge.source();
-              let target = edge.target();
-              if(options.quality == "draft"){
-                let sourceNodeIndex = nodeIndexes.get(source.id());
-                let targetNodeIndex = nodeIndexes.get(target.id());
-                let sourceCenter = [];
-                let targetCenter = [];
-                if(source.isParent()){
-                  let parentInfo = aux.calcBoundingBox(source, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
-                  sourceCenter.push(parentInfo.topLeftX + parentInfo.width / 2);
-                  sourceCenter.push(parentInfo.topLeftY + parentInfo.height / 2);
-                }
-                else{
-                  sourceCenter.push(spectralResult[index].xCoords[sourceNodeIndex]);
-                  sourceCenter.push(spectralResult[index].yCoords[sourceNodeIndex]);
-                }
-                if(target.isParent()){
-                  let parentInfo = aux.calcBoundingBox(target, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
-                  targetCenter.push(parentInfo.topLeftX + parentInfo.width / 2);
-                  targetCenter.push(parentInfo.topLeftY + parentInfo.height / 2);
-                }
-                else{
-                  targetCenter.push(spectralResult[index].xCoords[targetNodeIndex]);
-                  targetCenter.push(spectralResult[index].yCoords[targetNodeIndex]);
-                }
-                subgraph.edges.push({startX: sourceCenter[0], startY: sourceCenter[1], endX: targetCenter[0], endY: targetCenter[1]});
-              }
-              else{
-                subgraph.edges.push({startX: coseResult[index][source.id()].getCenterX(), startY: coseResult[index][source.id()].getCenterY(), endX: coseResult[index][target.id()].getCenterX(), endY: coseResult[index][target.id()].getCenterY()});
-              }
-            });
-            subgraphs.push(subgraph);
+            }
           });
           let shiftResult = layUtil.packComponents(subgraphs, options.randomize).shifts;
           if(options.quality == "draft"){
@@ -305,12 +319,14 @@ class Layout {
             });
           }
           else{
-            coseResult.forEach(function(result, index){
-              Object.keys(result).forEach(function (item) {
-                let nodeRectangle = result[item];
-                nodeRectangle.setCenter(nodeRectangle.getCenterX() + shiftResult[index].dx, nodeRectangle.getCenterY() + shiftResult[index].dy);
+            let count = 0; 
+            componentsEvaluated.forEach((index) => {
+              Object.keys(coseResult[index]).forEach(function (item) {
+                let nodeRectangle = coseResult[index][item];
+                nodeRectangle.setCenter(nodeRectangle.getCenterX() + shiftResult[count].dx, nodeRectangle.getCenterY() + shiftResult[count].dy);
               });
-            });
+              count++;
+            })
           }
         }
       }
@@ -349,6 +365,8 @@ class Layout {
             }
           }
         }
+        if(pos == undefined)
+          pos = {x: ele.position("x"), y: ele.position("y")};
         return {
           x: pos.x,
           y: pos.y
@@ -374,8 +392,17 @@ class Layout {
     // quality = "draft" and randomize = false are contradictive so in that case positions don't change
     if(options.quality == "default" || options.quality == "proof" || options.randomize) {
       // transfer calculated positions to nodes (positions of only simple nodes are evaluated, compounds are positioned automatically)
-      options.eles = eles;
-      eles.nodes().not(":parent").layoutPositions(layout, options, getPositions); 
+      let parentsWithoutChildren = aux.calcParentsWithoutChildren(cy, eles);
+      let hiddenEles = eles.filter((ele) => {return ele.css('display') == 'none'}); 
+      options.eles = eles.not(hiddenEles);
+
+      eles.nodes().not(":parent").not(hiddenEles).layoutPositions(layout, options, getPositions);
+      
+      if(parentsWithoutChildren.length > 0){
+        parentsWithoutChildren.forEach((ele) => {
+          ele.position(getPositions(ele));
+        });
+      }
     }
     else{
       console.log("If randomize option is set to false, then quality option must be 'default' or 'proof'.");

@@ -13,7 +13,8 @@ const CoSEConstants = require('cose-base').CoSEConstants;
 
 // main function that cose layout is processed
 let coseLayout = function(options, spectralResult){
-  
+
+  let cy = options.cy;
   let eles = options.eles;
   let nodes = eles.nodes();
   let edges = eles.edges();
@@ -41,12 +42,17 @@ let coseLayout = function(options, spectralResult){
 
   /**** Postprocessing functions ****/
 
+  let parentsWithoutChildren = aux.calcParentsWithoutChildren(cy, eles);
+
   // transfer cytoscape nodes to cose nodes
   let processChildrenList = function (parent, children, layout, options) {
     let size = children.length;
     for (let i = 0; i < size; i++) {
       let theChild = children[i];
-      let children_of_children = theChild.children();
+      let children_of_children = null;
+      if(theChild.intersection(parentsWithoutChildren).length == 0) {
+        children_of_children = theChild.children();
+      }
       let theNode;    
 
       let dimensions = theChild.layoutDimensions({
@@ -63,9 +69,16 @@ let coseLayout = function(options, spectralResult){
           }
           else{
             let parentInfo = aux.calcBoundingBox(theChild, xCoords, yCoords, nodeIndexes);
-            theNode = parent.add(new CoSENode(layout.graphManager,
-                    new PointD(parentInfo.topLeftX, parentInfo.topLeftY),
-                    new DimensionD(parentInfo.width, parentInfo.height)));
+            if(theChild.intersection(parentsWithoutChildren).length == 0) {
+              theNode = parent.add(new CoSENode(layout.graphManager,
+                new PointD(parentInfo.topLeftX, parentInfo.topLeftY),
+                new DimensionD(parentInfo.width, parentInfo.height)));
+            }
+            else {  // for the parentsWithoutChildren
+              theNode = parent.add(new CoSENode(layout.graphManager,
+                new PointD(parentInfo.topLeftX, parentInfo.topLeftY),
+                new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
+            }
           }
         }
         else{
@@ -123,7 +136,7 @@ let coseLayout = function(options, spectralResult){
       let edge = edges[i];
       let sourceNode = idToLNode[edge.data("source")];
       let targetNode = idToLNode[edge.data("target")];
-      if(sourceNode !== targetNode && sourceNode.getEdgesBetween(targetNode).length == 0){
+      if(sourceNode && targetNode && sourceNode !== targetNode && sourceNode.getEdgesBetween(targetNode).length == 0){
         let e1 = gm.add(layout.newEdge(), sourceNode, targetNode);
         e1.id = edge.id();
         e1.idealLength = optFn( options.idealEdgeLength, edge );

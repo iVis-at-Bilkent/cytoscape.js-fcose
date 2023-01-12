@@ -248,4 +248,22 @@ auxiliary.calcBoundingBox = function(parentNode, xCoords, yCoords, nodeIndexes){
     return boundingBox;
 };
 
+// This function finds and returns parent nodes whose all children are hidden
+auxiliary.calcParentsWithoutChildren = function(cy, eles){
+  let parentsWithoutChildren = cy.collection();
+  eles.nodes(':parent').forEach((parent) => {
+    let check = false;
+    parent.children().forEach((child) => {
+      if(child.css('display') != 'none') {
+        check = true;
+      }
+    });
+    if(!check) {
+      parentsWithoutChildren.merge(parent);
+    }
+  });
+
+  return parentsWithoutChildren;
+}
+
 module.exports = auxiliary;
