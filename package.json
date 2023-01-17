@@ -1,6 +1,6 @@
 {
   "name": "cytoscape-fcose",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "The fCoSE layout for Cytoscape.js by Bilkent with fast compound node placement",
   "main": "cytoscape-fcose.js",
   "author": {
