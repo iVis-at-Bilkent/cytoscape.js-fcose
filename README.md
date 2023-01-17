@@ -9,9 +9,9 @@ fCoSE (pron. "f-cosay", **f**ast **Co**mpound **S**pring **E**mbedder), is a fas
 
 Here are some demos: **simple**, **compound**, and **constraints**, respectively:
 <p align="center">
-<a href="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo.html" title="Simple"><img src="https://www.cs.bilkent.edu.tr/~ivis/images/demo1.png" height=42px></a> &emsp;
-<a href="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo-compound.html" title="Compound"><img src="https://www.cs.bilkent.edu.tr/~ivis/images/demo2.png" height=42px></a> &emsp;
-<a href="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo-constraint.html" title="Constraints"><img src="https://www.cs.bilkent.edu.tr/~ivis/images/demo3.png" height=42px></a>
+<a href="https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo/demo.html" title="Simple"><img src="https://www.cs.bilkent.edu.tr/~ivis/images/demo1.png" height=42px></a> &emsp;
+<a href="https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo/demo-compound.html" title="Compound"><img src="https://www.cs.bilkent.edu.tr/~ivis/images/demo2.png" height=42px></a> &emsp;
+<a href="https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo/demo-constraint.html" title="Constraints"><img src="https://www.cs.bilkent.edu.tr/~ivis/images/demo3.png" height=42px></a>
 </p>
 
 fCoSE layout algorithm combines the speed of spectral layout with the aesthetics of force-directed layout. fCoSE runs up to 2 times as fast as CoSE while achieving similar aesthetics.
