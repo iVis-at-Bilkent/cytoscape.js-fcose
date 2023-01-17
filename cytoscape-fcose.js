@@ -7,7 +7,7 @@
 		exports["cytoscapeFcose"] = factory(require("cose-base"));
 	else
 		root["cytoscapeFcose"] = factory(root["coseBase"]);
-})(self, function(__WEBPACK_EXTERNAL_MODULE__281__) {
+})(this, function(__WEBPACK_EXTERNAL_MODULE__140__) {
 return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
@@ -40,11 +40,13 @@ module.exports = Object.assign != null ? Object.assign.bind(Object) : function (
 
 
 
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 /*
  * Auxiliary functions
  */
 
-var LinkedList = __webpack_require__(281).layoutBase.LinkedList;
+var LinkedList = __webpack_require__(140).layoutBase.LinkedList;
 
 var auxiliary = {};
 
@@ -138,7 +140,7 @@ auxiliary.connectComponents = function (cy, eles, topMostNodes, dummyNodes) {
         // connectedEdges() usually cached
         if (cmpt.has(e.source()) && cmpt.has(e.target())) {
           // has() is cheap
-          cmpt.merge(e); // forEach() only considers nodes -- sets N at call time
+          cmpt.merge(e);
         }
       });
     });
@@ -179,6 +181,93 @@ auxiliary.connectComponents = function (cy, eles, topMostNodes, dummyNodes) {
     }
   }
   return components;
+};
+
+// relocates componentResult to originalCenter if there is no fixedNodeConstraint
+auxiliary.relocateComponent = function (originalCenter, componentResult, options) {
+  if (!options.fixedNodeConstraint) {
+    var minXCoord = Number.POSITIVE_INFINITY;
+    var maxXCoord = Number.NEGATIVE_INFINITY;
+    var minYCoord = Number.POSITIVE_INFINITY;
+    var maxYCoord = Number.NEGATIVE_INFINITY;
+    if (options.quality == "draft") {
+      // calculate current bounding box
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = componentResult.nodeIndexes[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var _ref = _step.value;
+
+          var _ref2 = _slicedToArray(_ref, 2);
+
+          var key = _ref2[0];
+          var value = _ref2[1];
+
+          var cyNode = options.cy.getElementById(key);
+          if (cyNode) {
+            var nodeBB = cyNode.boundingBox();
+            var leftX = componentResult.xCoords[value] - nodeBB.w / 2;
+            var rightX = componentResult.xCoords[value] + nodeBB.w / 2;
+            var topY = componentResult.yCoords[value] - nodeBB.h / 2;
+            var bottomY = componentResult.yCoords[value] + nodeBB.h / 2;
+
+            if (leftX < minXCoord) minXCoord = leftX;
+            if (rightX > maxXCoord) maxXCoord = rightX;
+            if (topY < minYCoord) minYCoord = topY;
+            if (bottomY > maxYCoord) maxYCoord = bottomY;
+          }
+        }
+        // find difference between current and original center
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
+      }
+
+      var diffOnX = originalCenter.x - (maxXCoord + minXCoord) / 2;
+      var diffOnY = originalCenter.y - (maxYCoord + minYCoord) / 2;
+      // move component to original center
+      componentResult.xCoords = componentResult.xCoords.map(function (x) {
+        return x + diffOnX;
+      });
+      componentResult.yCoords = componentResult.yCoords.map(function (y) {
+        return y + diffOnY;
+      });
+    } else {
+      // calculate current bounding box
+      Object.keys(componentResult).forEach(function (item) {
+        var node = componentResult[item];
+        var leftX = node.getRect().x;
+        var rightX = node.getRect().x + node.getRect().width;
+        var topY = node.getRect().y;
+        var bottomY = node.getRect().y + node.getRect().height;
+
+        if (leftX < minXCoord) minXCoord = leftX;
+        if (rightX > maxXCoord) maxXCoord = rightX;
+        if (topY < minYCoord) minYCoord = topY;
+        if (bottomY > maxYCoord) maxYCoord = bottomY;
+      });
+      // find difference between current and original center
+      var _diffOnX = originalCenter.x - (maxXCoord + minXCoord) / 2;
+      var _diffOnY = originalCenter.y - (maxYCoord + minYCoord) / 2;
+      // move component to original center
+      Object.keys(componentResult).forEach(function (item) {
+        var node = componentResult[item];
+        node.setCenter(node.getCenterX() + _diffOnX, node.getCenterY() + _diffOnY);
+      });
+    }
+  }
 };
 
 auxiliary.calcBoundingBox = function (parentNode, xCoords, yCoords, nodeIndexes) {
@@ -227,6 +316,24 @@ auxiliary.calcBoundingBox = function (parentNode, xCoords, yCoords, nodeIndexes)
   return boundingBox;
 };
 
+// This function finds and returns parent nodes whose all children are hidden
+auxiliary.calcParentsWithoutChildren = function (cy, eles) {
+  var parentsWithoutChildren = cy.collection();
+  eles.nodes(':parent').forEach(function (parent) {
+    var check = false;
+    parent.children().forEach(function (child) {
+      if (child.css('display') != 'none') {
+        check = true;
+      }
+    });
+    if (!check) {
+      parentsWithoutChildren.merge(parent);
+    }
+  });
+
+  return parentsWithoutChildren;
+};
+
 module.exports = auxiliary;
 
 /***/ }),
@@ -241,17 +348,18 @@ module.exports = auxiliary;
 */
 
 var aux = __webpack_require__(548);
-var CoSELayout = __webpack_require__(281).CoSELayout;
-var CoSENode = __webpack_require__(281).CoSENode;
-var PointD = __webpack_require__(281).layoutBase.PointD;
-var DimensionD = __webpack_require__(281).layoutBase.DimensionD;
-var LayoutConstants = __webpack_require__(281).layoutBase.LayoutConstants;
-var FDLayoutConstants = __webpack_require__(281).layoutBase.FDLayoutConstants;
-var CoSEConstants = __webpack_require__(281).CoSEConstants;
+var CoSELayout = __webpack_require__(140).CoSELayout;
+var CoSENode = __webpack_require__(140).CoSENode;
+var PointD = __webpack_require__(140).layoutBase.PointD;
+var DimensionD = __webpack_require__(140).layoutBase.DimensionD;
+var LayoutConstants = __webpack_require__(140).layoutBase.LayoutConstants;
+var FDLayoutConstants = __webpack_require__(140).layoutBase.FDLayoutConstants;
+var CoSEConstants = __webpack_require__(140).CoSEConstants;
 
 // main function that cose layout is processed
 var coseLayout = function coseLayout(options, spectralResult) {
 
+  var cy = options.cy;
   var eles = options.eles;
   var nodes = eles.nodes();
   var edges = eles.edges();
@@ -281,12 +389,17 @@ var coseLayout = function coseLayout(options, spectralResult) {
 
   /**** Postprocessing functions ****/
 
+  var parentsWithoutChildren = aux.calcParentsWithoutChildren(cy, eles);
+
   // transfer cytoscape nodes to cose nodes
   var processChildrenList = function processChildrenList(parent, children, layout, options) {
     var size = children.length;
     for (var i = 0; i < size; i++) {
       var theChild = children[i];
-      var children_of_children = theChild.children();
+      var children_of_children = null;
+      if (theChild.intersection(parentsWithoutChildren).length == 0) {
+        children_of_children = theChild.children();
+      }
       var theNode = void 0;
 
       var dimensions = theChild.layoutDimensions({
@@ -299,7 +412,12 @@ var coseLayout = function coseLayout(options, spectralResult) {
             theNode = parent.add(new CoSENode(layout.graphManager, new PointD(xCoords[nodeIndexes.get(theChild.id())] - dimensions.w / 2, yCoords[nodeIndexes.get(theChild.id())] - dimensions.h / 2), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
           } else {
             var parentInfo = aux.calcBoundingBox(theChild, xCoords, yCoords, nodeIndexes);
-            theNode = parent.add(new CoSENode(layout.graphManager, new PointD(parentInfo.topLeftX, parentInfo.topLeftY), new DimensionD(parentInfo.width, parentInfo.height)));
+            if (theChild.intersection(parentsWithoutChildren).length == 0) {
+              theNode = parent.add(new CoSENode(layout.graphManager, new PointD(parentInfo.topLeftX, parentInfo.topLeftY), new DimensionD(parentInfo.width, parentInfo.height)));
+            } else {
+              // for the parentsWithoutChildren
+              theNode = parent.add(new CoSENode(layout.graphManager, new PointD(parentInfo.topLeftX, parentInfo.topLeftY), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
+            }
           }
         } else {
           theNode = parent.add(new CoSENode(layout.graphManager, new PointD(theChild.position('x') - dimensions.w / 2, theChild.position('y') - dimensions.h / 2), new DimensionD(parseFloat(dimensions.w), parseFloat(dimensions.h))));
@@ -353,7 +471,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
       var edge = edges[i];
       var sourceNode = idToLNode[edge.data("source")];
       var targetNode = idToLNode[edge.data("target")];
-      if (sourceNode !== targetNode && sourceNode.getEdgesBetween(targetNode).length == 0) {
+      if (sourceNode && targetNode && sourceNode !== targetNode && sourceNode.getEdgesBetween(targetNode).length == 0) {
         var e1 = gm.add(layout.newEdge(), sourceNode, targetNode);
         e1.id = edge.id();
         e1.idealLength = optFn(options.idealEdgeLength, edge);
@@ -398,6 +516,8 @@ var coseLayout = function coseLayout(options, spectralResult) {
   if (options.gravityCompound != null) CoSEConstants.DEFAULT_COMPOUND_GRAVITY_STRENGTH = FDLayoutConstants.DEFAULT_COMPOUND_GRAVITY_STRENGTH = options.gravityCompound;
   if (options.gravityRangeCompound != null) CoSEConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = FDLayoutConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = options.gravityRangeCompound;
   if (options.initialEnergyOnIncremental != null) CoSEConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = FDLayoutConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = options.initialEnergyOnIncremental;
+
+  if (options.tilingCompareBy != null) CoSEConstants.TILING_COMPARE_BY = options.tilingCompareBy;
 
   if (options.quality == 'proof') LayoutConstants.QUALITY = 2;else LayoutConstants.QUALITY = 0;
 
@@ -540,6 +660,9 @@ var defaults = Object.freeze({
   numIter: 2500,
   // For enabling tiling
   tile: true,
+  // The function that specifies the criteria for comparing nodes while sorting them during tiling operation.
+  // Takes the node id as a parameter and the default tiling operation is perfomed when this option is not set.
+  tilingCompareBy: undefined,
   // Represents the amount of the vertical space to put between the zero degree members during the tiling operation(can also be a function)
   tilingPaddingVertical: 10,
   // Represents the amount of the horizontal space to put between the zero degree members during the tiling operation(can also be a function)
@@ -590,6 +713,7 @@ var Layout = function () {
       var yCoords = void 0;
       var coseResult = [];
       var components = void 0;
+      var componentCenters = [];
 
       // basic validity check for constraint inputs 
       if (options.fixedNodeConstraint && (!Array.isArray(options.fixedNodeConstraint) || options.fixedNodeConstraint.length == 0)) {
@@ -629,20 +753,32 @@ var Layout = function () {
       if (eles.nodes().length > 0) {
         // if packing is not enabled, perform layout on the whole graph
         if (!packingEnabled) {
+          // store component center
+          var boundingBox = options.eles.boundingBox();
+          componentCenters.push({ x: boundingBox.x1 + boundingBox.w / 2, y: boundingBox.y1 + boundingBox.h / 2 });
+          // apply spectral layout
           if (options.randomize) {
-            var result = spectralLayout(options); // apply spectral layout        
+            var result = spectralLayout(options);
             spectralResult.push(result);
           }
           // apply cose layout as postprocessing
           if (options.quality == "default" || options.quality == "proof") {
             coseResult.push(coseLayout(options, spectralResult[0]));
+            aux.relocateComponent(componentCenters[0], coseResult[0], options); // relocate center to original position
+          } else {
+            aux.relocateComponent(componentCenters[0], spectralResult[0], options); // relocate center to original position
           }
         } else {
           // packing is enabled
           var topMostNodes = aux.getTopMostNodes(options.eles.nodes());
           components = aux.connectComponents(cy, options.eles, topMostNodes);
+          // store component centers
+          components.forEach(function (component) {
+            var boundingBox = component.boundingBox();
+            componentCenters.push({ x: boundingBox.x1 + boundingBox.w / 2, y: boundingBox.y1 + boundingBox.h / 2 });
+          });
 
-          //send each component to spectral layout
+          //send each component to spectral layout if randomized
           if (options.randomize) {
             components.forEach(function (component) {
               options.eles = component;
@@ -674,11 +810,14 @@ var Layout = function () {
                 }
               });
               if (toBeTiledNodes.length > 1) {
+                var _boundingBox = toBeTiledNodes.boundingBox();
+                componentCenters.push({ x: _boundingBox.x1 + _boundingBox.w / 2, y: _boundingBox.y1 + _boundingBox.h / 2 });
                 components.push(toBeTiledNodes);
                 spectralResult.push(tempSpectralResult);
                 for (var i = indexesToBeDeleted.length - 1; i >= 0; i--) {
                   components.splice(indexesToBeDeleted[i], 1);
                   spectralResult.splice(indexesToBeDeleted[i], 1);
+                  componentCenters.splice(indexesToBeDeleted[i], 1);
                 };
               }
             }
@@ -686,64 +825,85 @@ var Layout = function () {
               // send each component to cose layout
               options.eles = component;
               coseResult.push(coseLayout(options, spectralResult[index]));
+              aux.relocateComponent(componentCenters[index], coseResult[index], options); // relocate center to original position
+            });
+          } else {
+            components.forEach(function (component, index) {
+              aux.relocateComponent(componentCenters[index], spectralResult[index], options); // relocate center to original position
             });
           }
 
           // packing
+          var componentsEvaluated = new Set();
           if (components.length > 1) {
             var subgraphs = [];
+            var hiddenEles = eles.filter(function (ele) {
+              return ele.css('display') == 'none';
+            });
             components.forEach(function (component, index) {
               var nodeIndexes = void 0;
               if (options.quality == "draft") {
                 nodeIndexes = spectralResult[index].nodeIndexes;
               }
-              var subgraph = {};
-              subgraph.nodes = [];
-              subgraph.edges = [];
-              var nodeIndex = void 0;
-              component.nodes().forEach(function (node) {
-                if (options.quality == "draft") {
-                  if (!node.isParent()) {
-                    nodeIndex = nodeIndexes.get(node.id());
-                    subgraph.nodes.push({ x: spectralResult[index].xCoords[nodeIndex] - node.boundingbox().w / 2, y: spectralResult[index].yCoords[nodeIndex] - node.boundingbox().h / 2, width: node.boundingbox().w, height: node.boundingbox().h });
+
+              if (component.nodes().not(hiddenEles).length > 0) {
+                var subgraph = {};
+                subgraph.edges = [];
+                subgraph.nodes = [];
+                var nodeIndex = void 0;
+                component.nodes().not(hiddenEles).forEach(function (node) {
+                  if (options.quality == "draft") {
+                    if (!node.isParent()) {
+                      nodeIndex = nodeIndexes.get(node.id());
+                      subgraph.nodes.push({ x: spectralResult[index].xCoords[nodeIndex] - node.boundingbox().w / 2, y: spectralResult[index].yCoords[nodeIndex] - node.boundingbox().h / 2, width: node.boundingbox().w, height: node.boundingbox().h });
+                    } else {
+                      var parentInfo = aux.calcBoundingBox(node, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                      subgraph.nodes.push({ x: parentInfo.topLeftX, y: parentInfo.topLeftY, width: parentInfo.width, height: parentInfo.height });
+                    }
                   } else {
-                    var parentInfo = aux.calcBoundingBox(node, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
-                    subgraph.nodes.push({ x: parentInfo.topLeftX, y: parentInfo.topLeftY, width: parentInfo.width, height: parentInfo.height });
+                    if (coseResult[index][node.id()]) {
+                      subgraph.nodes.push({ x: coseResult[index][node.id()].getLeft(), y: coseResult[index][node.id()].getTop(), width: coseResult[index][node.id()].getWidth(), height: coseResult[index][node.id()].getHeight() });
+                    }
                   }
-                } else {
-                  subgraph.nodes.push({ x: coseResult[index][node.id()].getLeft(), y: coseResult[index][node.id()].getTop(), width: coseResult[index][node.id()].getWidth(), height: coseResult[index][node.id()].getHeight() });
+                });
+                component.edges().forEach(function (edge) {
+                  var source = edge.source();
+                  var target = edge.target();
+                  if (source.css("display") != "none" && target.css("display") != "none") {
+                    if (options.quality == "draft") {
+                      var sourceNodeIndex = nodeIndexes.get(source.id());
+                      var targetNodeIndex = nodeIndexes.get(target.id());
+                      var sourceCenter = [];
+                      var targetCenter = [];
+                      if (source.isParent()) {
+                        var parentInfo = aux.calcBoundingBox(source, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                        sourceCenter.push(parentInfo.topLeftX + parentInfo.width / 2);
+                        sourceCenter.push(parentInfo.topLeftY + parentInfo.height / 2);
+                      } else {
+                        sourceCenter.push(spectralResult[index].xCoords[sourceNodeIndex]);
+                        sourceCenter.push(spectralResult[index].yCoords[sourceNodeIndex]);
+                      }
+                      if (target.isParent()) {
+                        var _parentInfo = aux.calcBoundingBox(target, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
+                        targetCenter.push(_parentInfo.topLeftX + _parentInfo.width / 2);
+                        targetCenter.push(_parentInfo.topLeftY + _parentInfo.height / 2);
+                      } else {
+                        targetCenter.push(spectralResult[index].xCoords[targetNodeIndex]);
+                        targetCenter.push(spectralResult[index].yCoords[targetNodeIndex]);
+                      }
+                      subgraph.edges.push({ startX: sourceCenter[0], startY: sourceCenter[1], endX: targetCenter[0], endY: targetCenter[1] });
+                    } else {
+                      if (coseResult[index][source.id()] && coseResult[index][target.id()]) {
+                        subgraph.edges.push({ startX: coseResult[index][source.id()].getCenterX(), startY: coseResult[index][source.id()].getCenterY(), endX: coseResult[index][target.id()].getCenterX(), endY: coseResult[index][target.id()].getCenterY() });
+                      }
+                    }
+                  }
+                });
+                if (subgraph.nodes.length > 0) {
+                  subgraphs.push(subgraph);
+                  componentsEvaluated.add(index);
                 }
-              });
-              component.edges().forEach(function (edge) {
-                var source = edge.source();
-                var target = edge.target();
-                if (options.quality == "draft") {
-                  var sourceNodeIndex = nodeIndexes.get(source.id());
-                  var targetNodeIndex = nodeIndexes.get(target.id());
-                  var sourceCenter = [];
-                  var targetCenter = [];
-                  if (source.isParent()) {
-                    var parentInfo = aux.calcBoundingBox(source, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
-                    sourceCenter.push(parentInfo.topLeftX + parentInfo.width / 2);
-                    sourceCenter.push(parentInfo.topLeftY + parentInfo.height / 2);
-                  } else {
-                    sourceCenter.push(spectralResult[index].xCoords[sourceNodeIndex]);
-                    sourceCenter.push(spectralResult[index].yCoords[sourceNodeIndex]);
-                  }
-                  if (target.isParent()) {
-                    var _parentInfo = aux.calcBoundingBox(target, spectralResult[index].xCoords, spectralResult[index].yCoords, nodeIndexes);
-                    targetCenter.push(_parentInfo.topLeftX + _parentInfo.width / 2);
-                    targetCenter.push(_parentInfo.topLeftY + _parentInfo.height / 2);
-                  } else {
-                    targetCenter.push(spectralResult[index].xCoords[targetNodeIndex]);
-                    targetCenter.push(spectralResult[index].yCoords[targetNodeIndex]);
-                  }
-                  subgraph.edges.push({ startX: sourceCenter[0], startY: sourceCenter[1], endX: targetCenter[0], endY: targetCenter[1] });
-                } else {
-                  subgraph.edges.push({ startX: coseResult[index][source.id()].getCenterX(), startY: coseResult[index][source.id()].getCenterY(), endX: coseResult[index][target.id()].getCenterX(), endY: coseResult[index][target.id()].getCenterY() });
-                }
-              });
-              subgraphs.push(subgraph);
+              }
             });
             var shiftResult = layUtil.packComponents(subgraphs, options.randomize).shifts;
             if (options.quality == "draft") {
@@ -758,63 +918,15 @@ var Layout = function () {
                 result.yCoords = newYCoords;
               });
             } else {
-              coseResult.forEach(function (result, index) {
-                Object.keys(result).forEach(function (item) {
-                  var nodeRectangle = result[item];
-                  nodeRectangle.setCenter(nodeRectangle.getCenterX() + shiftResult[index].dx, nodeRectangle.getCenterY() + shiftResult[index].dy);
+              var _count = 0;
+              componentsEvaluated.forEach(function (index) {
+                Object.keys(coseResult[index]).forEach(function (item) {
+                  var nodeRectangle = coseResult[index][item];
+                  nodeRectangle.setCenter(nodeRectangle.getCenterX() + shiftResult[_count].dx, nodeRectangle.getCenterY() + shiftResult[_count].dy);
                 });
+                _count++;
               });
             }
-          }
-        }
-
-        // move graph to its original position because spectral moves it to origin
-        if (options.randomize && !options.fixedNodeConstraint) {
-          var minXCoord = Number.POSITIVE_INFINITY;
-          var maxXCoord = Number.NEGATIVE_INFINITY;
-          var minYCoord = Number.POSITIVE_INFINITY;
-          var maxYCoord = Number.NEGATIVE_INFINITY;
-          if (options.quality == "draft") {
-            spectralResult.forEach(function (result) {
-              result.xCoords.forEach(function (value) {
-                if (value < minXCoord) minXCoord = value;
-                if (value > maxXCoord) maxXCoord = value;
-              });
-              result.yCoords.forEach(function (value) {
-                if (value < minYCoord) minYCoord = value;
-                if (value > maxYCoord) maxYCoord = value;
-              });
-            });
-            var boundingBox = options.eles.boundingBox();
-            var diffOnX = boundingBox.x1 + boundingBox.w / 2 - (maxXCoord + minXCoord) / 2;
-            var diffOnY = boundingBox.y1 + boundingBox.h / 2 - (maxYCoord + minYCoord) / 2;
-            spectralResult.forEach(function (result) {
-              result.xCoords = result.xCoords.map(function (x) {
-                return x + diffOnX;
-              });
-              result.yCoords = result.yCoords.map(function (y) {
-                return y + diffOnY;
-              });
-            });
-          } else {
-            coseResult.forEach(function (result) {
-              Object.keys(result).forEach(function (item) {
-                var node = result[item];
-                if (node.getCenterX() < minXCoord) minXCoord = node.getCenterX();
-                if (node.getCenterX() > maxXCoord) maxXCoord = node.getCenterX();
-                if (node.getCenterY() < minYCoord) minYCoord = node.getCenterY();
-                if (node.getCenterY() > maxYCoord) maxYCoord = node.getCenterY();
-              });
-            });
-            var _boundingBox = options.eles.boundingBox();
-            var _diffOnX = _boundingBox.x1 + _boundingBox.w / 2 - (maxXCoord + minXCoord) / 2;
-            var _diffOnY = _boundingBox.y1 + _boundingBox.h / 2 - (maxYCoord + minYCoord) / 2;
-            coseResult.forEach(function (result, index) {
-              Object.keys(result).forEach(function (item) {
-                var node = result[item];
-                node.setCenter(node.getCenterX() + _diffOnX, node.getCenterY() + _diffOnY);
-              });
-            });
           }
         }
       }
@@ -850,6 +962,7 @@ var Layout = function () {
               }
             }
           }
+          if (pos == undefined) pos = { x: ele.position("x"), y: ele.position("y") };
           return {
             x: pos.x,
             y: pos.y
@@ -873,8 +986,19 @@ var Layout = function () {
       // quality = "draft" and randomize = false are contradictive so in that case positions don't change
       if (options.quality == "default" || options.quality == "proof" || options.randomize) {
         // transfer calculated positions to nodes (positions of only simple nodes are evaluated, compounds are positioned automatically)
-        options.eles = eles;
-        eles.nodes().not(":parent").layoutPositions(layout, options, getPositions);
+        var parentsWithoutChildren = aux.calcParentsWithoutChildren(cy, eles);
+        var _hiddenEles = eles.filter(function (ele) {
+          return ele.css('display') == 'none';
+        });
+        options.eles = eles.not(_hiddenEles);
+
+        eles.nodes().not(":parent").not(_hiddenEles).layoutPositions(layout, options, getPositions);
+
+        if (parentsWithoutChildren.length > 0) {
+          parentsWithoutChildren.forEach(function (ele) {
+            ele.position(getPositions(ele));
+          });
+        }
       } else {
         console.log("If randomize option is set to false, then quality option must be 'default' or 'proof'.");
       }
@@ -898,8 +1022,8 @@ module.exports = Layout;
 */
 
 var aux = __webpack_require__(548);
-var Matrix = __webpack_require__(281).layoutBase.Matrix;
-var SVD = __webpack_require__(281).layoutBase.SVD;
+var Matrix = __webpack_require__(140).layoutBase.Matrix;
+var SVD = __webpack_require__(140).layoutBase.SVD;
 
 // main function that spectral layout is processed
 var spectralLayout = function spectralLayout(options) {
@@ -1379,10 +1503,10 @@ module.exports = register;
 
 /***/ }),
 
-/***/ 281:
+/***/ 140:
 /***/ ((module) => {
 
-module.exports = __WEBPACK_EXTERNAL_MODULE__281__;
+module.exports = __WEBPACK_EXTERNAL_MODULE__140__;
 
 /***/ })
 

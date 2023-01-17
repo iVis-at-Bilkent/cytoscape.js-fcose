@@ -9,9 +9,9 @@ fCoSE (pron. "f-cosay", **f**ast **Co**mpound **S**pring **E**mbedder), is a fas
 
 Here are some demos: **simple**, **compound**, and **constraints**, respectively:
 <p align="center">
-<a href="https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo/demo.html" title="Simple"><img src="https://www.cs.bilkent.edu.tr/~ivis/images/demo1.png" height=42px></a> &emsp;
-<a href="https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo/demo-compound.html" title="Compound"><img src="https://www.cs.bilkent.edu.tr/~ivis/images/demo2.png" height=42px></a> &emsp;
-<a href="https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo/demo-constraint.html" title="Constraints"><img src="https://www.cs.bilkent.edu.tr/~ivis/images/demo3.png" height=42px></a>
+<a href="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo.html" title="Simple"><img src="https://www.cs.bilkent.edu.tr/~ivis/images/demo1.png" height=42px></a> &emsp;
+<a href="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo-compound.html" title="Compound"><img src="https://www.cs.bilkent.edu.tr/~ivis/images/demo2.png" height=42px></a> &emsp;
+<a href="https://raw.githack.com/iVis-at-Bilkent/cytoscape.js-fcose/unstable/demo/demo-constraint.html" title="Constraints"><img src="https://www.cs.bilkent.edu.tr/~ivis/images/demo3.png" height=42px></a>
 </p>
 
 fCoSE layout algorithm combines the speed of spectral layout with the aesthetics of force-directed layout. fCoSE runs up to 2 times as fast as CoSE while achieving similar aesthetics.
@@ -163,7 +163,14 @@ var defaultOptions = {
   // Maximum number of iterations to perform - this is a suggested value and might be adjusted by the algorithm as required
   numIter: 2500,
   // For enabling tiling
-  tile: true,  
+  tile: true,
+  // The comparison function to be used while sorting nodes during tiling operation.
+  // Takes the ids of 2 nodes that will be compared as a parameter and the default tiling operation is performed when this option is not set.
+  // It works similar to ``compareFunction`` parameter of ``Array.prototype.sort()``
+  // If node1 is less then node2 by some ordering criterion ``tilingCompareBy(nodeId1, nodeId2)`` must return a negative value
+  // If node1 is greater then node2 by some ordering criterion ``tilingCompareBy(nodeId1, nodeId2)`` must return a positive value
+  // If node1 is equal to node2 by some ordering criterion ``tilingCompareBy(nodeId1, nodeId2)`` must return 0
+  tilingCompareBy: undefined, 
   // Represents the amount of the vertical space to put between the zero degree members during the tiling operation(can also be a function)
   tilingPaddingVertical: 10,
   // Represents the amount of the horizontal space to put between the zero degree members during the tiling operation(can also be a function)

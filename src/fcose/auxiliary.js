@@ -91,7 +91,7 @@ auxiliary.connectComponents = function(cy, eles, topMostNodes, dummyNodes){
     cmpt.forEach(node => {
       eles.intersection(node.connectedEdges()).forEach(e => { // connectedEdges() usually cached
         if( cmpt.has(e.source()) && cmpt.has(e.target()) ){ // has() is cheap
-          cmpt.merge(e); // forEach() only considers nodes -- sets N at call time
+          cmpt.merge(e);
         }
       });
     });    
@@ -130,6 +130,71 @@ auxiliary.connectComponents = function(cy, eles, topMostNodes, dummyNodes){
     }
   }
   return components;
+};
+
+// relocates componentResult to originalCenter if there is no fixedNodeConstraint
+auxiliary.relocateComponent = function(originalCenter, componentResult, options) {
+  if (!options.fixedNodeConstraint) {
+    let minXCoord = Number.POSITIVE_INFINITY;
+    let maxXCoord = Number.NEGATIVE_INFINITY;
+    let minYCoord = Number.POSITIVE_INFINITY;
+    let maxYCoord = Number.NEGATIVE_INFINITY;
+    if (options.quality == "draft") {
+      // calculate current bounding box
+      for (let [key, value] of componentResult.nodeIndexes) {
+        let cyNode = options.cy.getElementById(key);
+        if (cyNode) {
+          let nodeBB = cyNode.boundingBox();
+          let leftX = componentResult.xCoords[value] - nodeBB.w / 2;
+          let rightX = componentResult.xCoords[value] + nodeBB.w / 2;
+          let topY = componentResult.yCoords[value] - nodeBB.h / 2;
+          let bottomY = componentResult.yCoords[value] + nodeBB.h / 2;
+
+          if (leftX < minXCoord)
+            minXCoord = leftX;
+          if (rightX > maxXCoord)
+            maxXCoord = rightX;
+          if (topY < minYCoord)
+            minYCoord = topY;
+          if (bottomY > maxYCoord)
+            maxYCoord = bottomY;
+        }
+      }
+      // find difference between current and original center
+      let diffOnX = originalCenter.x - (maxXCoord + minXCoord) / 2;
+      let diffOnY = originalCenter.y - (maxYCoord + minYCoord) / 2;
+      // move component to original center
+      componentResult.xCoords = componentResult.xCoords.map(x => x + diffOnX);
+      componentResult.yCoords = componentResult.yCoords.map(y => y + diffOnY);
+    }
+    else {
+      // calculate current bounding box
+      Object.keys(componentResult).forEach(function (item) {
+        let node = componentResult[item];
+        let leftX = node.getRect().x;
+        let rightX = node.getRect().x + node.getRect().width;
+        let topY = node.getRect().y;
+        let bottomY = node.getRect().y + node.getRect().height;
+
+        if (leftX < minXCoord)
+          minXCoord = leftX;
+        if (rightX > maxXCoord)
+          maxXCoord = rightX;
+        if (topY < minYCoord)
+          minYCoord = topY;
+        if (bottomY > maxYCoord)
+          maxYCoord = bottomY;
+      });
+      // find difference between current and original center
+      let diffOnX = originalCenter.x - (maxXCoord + minXCoord) / 2;
+      let diffOnY = originalCenter.y - (maxYCoord + minYCoord) / 2;
+      // move component to original center
+      Object.keys(componentResult).forEach(function (item) {
+        let node = componentResult[item];
+        node.setCenter(node.getCenterX() + diffOnX, node.getCenterY() + diffOnY);
+      });
+    }
+  }
 };
 
 auxiliary.calcBoundingBox = function(parentNode, xCoords, yCoords, nodeIndexes){
@@ -182,5 +247,23 @@ auxiliary.calcBoundingBox = function(parentNode, xCoords, yCoords, nodeIndexes){
     boundingBox.height = bottom - top;
     return boundingBox;
 };
+
+// This function finds and returns parent nodes whose all children are hidden
+auxiliary.calcParentsWithoutChildren = function(cy, eles){
+  let parentsWithoutChildren = cy.collection();
+  eles.nodes(':parent').forEach((parent) => {
+    let check = false;
+    parent.children().forEach((child) => {
+      if(child.css('display') != 'none') {
+        check = true;
+      }
+    });
+    if(!check) {
+      parentsWithoutChildren.merge(parent);
+    }
+  });
+
+  return parentsWithoutChildren;
+}
 
 module.exports = auxiliary;
