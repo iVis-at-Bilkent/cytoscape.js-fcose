@@ -991,7 +991,7 @@ var Layout = function () {
           return ele.css('display') == 'none';
         });
         options.eles = eles.not(_hiddenEles);
-	console.log("Temp log!");
+
         eles.nodes().not(":parent").not(_hiddenEles).layoutPositions(layout, options, getPositions);
 
         if (parentsWithoutChildren.length > 0) {
