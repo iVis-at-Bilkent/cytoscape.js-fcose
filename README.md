@@ -61,6 +61,13 @@ fCoSE supports user-defined placement constraints as well as its full support fo
   ```
   The `gap` property is optional. If it is omitted, average `idealEdgeLength` is used as the gap value.
 
+* **Tree constraint:** This is a high level constraint specific to the trees. If the graph is known to be a tree/forest, this option allows to set the node positions to be in tree layout. This option requires to make the component packing (```packComponents```) active and if this option is used other options mentioned above are ignored. For example, to layout the tree in top-to-bottom direction with gap value 200 pixels between layers, ```treeConstraint``` option should be set as follows:
+
+  ```js
+  treeConstraint: {direction: 'T-B', gap: 200}
+  ```
+  `direction` property can get 'T-B', 'B-T', 'L-R' and 'R-L' values according to the desired direction. The `gap` property is optional. If it is omitted, average `idealEdgeLength` is used as the gap value.
+
 ## Usage instructions
 
 Download the library:
@@ -197,6 +204,10 @@ var defaultOptions = {
   // Place two nodes relatively in vertical/horizontal direction
   // [{top: 'n1', bottom: 'n2', gap: 100}, {left: 'n3', right: 'n4', gap: 75}, {...}]
   relativePlacementConstraint: undefined,
+  // If graph is a tree/forest, this option sets the node positions to be in tree layout.
+  // Ignores other options above and requires component packing to be active.
+  // {direction: 'T-B', gap: 200} 
+  treeConstraint: undefined,
 
   /* layout event callbacks */
   ready: () => {}, // on layoutready

@@ -4,6 +4,7 @@
 
 const assign = require('../assign');
 const aux = require('./auxiliary');
+const { handleTreeConstraint } = require('./constraint');
 const { spectralLayout } = require('./spectral');
 const { coseLayout } = require('./cose');
 
@@ -90,6 +91,10 @@ const defaults = Object.freeze({
   // Place two nodes relatively in vertical/horizontal direction 
   // [{top: 'n1', bottom: 'n2', gap: 100}, {left: 'n3', right: 'n4', gap: 75}]
   relativePlacementConstraint: undefined,
+  // If graph is a tree/forest, this option sets the node positions to be in tree layout.
+  // Ignores other options above and requires component packing to be active.
+  // {direction: 'T-B', gap: 200} 
+  treeConstraint: undefined,
   
   /* layout event callbacks */
   ready: () => {}, // on layoutready
@@ -108,8 +113,6 @@ class Layout {
     let eles = options.eles;
    
     let spectralResult = [];
-    let xCoords;
-    let yCoords;
     let coseResult = [];
     let components;
     let componentCenters = [];
@@ -126,20 +129,26 @@ class Layout {
       if(options.alignmentConstraint.horizontal && (!Array.isArray(options.alignmentConstraint.horizontal) || options.alignmentConstraint.horizontal.length == 0)){
         options.alignmentConstraint.horizontal = undefined;
       }      
-      
     }
     
     if(options.relativePlacementConstraint && (!Array.isArray(options.relativePlacementConstraint) || options.relativePlacementConstraint.length == 0)){
       options.relativePlacementConstraint = undefined;
-    }    
-    
+    }
+
     // if any constraint exists, set some options
-    let constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;    
+    let constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint || options.treeConstraint;    
     if(constraintExist){    
       // constraints work with these options
       options.tile = false;
       options.packComponents = false;
-    }       
+      if(options.treeConstraint){
+        // in case of tree constraint, we ignore other constraints and use packing
+        options.fixedNodeConstraint = undefined;
+        options.alignmentConstraint = undefined;
+        options.relativePlacementConstraint = undefined;
+        options.packComponents = true;
+      }
+    }
     
     // decide component packing is enabled or not
     let layUtil;
@@ -224,6 +233,13 @@ class Layout {
           }
           components.forEach(function(component, index){ // send each component to cose layout
             options.eles = component;
+            if(options.treeConstraint) {
+              let treeConstraintSets = handleTreeConstraint(options);
+              if (treeConstraintSets) {
+                options.alignmentConstraint = treeConstraintSets.alignmentConstarint;
+                options.relativePlacementConstraint = treeConstraintSets.relativePlacementConstraint;
+              }
+            }
             coseResult.push(coseLayout(options, spectralResult[index]));
             aux.relocateComponent(componentCenters[index], coseResult[index], options); // relocate center to original position
           });  

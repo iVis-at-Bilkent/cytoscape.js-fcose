@@ -7,12 +7,12 @@
 		exports["cytoscapeFcose"] = factory(require("cose-base"));
 	else
 		root["cytoscapeFcose"] = factory(root["coseBase"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE__140__) {
+})(this, (__WEBPACK_EXTERNAL_MODULE__625__) => {
 return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 658:
+/***/ 432:
 /***/ ((module) => {
 
 
@@ -35,7 +35,7 @@ module.exports = Object.assign != null ? Object.assign.bind(Object) : function (
 
 /***/ }),
 
-/***/ 548:
+/***/ 602:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 
@@ -46,7 +46,7 @@ var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = [
  * Auxiliary functions
  */
 
-var LinkedList = __webpack_require__(140).layoutBase.LinkedList;
+var LinkedList = (__webpack_require__(625).layoutBase).LinkedList;
 
 var auxiliary = {};
 
@@ -338,7 +338,219 @@ module.exports = auxiliary;
 
 /***/ }),
 
-/***/ 816:
+/***/ 455:
+/***/ ((module) => {
+
+
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+var handleTreeConstraint = function handleTreeConstraint(options) {
+  var cy = options.cy;
+  var eles = options.eles;
+  var treeConstraint = options.treeConstraint;
+
+  var levelOrders = getFlatForest(eles).levelOrders;
+
+  // not a tree/forest
+  if (levelOrders.length == 0) {
+    console.log("Given graph/component is not a tree/forest!");
+    return undefined;
+  }
+  // set alignment constraints
+  var alignmentConstarint = {};
+
+  if (treeConstraint.direction == "L-R" || treeConstraint.direction == "R-L") {
+    alignmentConstarint.vertical = [];
+    levelOrders.forEach(function (levelOrder) {
+      levelOrder.forEach(function (value, key, map) {
+        if (value.length > 1) alignmentConstarint.vertical.push(value);
+      });
+    });
+  } else {
+    alignmentConstarint.horizontal = [];
+    levelOrders.forEach(function (levelOrder) {
+      levelOrder.forEach(function (value, key, map) {
+        if (value.length > 1) alignmentConstarint.horizontal.push(value);
+      });
+    });
+  }
+
+  // set relative placement constraints
+  var relativePlacementConstraint = [];
+  eles.edges().forEach(function (edge) {
+    if (treeConstraint.direction == "L-R") {
+      relativePlacementConstraint.push({ left: edge.source().id(), right: edge.target().id(), gap: treeConstraint.gap });
+    } else if (treeConstraint.direction == "R-L") {
+      relativePlacementConstraint.push({ left: edge.target().id(), right: edge.source().id(), gap: treeConstraint.gap });
+    } else if (treeConstraint.direction == "T-B") {
+      relativePlacementConstraint.push({ top: edge.source().id(), bottom: edge.target().id(), gap: treeConstraint.gap });
+    } else if (treeConstraint.direction == "B-T") {
+      relativePlacementConstraint.push({ top: edge.target().id(), bottom: edge.source().id(), gap: treeConstraint.gap });
+    } else {
+      console.log("Invalid direction");
+    }
+  });
+
+  levelOrders.forEach(function (levelOrder) {
+    levelOrder.forEach(function (value, key, map) {
+      if (value.length > 1) {
+        for (var i = 0; i < value.length - 1; i++) {
+          if (treeConstraint.direction == "L-R") {
+            relativePlacementConstraint.push({ bottom: value[i], top: value[i + 1], gap: treeConstraint.gap });
+          } else if (treeConstraint.direction == "R-L") {
+            relativePlacementConstraint.push({ top: value[i], bottom: value[i + 1], gap: treeConstraint.gap });
+          } else if (treeConstraint.direction == "T-B") {
+            relativePlacementConstraint.push({ left: value[i], right: value[i + 1], gap: treeConstraint.gap });
+          } else if (treeConstraint.direction == "B-T") {
+            relativePlacementConstraint.push({ right: value[i], left: value[i + 1], gap: treeConstraint.gap });
+          } else {
+            console.log("Invalid direction");
+          }
+        };
+      }
+    });
+  });
+
+  return { alignmentConstarint: alignmentConstarint, relativePlacementConstraint: relativePlacementConstraint };
+};
+
+/**
+ * This method returns a list of trees where each tree is represented as a
+ * list of node ids. The method returns a list of size 0 when:
+ * - The graph is not flat or
+ * - One of the component(s) of the graph is not a tree.
+ */
+var getFlatForest = function getFlatForest(eles) {
+  var flatForest = [];
+  var isForest = true;
+
+  // simple nodes
+  var allNodes = eles.nodes();
+
+  // First be sure that the graph is flat
+  var isFlat = true;
+
+  for (var i = 0; i < allNodes.length; i++) {
+    if (allNodes[i].parent().length > 0) {
+      isFlat = false;
+    }
+  }
+
+  // Return empty forest if the graph is not flat.
+  if (!isFlat) {
+    return flatForest;
+  }
+
+  // Be sure that no node has more than one incoming edges
+  var invalidNodes = eles.nodes().filter(function (node) {
+    return node.incomers().edges().length > 1;
+  });
+
+  // Return empty forest if the graph is not flat.
+  if (invalidNodes.length > 1) {
+    return flatForest;
+  }
+
+  // Run BFS for each component of the graph.
+
+  var visited = new Set();
+  var toBeVisited = [];
+  var parents = new Map();
+  var unprocessedNodes = cy.collection();
+  var levelOrders = [];
+
+  unprocessedNodes = unprocessedNodes.merge(allNodes);
+  unprocessedNodes = unprocessedNodes.toArray();
+
+  var roots = eles.nodes().filter(function (node) {
+    return node.incomers().length == 0;
+  }).toArray();
+
+  // Each iteration of this loop finds a component of the graph and
+  // decides whether it is a tree or not. If it is a tree, adds it to the
+  // forest and continued with the next component.
+
+  while (unprocessedNodes.length > 0 && roots.length > 0 && isForest) {
+    toBeVisited.push([roots[0], 0]);
+    roots.splice(0, 1);
+
+    var levelOrder = new Map();
+
+    // Start the BFS. Each iteration of this loop visits a node in a
+    // BFS manner.
+    while (toBeVisited.length > 0 && isForest) {
+      //pool operation
+      var currentNode = toBeVisited[0][0];
+      var level = toBeVisited[0][1];
+      toBeVisited.splice(0, 1);
+      visited.add(currentNode);
+
+      if (!levelOrder.has(level)) {
+        levelOrder.set(level, []);
+      }
+      levelOrder.get(level).push(currentNode.id());
+
+      // Traverse all neighbors of this node
+      var neighbors = currentNode.neighborhood().nodes();
+
+      for (var i = 0; i < neighbors.length; i++) {
+        var currentNeighbor = neighbors[i];
+
+        // If BFS is not growing from this neighbor.
+        if (parents.get(currentNode) != currentNeighbor) {
+          // We haven't previously visited this neighbor.
+          if (!visited.has(currentNeighbor)) {
+            toBeVisited.push([currentNeighbor, level + 1]);
+            parents.set(currentNeighbor, currentNode);
+          }
+          // Since we have previously visited this neighbor and
+          // this neighbor is not parent of currentNode, given
+          // graph contains a component that is not tree, hence
+          // it is not a forest.
+          else {
+              isForest = false;
+              break;
+            }
+        }
+      }
+    }
+
+    // The graph contains a component that is not a tree. Empty
+    // previously found trees. The method will end.
+    if (!isForest) {
+      flatForest = [];
+    }
+    // Save currently visited nodes as a tree in our forest. Reset
+    // visited and parents lists. Continue with the next component of
+    // the graph, if any.
+    else {
+        var temp = [].concat(_toConsumableArray(visited));
+        flatForest.push(temp);
+        levelOrders.push(levelOrder);
+        //flatForest = flatForest.concat(temp);
+        //unProcessedNodes.removeAll(visited);
+        for (var i = 0; i < temp.length; i++) {
+          var value = temp[i];
+          var index = unprocessedNodes.indexOf(value);
+          if (index > -1) {
+            unprocessedNodes.splice(index, 1);
+          }
+        }
+        visited = new Set();
+        parents = new Map();
+        levelOrder = new Map();
+      }
+  }
+
+  return { flatForest: flatForest, levelOrders: levelOrders };
+};
+
+module.exports = { handleTreeConstraint: handleTreeConstraint };
+
+/***/ }),
+
+/***/ 126:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 
@@ -347,14 +559,14 @@ module.exports = auxiliary;
   The implementation of the postprocessing part that applies CoSE layout over the spectral layout
 */
 
-var aux = __webpack_require__(548);
-var CoSELayout = __webpack_require__(140).CoSELayout;
-var CoSENode = __webpack_require__(140).CoSENode;
-var PointD = __webpack_require__(140).layoutBase.PointD;
-var DimensionD = __webpack_require__(140).layoutBase.DimensionD;
-var LayoutConstants = __webpack_require__(140).layoutBase.LayoutConstants;
-var FDLayoutConstants = __webpack_require__(140).layoutBase.FDLayoutConstants;
-var CoSEConstants = __webpack_require__(140).CoSEConstants;
+var aux = __webpack_require__(602);
+var CoSELayout = (__webpack_require__(625).CoSELayout);
+var CoSENode = (__webpack_require__(625).CoSENode);
+var PointD = (__webpack_require__(625).layoutBase).PointD;
+var DimensionD = (__webpack_require__(625).layoutBase).DimensionD;
+var LayoutConstants = (__webpack_require__(625).layoutBase).LayoutConstants;
+var FDLayoutConstants = (__webpack_require__(625).layoutBase).FDLayoutConstants;
+var CoSEConstants = (__webpack_require__(625).CoSEConstants);
 
 // main function that cose layout is processed
 var coseLayout = function coseLayout(options, spectralResult) {
@@ -576,7 +788,7 @@ module.exports = { coseLayout: coseLayout };
 
 /***/ }),
 
-/***/ 212:
+/***/ 770:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 
@@ -589,14 +801,17 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
   The implementation of the fcose layout algorithm
 */
 
-var assign = __webpack_require__(658);
-var aux = __webpack_require__(548);
+var assign = __webpack_require__(432);
+var aux = __webpack_require__(602);
 
-var _require = __webpack_require__(657),
-    spectralLayout = _require.spectralLayout;
+var _require = __webpack_require__(455),
+    handleTreeConstraint = _require.handleTreeConstraint;
 
-var _require2 = __webpack_require__(816),
-    coseLayout = _require2.coseLayout;
+var _require2 = __webpack_require__(208),
+    spectralLayout = _require2.spectralLayout;
+
+var _require3 = __webpack_require__(126),
+    coseLayout = _require3.coseLayout;
 
 var defaults = Object.freeze({
 
@@ -687,6 +902,10 @@ var defaults = Object.freeze({
   // Place two nodes relatively in vertical/horizontal direction 
   // [{top: 'n1', bottom: 'n2', gap: 100}, {left: 'n3', right: 'n4', gap: 75}]
   relativePlacementConstraint: undefined,
+  // If graph is a tree/forest, this option sets the node positions to be in tree layout.
+  // Ignores other options above and requires component packing to be active.
+  // {direction: 'T-B', gap: 200} 
+  treeConstraint: undefined,
 
   /* layout event callbacks */
   ready: function ready() {}, // on layoutready
@@ -709,8 +928,6 @@ var Layout = function () {
       var eles = options.eles;
 
       var spectralResult = [];
-      var xCoords = void 0;
-      var yCoords = void 0;
       var coseResult = [];
       var components = void 0;
       var componentCenters = [];
@@ -734,11 +951,18 @@ var Layout = function () {
       }
 
       // if any constraint exists, set some options
-      var constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint;
+      var constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint || options.treeConstraint;
       if (constraintExist) {
         // constraints work with these options
         options.tile = false;
         options.packComponents = false;
+        if (options.treeConstraint) {
+          // in case of tree constraint, we ignore other constraints and use packing
+          options.fixedNodeConstraint = undefined;
+          options.alignmentConstraint = undefined;
+          options.relativePlacementConstraint = undefined;
+          options.packComponents = true;
+        }
       }
 
       // decide component packing is enabled or not
@@ -791,10 +1015,10 @@ var Layout = function () {
             if (options.tile) {
               // behave nodes to be tiled as one component
               var nodeIndexes = new Map();
-              var _xCoords = [];
-              var _yCoords = [];
+              var xCoords = [];
+              var yCoords = [];
               var count = 0;
-              var tempSpectralResult = { nodeIndexes: nodeIndexes, xCoords: _xCoords, yCoords: _yCoords };
+              var tempSpectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
               var indexesToBeDeleted = [];
               components.forEach(function (component, index) {
                 if (component.edges().length == 0) {
@@ -824,6 +1048,13 @@ var Layout = function () {
             components.forEach(function (component, index) {
               // send each component to cose layout
               options.eles = component;
+              if (options.treeConstraint) {
+                var treeConstraintSets = handleTreeConstraint(options);
+                if (treeConstraintSets) {
+                  options.alignmentConstraint = treeConstraintSets.alignmentConstarint;
+                  options.relativePlacementConstraint = treeConstraintSets.relativePlacementConstraint;
+                }
+              }
               coseResult.push(coseLayout(options, spectralResult[index]));
               aux.relocateComponent(componentCenters[index], coseResult[index], options); // relocate center to original position
             });
@@ -1012,7 +1243,7 @@ module.exports = Layout;
 
 /***/ }),
 
-/***/ 657:
+/***/ 208:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 
@@ -1021,9 +1252,9 @@ module.exports = Layout;
   The implementation of the spectral layout that is the first part of the fcose layout algorithm
 */
 
-var aux = __webpack_require__(548);
-var Matrix = __webpack_require__(140).layoutBase.Matrix;
-var SVD = __webpack_require__(140).layoutBase.SVD;
+var aux = __webpack_require__(602);
+var Matrix = (__webpack_require__(625).layoutBase).Matrix;
+var SVD = (__webpack_require__(625).layoutBase).SVD;
 
 // main function that spectral layout is processed
 var spectralLayout = function spectralLayout(options) {
@@ -1478,12 +1709,12 @@ module.exports = { spectralLayout: spectralLayout };
 
 /***/ }),
 
-/***/ 579:
+/***/ 497:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 
 
-var impl = __webpack_require__(212);
+var impl = __webpack_require__(770);
 
 // registers the extension on a cytoscape lib ref
 var register = function register(cytoscape) {
@@ -1503,10 +1734,10 @@ module.exports = register;
 
 /***/ }),
 
-/***/ 140:
+/***/ 625:
 /***/ ((module) => {
 
-module.exports = __WEBPACK_EXTERNAL_MODULE__140__;
+module.exports = __WEBPACK_EXTERNAL_MODULE__625__;
 
 /***/ })
 
@@ -1541,7 +1772,7 @@ module.exports = __WEBPACK_EXTERNAL_MODULE__140__;
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __webpack_require__(579);
+/******/ 	var __webpack_exports__ = __webpack_require__(497);
 /******/ 	
 /******/ 	return __webpack_exports__;
 /******/ })()
