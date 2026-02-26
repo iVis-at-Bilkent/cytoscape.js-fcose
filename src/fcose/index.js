@@ -96,6 +96,14 @@ const defaults = Object.freeze({
   // {direction: 'T-B', gap: 200} 
   treeConstraint: undefined,
   
+  /* boundary options */
+  
+  // Function that determines if a node is bound to a parent boundary and returns the parent
+  // function(node) { return undefined; }
+  boundaryNodeConstraint: undefined,
+  // Maximum boundary handling iteration configuration
+  boundaryMaxIteration: undefined,
+  
   /* layout event callbacks */
   ready: () => {}, // on layoutready
   stop: () => {} // on layoutstop

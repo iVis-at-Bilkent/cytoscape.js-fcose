@@ -99,6 +99,21 @@ let coseLayout = function(options, spectralResult){
       theNode.paddingRight = parseInt( theChild.css('padding') );
       theNode.paddingBottom = parseInt( theChild.css('padding') );
 
+      // Boundary node constraint handling
+      if (options.boundaryNodeConstraint) {
+        let boundedNodeCy = optFn(options.boundaryNodeConstraint, theChild);
+        if (boundedNodeCy) {
+          let boundedNodeCose = idToLNode[boundedNodeCy.id()];
+          if (boundedNodeCose) {
+            let parentGraph = boundedNodeCose.child;
+            if (!parentGraph) {
+              parentGraph = layout.getGraphManager().add(layout.newGraph(), boundedNodeCose);
+            }
+            theNode.boundaryGraph = parentGraph;
+          }
+        }
+      }
+
       //Attach the label properties to both compound and simple nodes if labels will be included in node dimensions
       //These properties will be used while updating bounds of compounds during iterations or tiling
       //and will be used for simple nodes while transferring final positions to cytoscape
@@ -191,6 +206,9 @@ let coseLayout = function(options, spectralResult){
     CoSEConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = FDLayoutConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = options.gravityRangeCompound;
   if (options.initialEnergyOnIncremental != null)
     CoSEConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = FDLayoutConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = options.initialEnergyOnIncremental;
+  
+  if (options.boundaryMaxIteration != null) 
+    CoSEConstants.BOUNDARY_MAX_ITERATION = options.boundaryMaxIteration;
   
   if (options.tilingCompareBy != null)
     CoSEConstants.TILING_COMPARE_BY = options.tilingCompareBy;
