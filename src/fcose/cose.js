@@ -207,8 +207,8 @@ let coseLayout = function(options, spectralResult){
   if (options.initialEnergyOnIncremental != null)
     CoSEConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = FDLayoutConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = options.initialEnergyOnIncremental;
   
-  if (options.boundaryMaxIteration != null) 
-    CoSEConstants.BOUNDARY_MAX_ITERATION = options.boundaryMaxIteration;
+  if (options.parentSideAdhesion != null) 
+    CoSEConstants.BOUNDARY_MAX_ITERATION = options.parentSideAdhesion;
   
   if (options.tilingCompareBy != null)
     CoSEConstants.TILING_COMPARE_BY = options.tilingCompareBy;

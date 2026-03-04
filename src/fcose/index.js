@@ -101,8 +101,8 @@ const defaults = Object.freeze({
   // Function that determines if a node is bound to a parent boundary and returns the parent
   // function(node) { return undefined; }
   boundaryNodeConstraint: undefined,
-  // Maximum boundary handling iteration configuration
-  boundaryMaxIteration: undefined,
+  // How difficult it is for a boundary node to change sides during layout (a positive integer)
+  parentSideAdhesion: 5,
   
   /* layout event callbacks */
   ready: () => {}, // on layoutready

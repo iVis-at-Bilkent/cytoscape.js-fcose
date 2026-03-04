@@ -727,7 +727,7 @@ var coseLayout = function coseLayout(options, spectralResult) {
   if (options.gravityCompound != null) CoSEConstants.DEFAULT_COMPOUND_GRAVITY_STRENGTH = FDLayoutConstants.DEFAULT_COMPOUND_GRAVITY_STRENGTH = options.gravityCompound;
   if (options.gravityRangeCompound != null) CoSEConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = FDLayoutConstants.DEFAULT_COMPOUND_GRAVITY_RANGE_FACTOR = options.gravityRangeCompound;
   if (options.initialEnergyOnIncremental != null) CoSEConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = FDLayoutConstants.DEFAULT_COOLING_FACTOR_INCREMENTAL = options.initialEnergyOnIncremental;
-  if (options.boundaryMaxIteration != null) CoSEConstants.BOUNDARY_MAX_ITERATION = options.boundaryMaxIteration;
+  if (options.parentSideAdhesion != null) CoSEConstants.BOUNDARY_MAX_ITERATION = options.parentSideAdhesion;
   if (options.tilingCompareBy != null) CoSEConstants.TILING_COMPARE_BY = options.tilingCompareBy;
   if (options.quality == 'proof') LayoutConstants.QUALITY = 2;else LayoutConstants.QUALITY = 0;
   CoSEConstants.NODE_DIMENSIONS_INCLUDE_LABELS = FDLayoutConstants.NODE_DIMENSIONS_INCLUDE_LABELS = LayoutConstants.NODE_DIMENSIONS_INCLUDE_LABELS = options.nodeDimensionsIncludeLabels;
@@ -895,8 +895,8 @@ var defaults = Object.freeze({
   // Function that determines if a node is bound to a parent boundary and returns the parent
   // function(node) { return undefined; }
   boundaryNodeConstraint: undefined,
-  // Maximum boundary handling iteration configuration
-  boundaryMaxIteration: undefined,
+  // How difficult it is for a boundary node to change sides during layout (a positive integer)
+  parentSideAdhesion: 5,
   /* layout event callbacks */
   ready: function ready() {},
   // on layoutready
