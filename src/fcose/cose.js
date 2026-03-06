@@ -110,6 +110,7 @@ let coseLayout = function(options, spectralResult){
               parentGraph = layout.getGraphManager().add(layout.newGraph(), boundedNodeCose);
             }
             theNode.boundaryGraph = parentGraph;
+            parentGraph.boundaryNodes.push(theNode);
           }
         }
       }

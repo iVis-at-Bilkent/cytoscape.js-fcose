@@ -144,7 +144,7 @@ class Layout {
     }
 
     // if any constraint exists, set some options
-    let constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint || options.treeConstraint;    
+    let constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint || options.treeConstraint || options.boundaryNodeConstraint;
     if(constraintExist){    
       // constraints work with these options
       options.tile = false;

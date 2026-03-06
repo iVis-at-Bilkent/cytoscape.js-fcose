@@ -153,7 +153,16 @@
                 node.css("width", size);
                 node.css("height", size);
               });
-              this.layout({name: 'fcose', animationEasing: 'ease-out'}).run();
+              this.layout({
+                name: 'fcose', animationEasing: 'ease-out', boundaryNodeConstraint: function (node) {
+                  var boundaryParentId = node.data('boundaryParentId');
+                  if (boundaryParentId && boundaryParentId.length > 0) {
+                    return node.cy().getElementById(boundaryParentId);
+                  }
+                  return undefined;
+                }
+              }).run();
+
             },
             
             // demo your layout
@@ -197,9 +206,15 @@
                 style: {
                   'line-color': '#F08080'
                 }
-              }                 
-            ],  
-            
+              },
+              {
+                selector: 'node[boundaryParentId]',
+                style: {
+                  'background-color': '#9fcae4',
+                }
+              }
+            ],
+
             elements: [{ group:'nodes', data:{ id: 'n0'}},
                     { group:'nodes', data:{ id: 'n1'}},
                     { group:'nodes', data:{ id: 'n2'}},
@@ -246,6 +261,10 @@
                     { group:'nodes', data:{ id: 'n45'}},
                     { group:'nodes', data:{ id: 'n46'}},
                     { group:'nodes', data:{ id: 'n47'}},
+                    // Boundary nodes
+                    { group: 'nodes', data: { id: 'BN1', boundaryParentId: 'n37' } },
+                    { group: 'nodes', data: { id: 'BN2', boundaryParentId: 'n43' } },
+                    { group: 'nodes', data: { id: 'BN3', boundaryParentId: 'n41' } },
                     { group:'edges', data:{ id: 'e0', source: 'n0', target: 'n1'} },
                     { group:'edges', data:{ id: 'e1', source: 'n1', target: 'n2'} },
                     { group:'edges', data:{ id: 'e2', source: 'n2', target: 'n3'} },
@@ -285,7 +304,11 @@
                     { group:'edges', data:{ id: 'e40', source: 'n16', target: 'n40'} },
                     { group:'edges', data:{ id: 'e41', source: 'n44', target: 'n45'} },
                     { group:'edges', data:{ id: 'e42', source: 'n44', target: 'n46'} },
-                    { group:'edges', data:{ id: 'e43', source: 'n45', target: 'n46'} }                 
+                    { group:'edges', data:{ id: 'e43', source: 'n45', target: 'n46'} },
+                    { group: 'edges', data: { id: 'e44', source: 'BN1', target: 'n5' } },
+                    { group: 'edges', data: { id: 'e45', source: 'BN2', target: 'n23' } },
+                    { group: 'edges', data: { id: 'e46', source: 'BN3', target: 'n21' } }
+
                    ]
             
           });          
@@ -324,12 +347,48 @@
               tilingPaddingVertical: parseFloat(document.getElementById("tilingPaddingVertical").value),
               tilingPaddingHorizontal: parseFloat(document.getElementById("tilingPaddingHorizontal").value),
               initialEnergyOnIncremental: document.getElementById("initialEnergyOnIncremental").value,
-              step:"all"
+              step: "all",
+              boundaryNodeConstraint: function (node) {
+                var boundaryParentId = node.data('boundaryParentId');
+                if (boundaryParentId && boundaryParentId.length > 0) {
+                  return node.cy().getElementById(boundaryParentId);
+                }
+                return undefined;
+              },
+              parentSideAdhesion: parseFloat(document.getElementById("parentSideAdhesion").value)
             });
             
             layout.run();        
           });
-          
+
+          function getClosestPointOnRectBoundary(px, py, rect) {
+            var left = rect.x1;
+            var right = rect.x2;
+            var top = rect.y1;
+            var bottom = rect.y2;
+
+            var clampedX = Math.max(left, Math.min(px, right));
+            var clampedY = Math.max(top, Math.min(py, bottom));
+
+            var distToLeft = Math.abs(px - left);
+            var distToRight = Math.abs(px - right);
+            var distToTop = Math.abs(py - top);
+            var distToBottom = Math.abs(py - bottom);
+
+            var minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+
+            if (minDist === distToLeft) {
+              return { x: left, y: clampedY };
+            } else if (minDist === distToRight) {
+              return { x: right, y: clampedY };
+            } else if (minDist === distToTop) {
+              return { x: clampedX, y: top };
+            } else {
+              return { x: clampedX, y: bottom };
+            }
+          }
+
+
         });
       </script>
   </head>
@@ -453,7 +512,13 @@
                 <tr>
                   <td><span class="add-on layout-text" title="Initial cooling factor for incremental layout"> Incremental Cooling Factor </span></td>
                   <td><input id="initialEnergyOnIncremental" class="textField form-control form-control-sm" type="text" value="0.3" maxlength=5 size="5"></td>
-                </tr>               
+                </tr>
+                <tr>
+                  <td><span class="add-on layout-text" title="How many iterations will it take for a boundary node to change sides when it is on the corner">Parent Side Adhesion</span></td>
+                  <td><input id="parentSideAdhesion" class="textField form-control form-control-sm" type="text" value="5" maxlength="5" size="5">
+                  </td>
+                </tr>
+                </tr>
               </table>
 
             </div>
