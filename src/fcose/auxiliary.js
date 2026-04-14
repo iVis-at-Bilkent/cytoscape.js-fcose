@@ -7,30 +7,30 @@ const LinkedList = require('cose-base').layoutBase.LinkedList;
 let auxiliary = {};
 
 // get the top most nodes
-auxiliary.getTopMostNodes = function(nodes) {
+auxiliary.getTopMostNodes = function (nodes) {
   let nodesMap = {};
   for (let i = 0; i < nodes.length; i++) {
-      nodesMap[nodes[i].id()] = true;
+    nodesMap[nodes[i].id()] = true;
   }
   let roots = nodes.filter(function (ele, i) {
-      if(typeof ele === "number") {
-        ele = i;
+    if (typeof ele === "number") {
+      ele = i;
+    }
+    let parent = ele.parent()[0];
+    while (parent != null) {
+      if (nodesMap[parent.id()]) {
+        return false;
       }
-      let parent = ele.parent()[0];
-      while(parent != null){
-        if(nodesMap[parent.id()]){
-          return false;
-        }
-        parent = parent.parent()[0];
-      }
-      return true;
+      parent = parent.parent()[0];
+    }
+    return true;
   });
 
   return roots;
 };
 
 // find disconnected components and create dummy nodes that connect them
-auxiliary.connectComponents = function(cy, eles, topMostNodes, dummyNodes){
+auxiliary.connectComponents = function (cy, eles, topMostNodes, dummyNodes, options) {
   let queue = new LinkedList();
   let visited = new Set();
   let visitedTopMostNodes = [];
@@ -43,43 +43,72 @@ auxiliary.connectComponents = function(cy, eles, topMostNodes, dummyNodes){
   let nodesConnectedToDummy = [];
   let components = [];
 
-  do{
+  let boundaryChildrenMap = new Map();
+  if (options && options.boundaryNodeConstraint) {
+    eles.nodes().forEach(function (node) {
+      let p;
+      try { p = options.boundaryNodeConstraint(node); } catch (e) { }
+      if (p) {
+        let pId = (typeof p.id === 'function') ? p.id() : p;
+        let parentNode = cy.getElementById(pId);
+        if (parentNode.length > 0) {
+          if (!boundaryChildrenMap.has(pId)) boundaryChildrenMap.set(pId, cy.collection());
+          boundaryChildrenMap.get(pId).merge(node);
+        }
+      }
+    });
+  }
+
+  do {
     let cmpt = cy.collection();
     components.push(cmpt);
-    
+
     let currentNode = topMostNodes[0];
     let childrenOfCurrentNode = cy.collection();
     childrenOfCurrentNode.merge(currentNode).merge(currentNode.descendants().intersection(eles));
     visitedTopMostNodes.push(currentNode);
 
-    childrenOfCurrentNode.forEach(function(node) {
+    childrenOfCurrentNode.forEach(function (node) {
       queue.push(node);
       visited.add(node);
       cmpt.merge(node);
     });
 
-    while(queue.length != 0){
+    while (queue.length != 0) {
       currentNode = queue.shift();
 
       // Traverse all neighbors of this node
       let neighborNodes = cy.collection();
-      currentNode.neighborhood().nodes().forEach(function(node){
-        if(eles.intersection(currentNode.edgesWith(node)).length > 0){
+      currentNode.neighborhood().nodes().forEach(function (node) {
+        if (eles.intersection(currentNode.edgesWith(node)).length > 0) {
           neighborNodes.merge(node);
         }
       });
 
-      for(let i = 0; i < neighborNodes.length; i++){
+      if (options && options.boundaryNodeConstraint) {
+        let p;
+        try { p = options.boundaryNodeConstraint(currentNode); } catch (e) { }
+        if (p) {
+          let pId = (typeof p.id === 'function') ? p.id() : p;
+          let parentNode = cy.getElementById(pId);
+          if (parentNode.length > 0) neighborNodes.merge(parentNode);
+        }
+        if (boundaryChildrenMap.has(currentNode.id())) {
+          neighborNodes.merge(boundaryChildrenMap.get(currentNode.id()));
+        }
+      }
+
+      for (let i = 0; i < neighborNodes.length; i++) {
         let neighborNode = neighborNodes[i];
         currentNeighbor = topMostNodes.intersection(neighborNode.union(neighborNode.ancestors()));
-        if(currentNeighbor != null && !visited.has(currentNeighbor[0])){
+        if (currentNeighbor != null && !visited.has(currentNeighbor[0])) {
           let childrenOfNeighbor = currentNeighbor.union(currentNeighbor.descendants());
 
-          childrenOfNeighbor.forEach(function(node){
+          childrenOfNeighbor.forEach(function (node) {
             queue.push(node);
             visited.add(node);
             cmpt.merge(node);
-            if(topMostNodes.has(node)){
+            if (topMostNodes.has(node)) {
               visitedTopMostNodes.push(node);
             }
           });
@@ -87,24 +116,24 @@ auxiliary.connectComponents = function(cy, eles, topMostNodes, dummyNodes){
         }
       }
     }
-    
+
     cmpt.forEach(node => {
       eles.intersection(node.connectedEdges()).forEach(e => { // connectedEdges() usually cached
-        if( cmpt.has(e.source()) && cmpt.has(e.target()) ){ // has() is cheap
+        if (cmpt.has(e.source()) && cmpt.has(e.target())) { // has() is cheap
           cmpt.merge(e);
         }
       });
-    });    
+    });
 
-    if(visitedTopMostNodes.length == topMostNodes.length){
+    if (visitedTopMostNodes.length == topMostNodes.length) {
       isConnected = true;
     }
 
-    if(!isConnected || (isConnected && count > 1)){
+    if (!isConnected || (isConnected && count > 1)) {
       minDegreeNode = visitedTopMostNodes[0];
       minDegree = minDegreeNode.connectedEdges().length;
-      visitedTopMostNodes.forEach(function(node){
-        if(node.connectedEdges().length < minDegree){
+      visitedTopMostNodes.forEach(function (node) {
+        if (node.connectedEdges().length < minDegree) {
           minDegree = node.connectedEdges().length;
           minDegreeNode = node;
         }
@@ -113,7 +142,7 @@ auxiliary.connectComponents = function(cy, eles, topMostNodes, dummyNodes){
       // TO DO: Check efficiency of this part
       let temp = cy.collection();
       temp.merge(visitedTopMostNodes[0]);
-      visitedTopMostNodes.forEach(function(node){
+      visitedTopMostNodes.forEach(function (node) {
         temp.merge(node);
       });
       visitedTopMostNodes = [];
@@ -122,18 +151,18 @@ auxiliary.connectComponents = function(cy, eles, topMostNodes, dummyNodes){
     }
 
   }
-  while(!isConnected);
+  while (!isConnected);
 
-  if(dummyNodes){
-    if(nodesConnectedToDummy.length > 0 ){
-        dummyNodes.set('dummy'+(dummyNodes.size+1), nodesConnectedToDummy);
+  if (dummyNodes) {
+    if (nodesConnectedToDummy.length > 0) {
+      dummyNodes.set('dummy' + (dummyNodes.size + 1), nodesConnectedToDummy);
     }
   }
   return components;
 };
 
 // relocates componentResult to originalCenter if there is no fixedNodeConstraint
-auxiliary.relocateComponent = function(originalCenter, componentResult, options) {
+auxiliary.relocateComponent = function (originalCenter, componentResult, options) {
   if (!options.fixedNodeConstraint) {
     let minXCoord = Number.POSITIVE_INFINITY;
     let maxXCoord = Number.NEGATIVE_INFINITY;
@@ -197,68 +226,63 @@ auxiliary.relocateComponent = function(originalCenter, componentResult, options)
   }
 };
 
-auxiliary.calcBoundingBox = function(parentNode, xCoords, yCoords, nodeIndexes){
-    // calculate bounds
-    let left = Number.MAX_SAFE_INTEGER;
-    let right = Number.MIN_SAFE_INTEGER;
-    let top = Number.MAX_SAFE_INTEGER;
-    let bottom = Number.MIN_SAFE_INTEGER;
-    let nodeLeft;
-    let nodeRight;
-    let nodeTop;
-    let nodeBottom;
+auxiliary.calcBoundingBox = function (parentNode, xCoords, yCoords, nodeIndexes) {
+  // calculate bounds
+  let left = Number.MAX_SAFE_INTEGER;
+  let right = Number.MIN_SAFE_INTEGER;
+  let top = Number.MAX_SAFE_INTEGER;
+  let bottom = Number.MIN_SAFE_INTEGER;
+  let nodeLeft;
+  let nodeRight;
+  let nodeTop;
+  let nodeBottom;
 
-    let nodes = parentNode.descendants().not(":parent");
-    let s = nodes.length;
-    for (let i = 0; i < s; i++)
-    {
-      let node = nodes[i];
+  let nodes = parentNode.descendants().not(":parent");
+  let s = nodes.length;
+  for (let i = 0; i < s; i++) {
+    let node = nodes[i];
 
-      nodeLeft = xCoords[nodeIndexes.get(node.id())] - node.width()/2;
-      nodeRight = xCoords[nodeIndexes.get(node.id())] + node.width()/2;
-      nodeTop = yCoords[nodeIndexes.get(node.id())] - node.height()/2;
-      nodeBottom = yCoords[nodeIndexes.get(node.id())] + node.height()/2;
+    nodeLeft = xCoords[nodeIndexes.get(node.id())] - node.width() / 2;
+    nodeRight = xCoords[nodeIndexes.get(node.id())] + node.width() / 2;
+    nodeTop = yCoords[nodeIndexes.get(node.id())] - node.height() / 2;
+    nodeBottom = yCoords[nodeIndexes.get(node.id())] + node.height() / 2;
 
-      if (left > nodeLeft)
-      {
-        left = nodeLeft;
-      }
-
-      if (right < nodeRight)
-      {
-        right = nodeRight;
-      }
-
-      if (top > nodeTop)
-      {
-        top = nodeTop;
-      }
-
-      if (bottom < nodeBottom)
-      {
-        bottom = nodeBottom;
-      }
+    if (left > nodeLeft) {
+      left = nodeLeft;
     }
 
-    let boundingBox = {};
-    boundingBox.topLeftX = left;
-    boundingBox.topLeftY = top;
-    boundingBox.width = right - left;
-    boundingBox.height = bottom - top;
-    return boundingBox;
+    if (right < nodeRight) {
+      right = nodeRight;
+    }
+
+    if (top > nodeTop) {
+      top = nodeTop;
+    }
+
+    if (bottom < nodeBottom) {
+      bottom = nodeBottom;
+    }
+  }
+
+  let boundingBox = {};
+  boundingBox.topLeftX = left;
+  boundingBox.topLeftY = top;
+  boundingBox.width = right - left;
+  boundingBox.height = bottom - top;
+  return boundingBox;
 };
 
 // This function finds and returns parent nodes whose all children are hidden
-auxiliary.calcParentsWithoutChildren = function(cy, eles){
+auxiliary.calcParentsWithoutChildren = function (cy, eles) {
   let parentsWithoutChildren = cy.collection();
   eles.nodes(':parent').forEach((parent) => {
     let check = false;
     parent.children().forEach((child) => {
-      if(child.css('display') != 'none') {
+      if (child.css('display') != 'none') {
         check = true;
       }
     });
-    if(!check) {
+    if (!check) {
       parentsWithoutChildren.merge(parent);
     }
   });

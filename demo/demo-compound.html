@@ -449,14 +449,29 @@
 
         var compound = compounds[0];
         var compoundId = compound.id();
-        var bb = compound.boundingBox();
-        cy.nodes(':selected').unselect();
+        // Track the actively rendered simple nodes (handling stale references from .move)
+        var activeSimpleNodes = [];
 
         simpleNodes.forEach(function (node) {
-          node.data('boundaryParentId', compoundId);
-          var pos = getClosestPointOnRectBoundary(node.position('x'), node.position('y'), bb);
-          node.position(pos);
+          var activeNode = node;
+          if (node.isChild()) {
+            // .move() removes the old node and returns a newly created one
+            activeNode = node.move({ parent: null });
+          }
+          // Safely set data on the new valid node reference
+          activeNode.data('boundaryParentId', compoundId);
+          activeSimpleNodes.push(activeNode);
         });
+
+        var bb = compound.boundingBox();
+        // Snap the new active nodes to the boundary
+        activeSimpleNodes.forEach(function (activeNode) {
+          var pos = getClosestPointOnRectBoundary(activeNode.position('x'), activeNode.position('y'), bb);
+          activeNode.position(pos);
+        });
+
+        // Unselect all involved nodes
+        cy.nodes(':selected').unselect();
       });
 
     });

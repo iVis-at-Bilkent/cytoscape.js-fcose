@@ -141,7 +141,7 @@ auxiliary.getTopMostNodes = function (nodes) {
 };
 
 // find disconnected components and create dummy nodes that connect them
-auxiliary.connectComponents = function (cy, eles, topMostNodes, dummyNodes) {
+auxiliary.connectComponents = function (cy, eles, topMostNodes, dummyNodes, options) {
   var queue = new LinkedList();
   var visited = new Set();
   var visitedTopMostNodes = [];
@@ -153,6 +153,24 @@ auxiliary.connectComponents = function (cy, eles, topMostNodes, dummyNodes) {
   var count = 1;
   var nodesConnectedToDummy = [];
   var components = [];
+
+  var boundaryChildrenMap = new Map();
+  if (options && options.boundaryNodeConstraint) {
+    eles.nodes().forEach(function (node) {
+      var p = void 0;
+      try {
+        p = options.boundaryNodeConstraint(node);
+      } catch (e) {}
+      if (p) {
+        var pId = typeof p.id === 'function' ? p.id() : p;
+        var parentNode = cy.getElementById(pId);
+        if (parentNode.length > 0) {
+          if (!boundaryChildrenMap.has(pId)) boundaryChildrenMap.set(pId, cy.collection());
+          boundaryChildrenMap.get(pId).merge(node);
+        }
+      }
+    });
+  }
 
   var _loop = function _loop() {
     var cmpt = cy.collection();
@@ -179,6 +197,21 @@ auxiliary.connectComponents = function (cy, eles, topMostNodes, dummyNodes) {
           neighborNodes.merge(node);
         }
       });
+
+      if (options && options.boundaryNodeConstraint) {
+        var p = void 0;
+        try {
+          p = options.boundaryNodeConstraint(currentNode);
+        } catch (e) {}
+        if (p) {
+          var pId = typeof p.id === 'function' ? p.id() : p;
+          var parentNode = cy.getElementById(pId);
+          if (parentNode.length > 0) neighborNodes.merge(parentNode);
+        }
+        if (boundaryChildrenMap.has(currentNode.id())) {
+          neighborNodes.merge(boundaryChildrenMap.get(currentNode.id()));
+        }
+      }
 
       for (var i = 0; i < neighborNodes.length; i++) {
         var neighborNode = neighborNodes[i];
@@ -601,7 +634,7 @@ var Layout = function () {
       }
 
       // if any constraint exists, set some options
-      var constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint || options.treeConstraint || options.boundaryNodeConstraint;
+      var constraintExist = options.fixedNodeConstraint || options.alignmentConstraint || options.relativePlacementConstraint || options.treeConstraint;
       if (constraintExist) {
         // constraints work with these options
         options.tile = false;
@@ -645,7 +678,7 @@ var Layout = function () {
         } else {
           // packing is enabled
           var topMostNodes = aux.getTopMostNodes(options.eles.nodes());
-          components = aux.connectComponents(cy, options.eles, topMostNodes);
+          components = aux.connectComponents(cy, options.eles, topMostNodes, undefined, options);
           // store component centers
           components.forEach(function (component) {
             var boundingBox = component.boundingBox();
@@ -671,7 +704,17 @@ var Layout = function () {
               var tempSpectralResult = { nodeIndexes: nodeIndexes, xCoords: xCoords, yCoords: yCoords };
               var indexesToBeDeleted = [];
               components.forEach(function (component, index) {
-                if (component.edges().length == 0) {
+                var hasBoundary = false;
+                if (options.boundaryNodeConstraint) {
+                  component.nodes().forEach(function (node) {
+                    var p = void 0;
+                    try {
+                      p = options.boundaryNodeConstraint(node);
+                    } catch (e) {}
+                    if (p) hasBoundary = true;
+                  });
+                }
+                if (component.edges().length == 0 && !hasBoundary) {
                   component.nodes().forEach(function (node, i) {
                     toBeTiledNodes.merge(component.nodes()[i]);
                     if (!node.isParent()) {
