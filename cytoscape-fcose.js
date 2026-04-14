@@ -587,7 +587,9 @@ var defaults = Object.freeze({
   // Function that determines if a node is bound to a parent boundary and returns the parent
   // function(node) { return undefined; }
   boundaryNodeConstraint: undefined,
-  // How difficult it is for a boundary node to change sides during layout (a positive integer)
+  // Margin adjustment for boundary nodes
+  compoundPaddingForBoundaryNodes: true,
+  // How many iterations will it take for a boundary node to change sides when it is on the corner
   parentSideAdhesion: 5,
 
   /* layout event callbacks */
@@ -614,6 +616,40 @@ var Layout = function () {
       var coseResult = [];
       var components = void 0;
       var componentCenters = [];
+
+      if (options.boundaryNodeConstraint && options.compoundPaddingForBoundaryNodes) {
+        cy.nodes(':parent').forEach(function (compoundNode) {
+          var compoundId = compoundNode.id();
+          var maxExtraPadding = 0;
+          cy.nodes().forEach(function (node) {
+            var p = void 0;
+            try {
+              p = options.boundaryNodeConstraint(node);
+            } catch (e) {}
+            if (p) {
+              var pId = typeof p.id === 'function' ? p.id() : p;
+              if (pId === compoundId) {
+                maxExtraPadding = Math.max(maxExtraPadding, Math.max(node.width(), node.height()) / 2);
+              }
+            }
+          });
+          var basePadding = compoundNode.data('fcoseBasePadding');
+          if (basePadding == null) {
+            basePadding = parseFloat(compoundNode.style('padding')) || 0;
+            compoundNode.data('fcoseBasePadding', basePadding);
+          }
+          compoundNode.style('padding', basePadding + maxExtraPadding + 'px');
+        });
+      } else {
+        // Reset padding to original base value when boundary padding is disabled
+        cy.nodes(':parent').forEach(function (compoundNode) {
+          var basePadding = compoundNode.data('fcoseBasePadding');
+          if (basePadding != null) {
+            compoundNode.style('padding', basePadding + 'px');
+            compoundNode.removeData('fcoseBasePadding');
+          }
+        });
+      }
 
       // basic validity check for constraint inputs 
       if (options.fixedNodeConstraint && (!Array.isArray(options.fixedNodeConstraint) || options.fixedNodeConstraint.length == 0)) {

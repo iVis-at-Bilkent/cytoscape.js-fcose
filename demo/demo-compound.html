@@ -174,9 +174,8 @@
             node.css("width", size);
             node.css("height", size);
           });
-          updateCompoundPaddingForBoundaryNodes(this);
           this.layout({
-            name: 'fcose', animationEasing: 'ease-out', boundaryNodeConstraint: function (node) {
+            name: 'fcose', animationEasing: 'ease-out', compoundPaddingForBoundaryNodes: true, boundaryNodeConstraint: function (node) {
               var boundaryParentId = node.data('boundaryParentId');
               if (boundaryParentId && boundaryParentId.length > 0) {
                 return node.cy().getElementById(boundaryParentId);
@@ -376,39 +375,12 @@
             }
             return undefined;
           },
+          compoundPaddingForBoundaryNodes: document.getElementById("compoundPadding").checked,
           parentSideAdhesion: parseFloat(document.getElementById("parentSideAdhesion").value)
         });
 
-        updateCompoundPaddingForBoundaryNodes();
         layout.run();
       });
-
-      // Function to add paddings to compound nodes who have boundary nodes to prevent overlapping
-      function updateCompoundPaddingForBoundaryNodes(cyRef) {
-        var cy = cyRef || window.cy;
-
-        if (!cy || typeof cy.nodes !== 'function') {
-          return;
-        }
-        cy.nodes(':parent').forEach(function (compoundNode) {
-          var compoundId = compoundNode.id();
-          var maxExtraPadding = 0;
-          cy.nodes().forEach(function (node) {
-            if (node.data('boundaryParentId') === compoundId) {
-              maxExtraPadding = Math.max(
-                maxExtraPadding,
-                Math.max(node.width(), node.height()) / 2
-              );
-            }
-          });
-          var basePadding = compoundNode.data('basePadding');
-          if (basePadding == null) {
-            basePadding = parseFloat(compoundNode.style('padding')) || 0;
-            compoundNode.data('basePadding', basePadding);
-          }
-          compoundNode.style('padding', (basePadding + maxExtraPadding) + 'px');
-        });
-      }
 
       function getClosestPointOnRectBoundary(px, py, rect) {
         var left = rect.x1;
@@ -449,25 +421,24 @@
 
         var compound = compounds[0];
         var compoundId = compound.id();
-        // Track the actively rendered simple nodes (handling stale references from .move)
-        var activeSimpleNodes = [];
 
         simpleNodes.forEach(function (node) {
           var activeNode = node;
           if (node.isChild()) {
-            // .move() removes the old node and returns a newly created one
             activeNode = node.move({ parent: null });
           }
-          // Safely set data on the new valid node reference
           activeNode.data('boundaryParentId', compoundId);
-          activeSimpleNodes.push(activeNode);
         });
 
+        // Get the compound's current bounding box (after structural changes)
         var bb = compound.boundingBox();
-        // Snap the new active nodes to the boundary
-        activeSimpleNodes.forEach(function (activeNode) {
-          var pos = getClosestPointOnRectBoundary(activeNode.position('x'), activeNode.position('y'), bb);
-          activeNode.position(pos);
+
+        // Reposition ALL boundary nodes of this compound to the current boundary
+        cy.nodes().forEach(function (node) {
+          if (node.data('boundaryParentId') === compoundId) {
+            var pos = getClosestPointOnRectBoundary(node.position('x'), node.position('y'), bb);
+            node.position(pos);
+          }
         });
 
         // Unselect all involved nodes
@@ -498,7 +469,8 @@
           </td>
         </tr>
         <tr>
-          <td><span class="add-on layout-text" title="Whether to enable incremental mode"> Incremental </span></td>
+          <td><span class="add-on layout-text" title="Whether to enable incremental mode"> Incremental </span>
+          </td>
           <td>
             <div class="custom-control custom-control-inline custom-checkbox">
               <input type="checkbox" class="custom-control-input" id="randomize" name="incremental">
@@ -507,7 +479,8 @@
           </td>
         </tr>
         <tr>
-          <td><span class="add-on layout-text" title="Whether to perform animation after layout"> Animate </span></td>
+          <td><span class="add-on layout-text" title="Whether to perform animation after layout"> Animate
+            </span></td>
           <td>
             <div class="custom-control custom-control-inline custom-checkbox">
               <input type="checkbox" class="custom-control-input" id="animate" name="animate" checked>
@@ -516,7 +489,8 @@
           </td>
         </tr>
         <tr>
-          <td><span class="add-on layout-text" title="Whether to fit the viewport to the repositioned nodes"> Fit
+          <td><span class="add-on layout-text" title="Whether to fit the viewport to the repositioned nodes">
+              Fit
             </span></td>
           <td>
             <div class="custom-control custom-control-inline custom-checkbox">
@@ -526,7 +500,8 @@
           </td>
         </tr>
         <tr>
-          <td><span class="add-on layout-text" title="Whether nodes are of uniform dimensions"> Uniform Node Dimensions
+          <td><span class="add-on layout-text" title="Whether nodes are of uniform dimensions"> Uniform Node
+              Dimensions
             </span></td>
           <td>
             <div class="custom-control custom-control-inline custom-checkbox">
@@ -537,7 +512,8 @@
           </td>
         </tr>
         <tr>
-          <td><span class="add-on layout-text" title="Whether to pack components"> Pack Components to Window </span>
+          <td><span class="add-on layout-text" title="Whether to pack components"> Pack Components to Window
+            </span>
           </td>
           <td>
             <div class="custom-control custom-control-inline custom-checkbox">
@@ -547,7 +523,8 @@
           </td>
         </tr>
         <tr>
-          <td><span class="add-on layout-text" title="Whether to tile disconnected nodes"> Tile Disconnected </span>
+          <td><span class="add-on layout-text" title="Whether to tile disconnected nodes"> Tile Disconnected
+            </span>
           </td>
           <td>
             <div class="custom-control custom-control-inline custom-checkbox">
@@ -557,24 +534,41 @@
           </td>
         </tr>
         <tr>
-          <td><span class="add-on layout-text" title="Node repulsion (non overlapping) multiplier"> Node Repulsion
+          <td><span class="add-on layout-text"
+              title="Whether to automatically pad compounds to prevent overlap with boundary nodes"> Pad
+              Compounds for
+              Boundary Nodes </span>
+          </td>
+          <td>
+            <div class="custom-control custom-control-inline custom-checkbox">
+              <input type="checkbox" class="custom-control-input" id="compoundPadding" name="compoundPadding" checked>
+              <label class="custom-control-label" for="compoundPadding"></label>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="add-on layout-text" title="Node repulsion (non overlapping) multiplier"> Node
+              Repulsion
             </span></td>
           <td><input id="nodeRepulsion" class="textField form-control form-control-sm" type="text" value="4500"
               maxlength=5 size="5"></td>
         </tr>
         <tr>
-          <td><span class="add-on layout-text" title="Ideal (intra-graph) edge length"> Ideal Edge Length </span></td>
+          <td><span class="add-on layout-text" title="Ideal (intra-graph) edge length"> Ideal Edge Length
+            </span></td>
           <td><input id="idealEdgeLength" class="textField form-control form-control-sm" type="text" value="50"
               maxlength=5 size="5"></td>
         </tr>
         <tr>
-          <td><span class="add-on layout-text" title="Divisor to compute edge forces"> Edge Elasticity </span></td>
+          <td><span class="add-on layout-text" title="Divisor to compute edge forces"> Edge Elasticity </span>
+          </td>
           <td><input id="edgeElasticity" class="textField form-control form-control-sm" type="text" value="0.45"
               maxlength=5 size="5"></td>
         </tr>
         <tr>
           <td><span class="add-on layout-text"
-              title="Nesting factor (multiplier) to compute ideal edge length for inter-graph edges"> Nesting Factor
+              title="Nesting factor (multiplier) to compute ideal edge length for inter-graph edges">
+              Nesting Factor
             </span></td>
           <td><input id="nestingFactor" class="textField form-control form-control-sm" type="text" value="0.1"
               maxlength=5 size="5"></td>
@@ -590,38 +584,44 @@
               maxlength=5 size="5"></td>
         </tr>
         <tr>
-          <td><span class="add-on layout-text" title="Gravity force (constant) for compounds"> Compound Gravity </span>
+          <td><span class="add-on layout-text" title="Gravity force (constant) for compounds"> Compound
+              Gravity </span>
           </td>
           <td><input id="gravityCompound" class="textField form-control form-control-sm" type="text" value="1"
               maxlength=5 size="5"></td>
         </tr>
         <tr>
-          <td><span class="add-on layout-text" title="Gravity range (constant) for compounds"> Compound Gravity Range
+          <td><span class="add-on layout-text" title="Gravity range (constant) for compounds"> Compound
+              Gravity Range
             </span></td>
           <td><input id="gravityRangeCompound" class="textField form-control form-control-sm" type="text" value="1.5"
               maxlength=5 size="5"></td>
         </tr>
         <tr>
-          <td><span class="add-on layout-text" title="Maximum number of iterations to perform"> Number of Iterations
+          <td><span class="add-on layout-text" title="Maximum number of iterations to perform"> Number of
+              Iterations
             </span></td>
           <td><input id="numIter" class="textField form-control form-control-sm" type="text" value="2500" size="5"></td>
         </tr>
         <tr>
           <td><span class="add-on layout-text"
-              title="Amount of vertical space to put between degree zero nodes during tiling"> Tiling Vertical Padding
+              title="Amount of vertical space to put between degree zero nodes during tiling"> Tiling
+              Vertical Padding
             </span></td>
           <td><input id="tilingPaddingVertical" class="textField form-control form-control-sm" type="text" value="10"
               maxlength=5 size="5"></td>
         </tr>
         <tr>
           <td><span class="add-on layout-text"
-              title="Amount of horizontal space to put between degree zero nodes during tiling"> Tiling Horizontal
+              title="Amount of horizontal space to put between degree zero nodes during tiling"> Tiling
+              Horizontal
               Padding </span></td>
           <td><input id="tilingPaddingHorizontal" class="textField form-control form-control-sm" type="text" value="10"
               maxlength=5 size="5"></td>
         </tr>
         <tr>
-          <td><span class="add-on layout-text" title="Initial cooling factor for incremental layout"> Incremental
+          <td><span class="add-on layout-text" title="Initial cooling factor for incremental layout">
+              Incremental
               Cooling Factor </span></td>
           <td><input id="initialEnergyOnIncremental" class="textField form-control form-control-sm" type="text"
               value="0.3" maxlength=5 size="5"></td>
