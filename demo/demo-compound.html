@@ -175,13 +175,15 @@
             node.css("height", size);
           });
           this.layout({
-            name: 'fcose', animationEasing: 'ease-out', compoundPaddingForBoundaryNodes: true, boundaryNodeConstraint: function (node) {
+            name: 'fcose', animationEasing: 'ease-out', compoundPaddingForBoundaryNodes: true, 
+            boundaryNodeConstraint: function (node) {
               var boundaryParentId = node.data('boundaryParentId');
               if (boundaryParentId && boundaryParentId.length > 0) {
                 return node.cy().getElementById(boundaryParentId);
               }
               return undefined;
-            }
+            },
+            fixedPositionOnBoundary: calculateFixedPosition
           }).run();
 
         },
@@ -375,6 +377,7 @@
             }
             return undefined;
           },
+          fixedPositionOnBoundary: calculateFixedPosition,
           compoundPaddingForBoundaryNodes: document.getElementById("compoundPadding").checked,
           parentSideAdhesion: parseFloat(document.getElementById("parentSideAdhesion").value)
         });
@@ -409,6 +412,67 @@
         }
       }
 
+      function calculateFixedPosition(node) {
+        if (!node.data('isFixedOnBoundary')) {
+          return undefined;
+        }
+
+        var boundaryParentId = node.data('boundaryParentId');
+        if (!boundaryParentId) return undefined;
+
+        var parent = node.cy().getElementById(boundaryParentId);
+        if (!parent || parent.length === 0) return undefined;
+
+        var bb = parent.boundingBox();
+        var px = node.position('x');
+        var py = node.position('y');
+
+        var left = bb.x1;
+        var right = bb.x2;
+        var top = bb.y1;
+        var bottom = bb.y2;
+        var w = bb.w;
+        var h = bb.h;
+
+        var EPS = 2; 
+        var dLeft = Math.abs(px - left);
+        var dRight = Math.abs(px - right);
+        var dTop = Math.abs(py - top);
+        var dBottom = Math.abs(py - bottom);
+
+        var side = 'top';
+        var T = 0.5;
+
+        var minDist = Math.min(dLeft, dRight, dTop, dBottom);
+        var EPS = 5;
+
+        var onLeft = dLeft < EPS;
+        var onRight = dRight < EPS;
+        var onTop = dTop < EPS;
+        var onBottom = dBottom < EPS;
+
+        if (onTop && onLeft) side = 'top-left';
+        else if (onTop && onRight) side = 'top-right';
+        else if (onBottom && onLeft) side = 'bottom-left';
+        else if (onBottom && onRight) side = 'bottom-right';
+        else if (minDist === dTop) {
+          side = 'top';
+          T = (px - left) / w;
+        } else if (minDist === dBottom) {
+          side = 'bottom';
+          T = (px - left) / w;
+        } else if (minDist === dLeft) {
+          side = 'left';
+          T = (py - top) / h;
+        } else {
+          side = 'right';
+          T = (py - top) / h;
+        }
+        T = Math.max(0, Math.min(1, T));
+        
+        return { location: side, T: T };
+      }
+
       document.getElementById("boundaryButton").addEventListener("click", function () {
         var selectedNodes = cy.nodes(':selected');
         var compounds = selectedNodes.filter(':parent');
@@ -422,12 +486,15 @@
         var compound = compounds[0];
         var compoundId = compound.id();
 
+        var isFixed = document.getElementById("fixedPositionCheckbox").checked;
+
         simpleNodes.forEach(function (node) {
           var activeNode = node;
           if (node.isChild()) {
             activeNode = node.move({ parent: null });
           }
           activeNode.data('boundaryParentId', compoundId);
+          activeNode.data('isFixedOnBoundary', isFixed);
         });
 
         // Get the compound's current bounding box (after structural changes)
@@ -631,6 +698,17 @@
             <button id="boundaryButton" class="btn btn-primary btn-sm">
               Assign to boundary
             </button>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="add-on layout-text" title="Whether to fix the position of boundary nodes"> Set Fixed Position
+            </span>
+          </td>
+          <td>
+            <div class="custom-control custom-control-inline custom-checkbox">
+              <input type="checkbox" class="custom-control-input" id="fixedPositionCheckbox" name="fixedPositionCheckbox">
+              <label class="custom-control-label" for="fixedPositionCheckbox"></label>
+            </div>
           </td>
         </tr>
         <tr>

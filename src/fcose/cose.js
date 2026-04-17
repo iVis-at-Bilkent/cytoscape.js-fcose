@@ -115,6 +115,14 @@ let coseLayout = function (options, spectralResult) {
         }
       }
 
+      // Fixed boundary position handling
+      if (options.fixedPositionOnBoundary) {
+        let fixedPos = optFn(options.fixedPositionOnBoundary, theChild);
+        if (fixedPos) {
+          theNode.fixedPosition = fixedPos;
+        }
+      }
+
       //Attach the label properties to both compound and simple nodes if labels will be included in node dimensions
       //These properties will be used while updating bounds of compounds during iterations or tiling
       //and will be used for simple nodes while transferring final positions to cytoscape
@@ -284,6 +292,19 @@ let coseLayout = function (options, spectralResult) {
           }
           theNode.boundaryGraph = parentGraph;
           parentGraph.boundaryNodes.push(theNode);
+        }
+      }
+    });
+  }
+
+  // Fixed boundary position handling
+  if (options.fixedPositionOnBoundary) {
+    nodes.forEach(function (theChild) {
+      let fixedPos = optFn(options.fixedPositionOnBoundary, theChild);
+      if (fixedPos) {
+        let theNode = idToLNode[theChild.data("id")];
+        if (theNode) {
+          theNode.fixedPosition = fixedPos;
         }
       }
     });

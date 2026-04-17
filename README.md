@@ -214,6 +214,12 @@ var defaultOptions = {
   // Function that determines if a node is bound to a parent boundary and returns the parent
   // function(node) { return undefined; }
   boundaryNodeConstraint: undefined,
+  // Function that returns an object defining the node’s fixed position on its parent boundary
+  // function(node) { return undefined; }
+  // {location: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right', T: number (between 0 and 1)}
+  fixedPositionOnBoundary: undefined,
+  // Margin adjustment for boundary nodes
+  compoundPaddingForBoundaryNodes: true,
   // How difficult it is for a boundary node to change sides during layout (a positive integer)
   parentSideAdhesion: 5,
 
